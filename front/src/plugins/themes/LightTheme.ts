@@ -5,8 +5,8 @@ const LightTheme: ThemeDefinition = {
   colors: {
     background: '#fefefe',
     surface: '#ffffff',
-    toolbar: '#EEEEEE'
-    // primary: '#6200EE',
+    toolbar: '#3E8F8D',
+     primary: '#3E8F8D',
     // secondary: '#03DAC6',
     // 'primary-darken-1': '#3700B3',
     // 'secondary-darken-1': '#018786',

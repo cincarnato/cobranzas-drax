@@ -1,4 +1,4 @@
-import {LoadPermissions} from "@drax/identity-back";
+import { LoadPermissions } from "@drax/identity-back";
 import {
     UserPermissions,
     RolePermissions,
@@ -7,14 +7,15 @@ import {
     UserLoginFailPermissions,
     UserSessionPermissions
 } from "@drax/identity-back";
-import {MediaPermissions} from "@drax/media-back";
-import {SettingPermissions} from "@drax/settings-back";
-import {DashboardPermissions} from "@drax/dashboard-back";
-import {AuditPermissions} from "@drax/audit-back";
+import { MediaPermissions } from "@drax/media-back";
+import { SettingPermissions } from "@drax/settings-back";
+import { DashboardPermissions } from "@drax/dashboard-back";
+import { AuditPermissions } from "@drax/audit-back";
 
-import {BasePermissions} from "../modules/base/permissions/BasePermissions.js";
-import {NotificationPermissions} from "../modules/base/permissions/NotificationPermissions.js";
-
+import { BasePermissions } from "../modules/base/permissions/BasePermissions.js";
+import { NotificationPermissions } from "../modules/base/permissions/NotificationPermissions.js";
+import { CovenantPermissions } from "../modules/collections/permissions/CovenantPermissions.js";
+import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
 
 function InitializePermissions() {
 
@@ -34,7 +35,8 @@ function InitializePermissions() {
         //Local modules permissions
         ...Object.values(BasePermissions),
         ...Object.values(NotificationPermissions),
-
+        ...Object.values(CovenantPermissions),
+        ...Object.values(GroupZonePermissions),
     ]
 
     //Load All Permissions
@@ -43,5 +45,5 @@ function InitializePermissions() {
 
 export default InitializePermissions
 
-export {InitializePermissions}
+export { InitializePermissions }
 
