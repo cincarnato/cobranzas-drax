@@ -165,7 +165,9 @@ class FastifyServer {
 
 
     setupErrorHandler(){
+
         this.fastifyServer.setErrorHandler((e, request, reply) => {
+            console.error(e)
             if(
                 e instanceof ValidationError ||
                 e instanceof NotFoundError ||

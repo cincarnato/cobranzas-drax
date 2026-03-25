@@ -14,6 +14,13 @@ const menu: MenuItem[] = [
     gallery: true,
     children: [
       {
+        icon: 'mdi-view-dashboard-variant-outline',
+        text: 'Dashboard',
+        link: { name: "CovenantDashboardPage" },
+        gallery: true,
+        permission: 'covenant:manage'
+      },
+      {
         icon: 'mdi-domain',
         text: 'covenant.menu',
         link: { name: "CovenantCrudPage" },
@@ -26,6 +33,34 @@ const menu: MenuItem[] = [
         link: { name: "GroupZoneCrudPage" },
         gallery: true,
         permission: 'groupzone:manage'
+      },
+      {
+        icon: 'mdi-format-list-bulleted',
+        text: 'calllist.menu',
+        link: { name: "CallListCrudPage" },
+        gallery: true,
+        permission: 'calllist:manage'
+      },
+      {
+        icon: 'mdi-phone-log',
+        text: 'calllog.menu',
+        link: { name: "CallLogCrudPage" },
+        gallery: true,
+        permission: 'calllog:manage'
+      },
+      {
+        icon: 'mdi-phone-check',
+        text: 'callsuccesstype.menu',
+        link: { name: "CallSuccessTypeCrudPage" },
+        gallery: true,
+        permission: 'callsuccesstype:manage'
+      },
+      {
+        icon: 'mdi-phone-remove',
+        text: 'callfailedtype.menu',
+        link: { name: "CallFailedTypeCrudPage" },
+        gallery: true,
+        permission: 'callfailedtype:manage'
       },
     ],
   },
@@ -100,6 +135,13 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'audit:manage'
       },
+      {
+        icon: 'mdi-file',
+        text:'file.menu',
+        link: { name: "FileCrudPage" },
+        gallery: true,
+        permission: 'file:manage'
+      },
     ]
   },
 
@@ -110,5 +152,4 @@ export default menu
 export {
   menu
 }
-
 

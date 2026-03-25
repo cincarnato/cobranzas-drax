@@ -1,10 +1,12 @@
 import merge from 'deepmerge'
 import { LocaleMessages } from "vue-i18n";
 import baseI18n from '../modules/base/i18n/index'
+import callerI18n from '../modules/caller/i18n/index'
 import collectionsI18n from '../modules/collections/i18n/index'
 
 const modulesI18n = merge.all([
   baseI18n,
+  callerI18n,
   collectionsI18n,
 ]) as LocaleMessages<never>
 

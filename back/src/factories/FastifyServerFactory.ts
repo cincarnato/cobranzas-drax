@@ -10,7 +10,7 @@ import {
     UserSessionRoutes,
     UserLoginFailRoutes
 } from "@drax/identity-back"
-import { MediaRoutes } from "@drax/media-back"
+import { MediaRoutes, FileRoutes } from "@drax/media-back"
 import { SettingRoutes } from "@drax/settings-back"
 import { DashboardRoutes } from "@drax/dashboard-back";
 import { AuditRoutes } from "@drax/audit-back";
@@ -18,6 +18,10 @@ import { AuditRoutes } from "@drax/audit-back";
 import { GoogleFastifyRoutes } from "../modules/google/routes/GoogleRoutes.js"
 import { HealthRoutes } from "../modules/base/routes/HealthRoutes.js"
 import { NotificationFastifyRoutes } from "../modules/base/routes/NotificationRoutes.js"
+import { CallFailedTypeFastifyRoutes } from "../modules/caller/routes/CallFailedTypeRoutes.js"
+import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.js"
+import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js"
+import { CallSuccessTypeFastifyRoutes } from "../modules/caller/routes/CallSuccessTypeRoutes.js"
 import { CovenantFastifyRoutes } from "../modules/collections/routes/CovenantRoutes.js"
 import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneRoutes.js"
 
@@ -41,6 +45,7 @@ function FastifyServerFactory(rootDir: string) {
     //DRAX MODULES ROUTES
     server.fastifyRegister(AuditRoutes)
     server.fastifyRegister(MediaRoutes)
+    server.fastifyRegister(FileRoutes)
     server.fastifyRegister(SettingRoutes)
     server.fastifyRegister(DashboardRoutes)
 
@@ -48,6 +53,12 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(GoogleFastifyRoutes)
     server.fastifyRegister(HealthRoutes)
     server.fastifyRegister(NotificationFastifyRoutes)
+
+    server.fastifyRegister(CallFailedTypeFastifyRoutes)
+    server.fastifyRegister(CallListFastifyRoutes)
+    server.fastifyRegister(CallLogFastifyRoutes)
+    server.fastifyRegister(CallSuccessTypeFastifyRoutes)
+
     server.fastifyRegister(CovenantFastifyRoutes)
     server.fastifyRegister(GroupZoneFastifyRoutes)
 

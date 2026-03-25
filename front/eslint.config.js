@@ -27,7 +27,7 @@ export default [
       ...vue.configs['flat/essential'].rules,
       ...tsPlugin.configs.recommended.rules,
       'vue/multi-word-component-names': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/no-unsafe-function-type': 'warn'
     }
