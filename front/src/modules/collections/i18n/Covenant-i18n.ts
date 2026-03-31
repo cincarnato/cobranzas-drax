@@ -3,6 +3,7 @@ const messages = {
     covenant: {
       entity: 'Agreement',
       menu: 'Agreements',
+      exportMenu: 'Export Agreements',
       crud: 'Manage Agreements',
       field: {
         date: 'Date',
@@ -36,6 +37,7 @@ const messages = {
     covenant: {
       entity: 'Convenio',
       menu: 'Convenios',
+      exportMenu: 'Exportar Convenios',
       crud: 'Gestionar Convenios',
       field: {
         date: 'Fecha',

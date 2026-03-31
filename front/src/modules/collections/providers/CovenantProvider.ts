@@ -17,7 +17,23 @@ class CovenantProvider extends AbstractCrudRestProvider<ICovenant, ICovenantBase
     return CovenantProvider.singleton
   }
 
+  async exportExcel(date: string, group: string): Promise<Response> {
+    const authStoreString = localStorage.getItem('AuthStore')
+    let accessToken: string | null = null
+
+    if (authStoreString) {
+      const authStoreObject = JSON.parse(authStoreString)
+      accessToken = authStoreObject.accessToken ?? null
+    }
+
+    const query = new URLSearchParams({date, group})
+
+    return fetch(`${this.basePath}/export-excel?${query.toString()}`, {
+      method: 'GET',
+      headers: accessToken ? {Authorization: `Bearer ${accessToken}`} : undefined,
+    })
+  }
+
 }
 
 export default CovenantProvider
-

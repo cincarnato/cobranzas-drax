@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   data: null,
   mode: 'simple',
-  maxEntries: 3
+  maxEntries: 8
 })
 
 const entries = computed(() => {

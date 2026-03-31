@@ -29,6 +29,8 @@ async function CovenantFastifyRoutes(fastify, options) {
     fastify.delete('/api/covenants/:id', {schema: schemas.deleteSchema}, (req,rep) =>controller.delete(req,rep))
     
     fastify.get('/api/covenants/export', (req,rep) =>controller.export(req,rep))
+
+    fastify.get('/api/covenants/export-excel', (req,rep) =>controller.exportExcel(req,rep))
     
 }
 

@@ -10,6 +10,7 @@ import type {
   IEntityCrudRules
 } from "@drax/crud-share";
 import CovenantProvider from "../providers/CovenantProvider";
+import {useI18n} from 'vue-i18n'
 
 //Import EntityCrud Refs
 import {UserCrud} from "@drax/identity-vue"
@@ -96,26 +97,28 @@ class CovenantCrud extends EntityCrud implements IEntityCrud {
   }
 
   get rules(): IEntityCrudRules {
+    const {t} = useI18n()
+
     return {
-      date: [(v: never) => !!v || 'validation.required'],
+      date: [(v: never) => !!v || t('validation.required')],
       since: [
-        (v: never) => !!v || 'Requerido',
+        (v: never) => !!v || t('validation.required'),
         (v: never) => /^([0-1][0-9]|2[0-3])$|([0-1][0-9]|^2[0-3]):[0-5][0-9]$/.test(v) || 'Formato: HH o HH:MM'
       ],
       until: [
-        (v: never) => !!v || 'Requerido',
+        (v: never) => !!v || t('validation.required'),
         (v: never) => /^([0-1][0-9]|2[0-3])$|([0-1][0-9]|^2[0-3]):[0-5][0-9]$/.test(v) || 'Formato: HH o HH:MM'
       ],
       month: [
-        (v: never) => !!v || 'Requerido',
+        (v: never) => !!v || t('validation.required'),
         (v: never) => /^ENE$|^FEB$|^MAR$|^ABR$|^MAY$|^JUN$|^JUL$|^AGO$|^SEP$|^OCT$|^NOV$|^DIC$/.test(v) || 'Valores: ENE, FEB, MAR, ABR, MAY, JUN, JUL, AGO, SEP, OCT, NOV, DIC'
       ],
-      fullname: [(v: never) => !!v || 'validation.required'],
-      dni: [(v: never) => !!v || 'validation.required'],
-      locality: [(v: never) => !!v || 'validation.required'],
-      address: [(v: never) => !!v || 'validation.required'],
-      amount: [(v: never) => !!v || 'validation.required'],
-      group: [(v: never) => !!v || 'validation.required'],
+      fullname: [(v: never) => !!v || t('validation.required')],
+      dni: [(v: never) => !!v || t('validation.required')],
+      locality: [(v: never) => !!v || t('validation.required')],
+      address: [(v: never) => !!v || t('validation.required')],
+      amount: [(v: never) => !!v || t('validation.required')],
+      group: [(v: never) => !!v || t('validation.required')],
     }
   }
 
@@ -156,7 +159,7 @@ class CovenantCrud extends EntityCrud implements IEntityCrud {
   get fields(): IEntityCrudField[] {
     return [
       {name: 'date', type: 'date', label: 'date', default: new Date((new Date()).setHours(0, 0, 0, 0)), md: 6},
-      {name: 'group', type: 'ref', label: 'group', default: null, ref: 'Group', refDisplay: 'name', md: 6},
+      {name: 'group', type: 'ref', label: 'group', default: null, ref: 'Group', refDisplay: 'name', md: 6, noFilter: true},
       {name: 'createdBy', type: 'ref', label: 'createdBy', default: null, ref: 'User', refDisplay: 'username', md: 6},
       {name: 'locality', type: 'string', label: 'locality', default: '', md: 6},
       {name: 'address', type: 'string', label: 'address', default: '', md: 6},

@@ -1,6 +1,6 @@
 
 import CovenantCrudRoute from "./CovenantCrudRoute"
-import CovenantDashboardRoute from "./CovenantDashboardRoute"
+import CovenantDashboardRoute from "./CovenantRoutes"
 import GroupZoneCrudRoute from "./GroupZoneCrudRoute"
 
 export const routes = [

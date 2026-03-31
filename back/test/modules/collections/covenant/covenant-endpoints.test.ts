@@ -351,6 +351,52 @@ describe("Covenant Endpoints Test", function () {
         expect(locA.count).toBe(1)
     })
 
+    it("should export Covenants to Excel by date and group", async () => {
+        const { accessToken } = await testSetup.rootUserLogin()
+        expect(accessToken).toBeTruthy()
+        await testSetup.dropCollection('Covenant')
+
+        const exportDate = new Date('2026-03-31T00:00:00.000Z')
+        const covenantData = [
+            {
+                ...baseCovenantData,
+                date: exportDate,
+                dni: "70000001",
+                fullname: "Excel Export One",
+                createdBy: testSetup.rootUser._id.toString(),
+                updatedBy: testSetup.rootUser._id.toString()
+            },
+            {
+                ...baseCovenantData,
+                date: exportDate,
+                dni: "70000002",
+                fullname: "Excel Export Two",
+                createdBy: testSetup.rootUser._id.toString(),
+                updatedBy: testSetup.rootUser._id.toString()
+            }
+        ]
+
+        for (const data of covenantData) {
+            await testSetup.fastifyInstance.inject({
+                method: 'POST',
+                url: '/api/covenants',
+                payload: data,
+                headers: { Authorization: `Bearer ${accessToken}` }
+            })
+        }
+
+        const resp = await testSetup.fastifyInstance.inject({
+            method: 'GET',
+            url: `/api/covenants/export-excel?date=${encodeURIComponent(exportDate.toISOString())}&group=${validGroupObjId}`,
+            headers: { Authorization: `Bearer ${accessToken}` }
+        })
+
+        expect(resp.statusCode).toBe(200)
+        expect(resp.headers['content-type']).toContain('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        expect(resp.headers['content-disposition']).toContain('.xlsx')
+        expect(resp.body.length).toBeGreaterThan(0)
+    })
+
     it("should handle error responses correctly when Covenant is not found", async () => {
         const { accessToken } = await testSetup.rootUserLogin()
         expect(accessToken).toBeTruthy()

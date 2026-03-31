@@ -28,25 +28,41 @@ const menu: MenuItem[] = [
         permission: 'covenant:manage'
       },
       {
+        icon: 'mdi-file-excel-outline',
+        text: 'covenant.exportMenu',
+        link: { name: "CovenantExportPage" },
+        gallery: true,
+        permission: 'covenant:manage'
+      },
+      {
         icon: 'mdi-map-marker-radius',
         text: 'groupzone.menu',
         link: { name: "GroupZoneCrudPage" },
         gallery: true,
         permission: 'groupzone:manage'
       },
+
+    ],
+  },
+  {
+    icon: 'mdi-account-circle',
+    text: 'LLamados',
+    gallery: true,
+    children: [
+
       {
         icon: 'mdi-format-list-bulleted',
-        text: 'calllist.menu',
+        text: 'Administrar Listados',
         link: { name: "CallListCrudPage" },
         gallery: true,
         permission: 'calllist:manage'
       },
       {
         icon: 'mdi-phone-log',
-        text: 'calllog.menu',
-        link: { name: "CallLogCrudPage" },
+        text: 'Dashboard Llamadas',
+        link: { name: "CallListDashboardPage" },
         gallery: true,
-        permission: 'calllog:manage'
+        permission: 'calllist:manage'
       },
       {
         icon: 'mdi-phone-check',
@@ -152,4 +168,3 @@ export default menu
 export {
   menu
 }
-
