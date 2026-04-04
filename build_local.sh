@@ -3,23 +3,20 @@ echo "BUILD: START"
 
 node -v
 
-echo "BUILD: Clear out dir"
-rm -R out
+echo "BUILD: Clear build dir"
+rm -R build
 
 echo "BUILD: Backend Start"
 cd back
 npm install
-npm run build
+npm run build:local
 
 echo "BUILD: Frontend Start"
 cd ../front
 npm install
-npm run build
+npm run build:local
 cd ..
 
-echo "BUILD: Build install dependencies"
+echo "BUILD: Add build to git"
 
-cd out
-npm install --production
-cd ..
-
+git add build
