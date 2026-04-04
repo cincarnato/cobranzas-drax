@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import {computed} from "vue";
+import {useAuth} from "@drax/identity-vue";
+import { VDateInput } from 'vuetify/labs/VDateInput'
 import GroupZoneCombobox from "../../../collections/comboboxes/GroupZoneCombobox.vue";
 import CallListDashboardUserCombobox from "../../comboboxes/CallListDashboardUserCombobox.vue";
 
-const fromModel = defineModel<string | null>('from', {default: null})
-const toModel = defineModel<string | null>('to', {default: null})
+const {hasPermission} = useAuth()
+const fromModel = defineModel<Date | null>('from', {default: null})
+const toModel = defineModel<Date | null>('to', {default: null})
 const groupsModel = defineModel<string[]>('groups', {default: []})
 const usersModel = defineModel<string[]>('users', {default: []})
 
@@ -30,10 +33,9 @@ const hasActiveFilters = computed(() => {
     <v-card-text>
       <v-row>
         <v-col cols="12" md="3">
-          <v-text-field
+          <v-date-input
             v-model="fromModel"
             label="Desde"
-            type="date"
             variant="outlined"
             hide-details="auto"
             @update:model-value="emit('apply')"
@@ -41,17 +43,16 @@ const hasActiveFilters = computed(() => {
         </v-col>
 
         <v-col cols="12" md="3">
-          <v-text-field
+          <v-date-input
             v-model="toModel"
             label="Hasta"
-            type="date"
             variant="outlined"
             hide-details="auto"
             @update:model-value="emit('apply')"
           />
         </v-col>
 
-        <v-col cols="12" md="3">
+        <v-col cols="12" md="3" v-if="hasPermission('calllist:viewAll')">
           <GroupZoneCombobox
             v-model="groupsModel"
             label="Grupos"
@@ -63,7 +64,7 @@ const hasActiveFilters = computed(() => {
           />
         </v-col>
 
-        <v-col cols="12" md="3">
+        <v-col cols="12" md="3" v-if="hasPermission('calllist:viewAll')">
           <CallListDashboardUserCombobox
             v-model="usersModel"
             label="Usuarios"

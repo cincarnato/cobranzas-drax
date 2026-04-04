@@ -12,8 +12,8 @@ const totalItems = ref(0)
 const pageNumber = ref(1)
 const itemsPerPage = ref(6)
 
-const fromDate = ref<string | null>(startOfMonth())
-const toDate = ref<string | null>(endOfMonth())
+const fromDate = ref<Date | null>(startOfMonth())
+const toDate = ref<Date | null>(endOfMonth())
 const groupIds = ref<string[]>([])
 const userIds = ref<string[]>([])
 
@@ -32,7 +32,7 @@ const filters = computed<IDraxFieldFilter[]>(() => {
     currentFilters.push({
       field: 'deadline',
       operator: 'gte',
-      value: new Date(`${fromDate.value}T00:00:00`)
+      value: fromDate.value
     })
   }
 
@@ -40,7 +40,7 @@ const filters = computed<IDraxFieldFilter[]>(() => {
     currentFilters.push({
       field: 'deadline',
       operator: 'lte',
-      value: new Date(`${toDate.value}T23:59:59`)
+      value: toDate.value
     })
   }
 
@@ -107,12 +107,12 @@ function resetFilters() {
 
 function startOfMonth() {
   const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  return new Date(now.getFullYear(), now.getMonth(), 1)
 }
 
 function endOfMonth() {
   const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0)
 }
 </script>
 

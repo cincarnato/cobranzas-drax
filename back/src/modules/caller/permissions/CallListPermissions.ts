@@ -5,10 +5,7 @@ enum CallListPermissions {
     Update = "calllist:update",
     Delete = "calllist:delete",
     View = "calllist:view",
-
-    ViewGroup = "calllist:viewGroup",
-    ViewMy = "calllist:viewMy",
-
+    ViewAll = "calllist:viewAll",
     Manage = "calllist:manage"
 
 }

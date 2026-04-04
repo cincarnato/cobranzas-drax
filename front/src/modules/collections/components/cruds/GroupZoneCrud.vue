@@ -7,7 +7,7 @@ import {Crud} from "@drax/crud-vue";
 
 <template>
   <crud :entity="GroupZoneCrud.instance">
-    <template v-slot:item.users="{value}">{{ value.map((v: any) => v.username).join(",") }}</template>
+    <template v-slot:item.users="{value}">{{ value.map((v: any) => v.username).join(", ") }}</template>
   </crud>
 </template>
 

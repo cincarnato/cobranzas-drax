@@ -62,7 +62,7 @@ const menu: MenuItem[] = [
         text: 'Dashboard Llamadas',
         link: { name: "CallListDashboardPage" },
         gallery: true,
-        permission: 'calllist:manage'
+        permission: 'calllist:view'
       },
       {
         icon: 'mdi-phone-check',

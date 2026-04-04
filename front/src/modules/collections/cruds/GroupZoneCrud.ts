@@ -5,7 +5,7 @@ import type{
   IEntityCrud,
   IEntityCrudField,
   IEntityCrudFilter,
-  IEntityCrudHeader, 
+  IEntityCrudHeader,
   IEntityCrudPermissions,
   IEntityCrudRefs,
   IEntityCrudRules
@@ -23,7 +23,7 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
     super();
     this.name = 'GroupZone'
   }
-  
+
   static get instance(): GroupZoneCrud {
     if(!GroupZoneCrud.singleton){
       GroupZoneCrud.singleton = new GroupZoneCrud()
@@ -33,24 +33,25 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
 
   get permissions(): IEntityCrudPermissions{
     return {
-      manage: 'groupzone:manage', 
-      view: 'groupzone:view', 
-      create: 'groupzone:create', 
-      update: 'groupzone:update', 
+      manage: 'groupzone:manage',
+      view: 'groupzone:view',
+      create: 'groupzone:create',
+      update: 'groupzone:update',
       delete: 'groupzone:delete'
     }
   }
 
   get headers(): IEntityCrudHeader[] {
     return [
-        {title: 'name',key:'name', align: 'start'}
+        {title: 'name',key:'name', align: 'start'},
+        {title: 'users',key:'users', align: 'start'},
     ]
   }
-  
+
   get selectedHeaders(): string[] {
     return this.headers.map(header => header.key)
   }
-  
+
   get actionHeaders():IEntityCrudHeader[]{
     return [
       {
@@ -67,10 +68,10 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
   get provider(): IDraxCrudProvider<any, any, any>{
     return GroupZoneProvider.instance
   }
-  
+
   get refs(): IEntityCrudRefs{
     return {
-      User: UserCrud.instance 
+      User: UserCrud.instance
     }
   }
 
@@ -86,13 +87,13 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
 {name:'users',type:'array.ref',label:'users',default:[],ref: 'User',refDisplay: 'username'}
     ]
   }
-  
+
   get filters():IEntityCrudFilter[]{
     return [
       //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
     ]
   }
-  
+
   get isViewable(){
     return true
   }
@@ -124,7 +125,7 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
   get isImportable(){
     return true
   }
-  
+
   get isColumnSelectable() {
     return true
   }
@@ -140,16 +141,16 @@ class GroupZoneCrud extends EntityCrud implements IEntityCrud {
   get dialogFullscreen(){
     return false
   }
-  
+
   get tabs() {
     return [
-     
+
     ]
   }
-  
+
   get menus() {
     return [
-     
+
     ]
   }
 

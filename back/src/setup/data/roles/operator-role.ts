@@ -16,8 +16,7 @@ const role = {
         CovenantPermissions.Update,
         CovenantPermissions.Delete,
 
-        CallListPermissions.ViewGroup,
-        CallListPermissions.ViewMy,
+        CallListPermissions.View,
 
         CallLogPermissions.View,
         CallLogPermissions.Update,
