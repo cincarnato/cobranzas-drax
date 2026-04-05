@@ -204,6 +204,16 @@ class CovenantCrud extends EntityCrud implements IEntityCrud {
         md: 6,
         operator: 'in'
       },
+      {
+        name: 'createdBy',
+        type: 'ref',
+        label: 'createdBy',
+        default: null,
+        ref: 'User',
+        refDisplay: 'username',
+        md: 6,
+        operator: 'in'
+      },
       {name: 'locality', type: 'string', label: 'locality', default: '', md: 6, operator: 'like'},
       {name: 'address', type: 'string', label: 'address', default: '', md: 6, operator: 'like'},
       {name: 'fullname', type: 'string', label: 'fullname', default: '', md: 6, operator: 'like'},

@@ -35,10 +35,10 @@ const messages = {
   },
   es: {
     covenant: {
-      entity: 'Convenio',
-      menu: 'Convenios',
-      exportMenu: 'Exportar Convenios',
-      crud: 'Gestionar Convenios',
+      entity: 'Cobranza',
+      menu: 'Cobranzas',
+      exportMenu: 'Exportar Cobranzas',
+      crud: 'Gestionar Cobranzas',
       field: {
         date: 'Fecha',
         link: 'Enlace',
@@ -60,11 +60,11 @@ const messages = {
       },
     },
     permission: {
-      'covenant:view': 'Ver Convenio',
-      'covenant:create': 'Crear Convenio',
-      'covenant:update': 'Editar Convenio',
-      'covenant:delete': 'Eliminar Convenio',
-      'covenant:manage': 'Gestionar Convenios',
+      'covenant:view': 'Ver Cobranza',
+      'covenant:create': 'Crear Cobranza',
+      'covenant:update': 'Editar Cobranza',
+      'covenant:delete': 'Eliminar Cobranza',
+      'covenant:manage': 'Gestionar Cobranzas',
     },
   },
 };

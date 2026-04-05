@@ -5,6 +5,7 @@ enum CovenantPermissions {
     Update = "covenant:update",
     Delete = "covenant:delete",
     View = "covenant:view",
+    ViewAll = "covenant:viewAll",
     Manage = "covenant:manage"
 
 }

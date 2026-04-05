@@ -1,5 +1,4 @@
 import GroupZonePermissions from "../../../modules/collections/permissions/GroupZonePermissions.js";
-import CovenantPermissions from "../../../modules/collections/permissions/CovenantPermissions.js";
 
 import CallListPermissions from "../../../modules/caller/permissions/CallListPermissions.js";
 import CallLogPermissions from "../../../modules/caller/permissions/CallLogPermissions.js";
@@ -7,14 +6,10 @@ import CallFailedTypePermissions from "../../../modules/caller/permissions/CallF
 import CallSuccessTypePermissions from "../../../modules/caller/permissions/CallSuccessTypePermissions.js";
 
 const role = {
-    name: "Operator",
+    name: "Llamador",
     permissions: [
         GroupZonePermissions.View,
-        CovenantPermissions.Manage,
-        CovenantPermissions.Create,
-        CovenantPermissions.View,
-        CovenantPermissions.Update,
-        CovenantPermissions.Delete,
+
 
         CallListPermissions.View,
 

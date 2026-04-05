@@ -1,52 +1,51 @@
 
 const messages = {
   en: {
-  
     calllog: {
-          entity: 'CallLog',
-          menu: 'CallLog',
-          crud: 'Manage CallLog',
+          entity: 'Call Log',
+          menu: 'Call Logs',
+          crud: 'Manage Call Logs',
           field:{
-                       callList:'callList',
-           attempts:'attempts',
-           notes:'notes',
-           typification:'typification',
-           state:'state',
-           promiseDate:'promiseDate',
-           done:'done',
-           data:'data'
+                       callList:'Call List',
+           attempts:'Attempts',
+           notes:'Notes',
+           typification:'Typification',
+           state:'Status',
+           promiseDate:'Promise Date',
+           done:'Completed',
+           data:'Data'
           }
       },
       permission: {
-              'calllog:view': 'View CallLog',
-              'calllog:create': 'Create CallLog',
-              'calllog:update': 'Edit CallLog',
-              'calllog:delete': 'Delete CallLog',
-              'calllog:manage': 'Manage CallLog',
+              'calllog:view': 'View Call Logs',
+              'calllog:create': 'Create Call Logs',
+              'calllog:update': 'Edit Call Logs',
+              'calllog:delete': 'Delete Call Logs',
+              'calllog:manage': 'Manage Call Logs',
       }
   },
   es: {
      calllog: {
-          entity: 'CallLog',
-          menu: 'CallLog',
-          crud: 'Gestionar CallLog',
+          entity: 'Registro de llamadas',
+          menu: 'Registros de llamadas',
+          crud: 'Gestionar registros de llamadas',
           field:{
-                       callList:'callList',
-           attempts:'attempts',
-           notes:'notes',
-           typification:'typification',
-           state:'state',
-           promiseDate:'promiseDate',
-           done:'done',
-           data:'data'
+                       callList:'Lista de llamadas',
+           attempts:'Intentos',
+           notes:'Notas',
+           typification:'Tipificacion',
+           state:'Estado',
+           promiseDate:'Fecha de promesa',
+           done:'Completado',
+           data:'Datos'
           }
       },
      permission: {
-              'calllog:view': 'Ver CallLog',
-              'calllog:create': 'Crear CallLog',
-              'calllog:update': 'Editar CallLog',
-              'calllog:delete': 'Eliminar CallLog',
-              'calllog:manage': 'Gestionar CallLog',
+              'calllog:view': 'Ver registros de llamadas',
+              'calllog:create': 'Crear registros de llamadas',
+              'calllog:update': 'Editar registros de llamadas',
+              'calllog:delete': 'Eliminar registros de llamadas',
+              'calllog:manage': 'Gestionar registros de llamadas',
      }
   }
 }

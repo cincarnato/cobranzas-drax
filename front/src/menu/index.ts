@@ -10,7 +10,7 @@ const menu: MenuItem[] = [
   },
   {
     icon: 'mdi-account-circle',
-    text: 'COBRANZAS',
+    text: 'Cobranzas',
     gallery: true,
     children: [
       {
@@ -21,7 +21,7 @@ const menu: MenuItem[] = [
         permission: 'covenant:manage'
       },
       {
-        icon: 'mdi-domain',
+        icon: 'mdi-currency-usd',
         text: 'covenant.menu',
         link: { name: "CovenantCrudPage" },
         gallery: true,
@@ -34,13 +34,7 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'covenant:manage'
       },
-      {
-        icon: 'mdi-map-marker-radius',
-        text: 'groupzone.menu',
-        link: { name: "GroupZoneCrudPage" },
-        gallery: true,
-        permission: 'groupzone:manage'
-      },
+
 
     ],
   },
@@ -59,7 +53,7 @@ const menu: MenuItem[] = [
       },
       {
         icon: 'mdi-phone-log',
-        text: 'Dashboard Llamadas',
+        text: 'Gestion de Llamadas',
         link: { name: "CallListDashboardPage" },
         gallery: true,
         permission: 'calllist:view'
@@ -82,17 +76,32 @@ const menu: MenuItem[] = [
   },
   {
     icon: 'mdi-account-circle',
-    text: 'admin',
+    text: 'Administración',
     gallery: true,
     permission: 'user:manage',
     children: [
       {
-        icon: 'mdi-domain',
-        text: 'tenant.menu',
-        link: { name: "CrudTenant" },
+        icon: 'mdi-map-marker-radius',
+        text: 'groupzone.menu',
+        link: { name: "GroupZoneCrudPage" },
         gallery: true,
-        permission: 'tenant:manage'
+        permission: 'groupzone:manage'
       },
+      // {
+      //   icon: 'mdi-domain',
+      //   text: 'tenant.menu',
+      //   link: { name: "CrudTenant" },
+      //   gallery: true,
+      //   permission: 'tenant:manage'
+      // },
+      {
+        icon: 'mdi-table-account',
+        text: 'user.menu',
+        link: { name: "CrudUser" },
+        gallery: true,
+        permission: 'user:manage'
+      },
+
       {
         icon: 'mdi-chair-rolling',
         text: 'role.menu',
@@ -101,13 +110,7 @@ const menu: MenuItem[] = [
         permission: 'role:manage'
       },
 
-      {
-        icon: 'mdi-table-account',
-        text: 'user.menu',
-        link: { name: "CrudUser" },
-        gallery: true,
-        permission: 'user:manage'
-      },
+
       {
         icon: 'mdi mdi-table-key',
         text: 'userapikey.menu',

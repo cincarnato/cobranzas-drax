@@ -25,8 +25,8 @@ defineProps({
           :key="item.text"
           :value="isActive(item)"
         >
-          <h4 class="text-h4">
-            {{ itemText(item) }}
+          <h4 class="text-h5 font-weight-semibold">
+            {{ itemText(item).toUpperCase() }}
           </h4>
           <v-divider class="mb-3"></v-divider>
 

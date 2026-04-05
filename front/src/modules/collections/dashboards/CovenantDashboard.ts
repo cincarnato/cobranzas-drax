@@ -1,15 +1,23 @@
 import type {IDashboardBase} from "@drax/dashboard-share";
+import CovenantCrud from "../cruds/CovenantCrud";
 
-function createCovenantDashboard(): IDashboardBase {
+type DashboardFilter = {
+  field: string
+  operator: string
+  value: unknown
+}
+
+function createCovenantDashboard(filters: DashboardFilter[] = []): IDashboardBase {
   return {
     identifier: "covenant-dashboard",
     title: "Dashboard de Convenios",
     cards: [
       {
         entity: "Covenant",
+        entityInstance: CovenantCrud.instance,
         type: "groupBy",
         title: "Resumen por zona",
-        filters: [],
+        filters,
         layout: {
           cols: 12,
           sm: 12,
@@ -25,9 +33,10 @@ function createCovenantDashboard(): IDashboardBase {
       },
       {
         entity: "Covenant",
+        entityInstance: CovenantCrud.instance,
         type: "groupBy",
         title: "Resumen por usuario",
-        filters: [],
+        filters,
         layout: {
           cols: 12,
           sm: 12,

@@ -1,40 +1,39 @@
 
 const messages = {
   en: {
-  
     callfailedtype: {
-          entity: 'CallFailedType',
-          menu: 'CallFailedType',
-          crud: 'Manage CallFailedType',
+          entity: 'Call Failure Type',
+          menu: 'Call Failure Types',
+          crud: 'Manage Call Failure Types',
           field:{
-                       name:'name',
-           color:'color'
+                       name:'Name',
+           color:'Color'
           }
       },
       permission: {
-              'callfailedtype:view': 'View CallFailedType',
-              'callfailedtype:create': 'Create CallFailedType',
-              'callfailedtype:update': 'Edit CallFailedType',
-              'callfailedtype:delete': 'Delete CallFailedType',
-              'callfailedtype:manage': 'Manage CallFailedType',
+              'callfailedtype:view': 'View Call Failure Types',
+              'callfailedtype:create': 'Create Call Failure Types',
+              'callfailedtype:update': 'Edit Call Failure Types',
+              'callfailedtype:delete': 'Delete Call Failure Types',
+              'callfailedtype:manage': 'Manage Call Failure Types',
       }
   },
   es: {
      callfailedtype: {
-          entity: 'CallFailedType',
-          menu: 'CallFailedType',
-          crud: 'Gestionar CallFailedType',
+          entity: 'Tipo de llamada fallida',
+          menu: 'Tipos de llamada fallida',
+          crud: 'Gestionar tipos de llamada fallida',
           field:{
-                       name:'name',
-           color:'color'
+                       name:'Nombre',
+           color:'Color'
           }
       },
      permission: {
-              'callfailedtype:view': 'Ver CallFailedType',
-              'callfailedtype:create': 'Crear CallFailedType',
-              'callfailedtype:update': 'Editar CallFailedType',
-              'callfailedtype:delete': 'Eliminar CallFailedType',
-              'callfailedtype:manage': 'Gestionar CallFailedType',
+              'callfailedtype:view': 'Ver tipos de llamada fallida',
+              'callfailedtype:create': 'Crear tipos de llamada fallida',
+              'callfailedtype:update': 'Editar tipos de llamada fallida',
+              'callfailedtype:delete': 'Eliminar tipos de llamada fallida',
+              'callfailedtype:manage': 'Gestionar tipos de llamada fallida',
      }
   }
 }
