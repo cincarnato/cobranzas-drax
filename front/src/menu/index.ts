@@ -8,6 +8,7 @@ const menu: MenuItem[] = [
     gallery: false,
     auth: false
   },
+
   {
     icon: 'mdi-account-circle',
     text: 'Cobranzas',
@@ -72,6 +73,52 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'callfailedtype:manage'
       },
+    ],
+  },
+
+  {
+    icon: 'mdi-bank-transfer',
+    text: 'Transferencias',
+    gallery: true,
+    children: [
+      {
+        icon: 'mdi-swap-horizontal',
+        text: 'bankmovement.menu',
+        link: { name: "BankMovementCrudPage" },
+        gallery: true,
+        permission: 'bankmovement:manage'
+      },
+      {
+        icon: 'mdi-account-search',
+        text: 'payerentity.menu',
+        link: { name: "PayerEntityCrudPage" },
+        gallery: true,
+        permission: 'payerentity:manage'
+      },
+      {
+        icon: 'mdi-account-multiple',
+        text: 'affiliate.menu',
+        link: { name: "AffiliateCrudPage" },
+        gallery: true,
+        permission: 'affiliate:manage'
+      },
+    ],
+  },
+
+  {
+    icon: 'mdi-account-circle',
+    text: 'Afilmed',
+    gallery: true,
+    children: [
+
+      {
+        icon: 'mdi-format-list-bulleted',
+        text: 'Padron',
+        link: { name: "PadronCrudPage" },
+        gallery: true,
+        permission: 'padron:manage'
+      },
+
     ],
   },
   {

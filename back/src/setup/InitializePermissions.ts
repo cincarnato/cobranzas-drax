@@ -14,12 +14,16 @@ import { AuditPermissions } from "@drax/audit-back";
 
 import { BasePermissions } from "../modules/base/permissions/BasePermissions.js";
 import { NotificationPermissions } from "../modules/base/permissions/NotificationPermissions.js";
+import { PadronPermissions } from "../modules/afilmed/permissions/PadronPermissions.js";
 import { CallFailedTypePermissions } from "../modules/caller/permissions/CallFailedTypePermissions.js";
 import { CallListPermissions } from "../modules/caller/permissions/CallListPermissions.js";
 import { CallLogPermissions } from "../modules/caller/permissions/CallLogPermissions.js";
 import { CallSuccessTypePermissions } from "../modules/caller/permissions/CallSuccessTypePermissions.js";
 import { CovenantPermissions } from "../modules/collections/permissions/CovenantPermissions.js";
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
+import { AffiliatePermissions } from "../modules/transferencias/permissions/AffiliatePermissions.js";
+import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
+import { PayerEntityPermissions } from "../modules/transferencias/permissions/PayerEntityPermissions.js";
 
 function InitializePermissions() {
 
@@ -40,12 +44,16 @@ function InitializePermissions() {
         //Local modules permissions
         ...Object.values(BasePermissions),
         ...Object.values(NotificationPermissions),
+        ...Object.values(PadronPermissions),
         ...Object.values(CallFailedTypePermissions),
         ...Object.values(CallListPermissions),
         ...Object.values(CallLogPermissions),
         ...Object.values(CallSuccessTypePermissions),
         ...Object.values(CovenantPermissions),
         ...Object.values(GroupZonePermissions),
+        ...Object.values(AffiliatePermissions),
+        ...Object.values(BankMovementPermissions),
+        ...Object.values(PayerEntityPermissions),
     ]
 
     //Load All Permissions
