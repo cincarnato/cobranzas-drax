@@ -12,6 +12,7 @@ const menu: MenuItem[] = [
   {
     icon: 'mdi-account-circle',
     text: 'Cobranzas',
+    description: 'Gestión y administración de cuentas de cobro, convenios y reportes contables',
     gallery: true,
     children: [
       {
@@ -42,6 +43,7 @@ const menu: MenuItem[] = [
   {
     icon: 'mdi-account-circle',
     text: 'LLamados',
+    description: 'Supervisión y control de campañas telefónicas y registro de gestiones',
     gallery: true,
     children: [
 
@@ -79,6 +81,7 @@ const menu: MenuItem[] = [
   {
     icon: 'mdi-bank-transfer',
     text: 'Transferencias',
+    description: 'Conciliación, revisión de comprobantes y validación de cobros transferidos',
     gallery: true,
     children: [
       {
@@ -96,18 +99,77 @@ const menu: MenuItem[] = [
         permission: 'payerentity:manage'
       },
       {
+        icon: 'mdi-email-fast-outline',
+        text: 'transferemail.menu',
+        link: { name: "TransferEmailCrudPage" },
+        gallery: true,
+        permission: 'transferemail:manage'
+      },
+      {
+        icon: 'mdi-play-circle-outline',
+        text: 'Procesar correos de transferencias',
+        link: { name: "TransferEmailProcessPage" },
+        gallery: true,
+        permission: 'transferemail:manage'
+      },
+    ],
+  },
+
+  {
+    icon: 'mdi-email-outline',
+    text: 'Mail',
+    description: 'Buzón de correos entrantes y procesamiento de comprobantes adjuntos',
+    gallery: true,
+    children: [
+      {
+        icon: 'mdi-email-cog-outline',
+        text: 'mailbox.menu',
+        link: { name: "MailboxCrudPage" },
+        gallery: true,
+        permission: 'mailbox:manage'
+      },
+      {
+        icon: 'mdi-email-receive-outline',
+        text: 'inboundemail.menu',
+        link: { name: "InboundEmailCrudPage" },
+        gallery: true,
+        permission: 'inboundemail:manage'
+      },
+      {
+        icon: 'mdi-sync',
+        text: 'Sincronizar correos',
+        link: { name: "InboundEmailSyncPage" },
+        gallery: true,
+        permission: 'mailbox:manage'
+      },
+    ],
+  },
+  {
+    icon: 'mdi-card-account-details-outline',
+    text: 'Premedic',
+    description: 'Información y configuración de afiliados y planes médicos Premedic',
+    gallery: true,
+    children: [
+      {
         icon: 'mdi-account-multiple',
         text: 'affiliate.menu',
         link: { name: "AffiliateCrudPage" },
         gallery: true,
         permission: 'affiliate:manage'
       },
+      {
+        icon: 'mdi-shape-outline',
+        text: 'affiliatetype.menu',
+        link: { name: "AffiliateTypeCrudPage" },
+        gallery: true,
+        permission: 'affiliatetype:manage'
+      },
     ],
   },
-
   {
     icon: 'mdi-account-circle',
     text: 'Afilmed',
+    description: 'Consulta de padrón y datos registrales de la red Afilmed',
     gallery: true,
     children: [
 
@@ -124,6 +186,7 @@ const menu: MenuItem[] = [
   {
     icon: 'mdi-account-circle',
     text: 'Administración',
+    description: 'Ajustes del sistema, usuarios, roles y seguridad de la plataforma',
     gallery: true,
     permission: 'user:manage',
     children: [
@@ -207,6 +270,13 @@ const menu: MenuItem[] = [
         link: { name: "FileCrudPage" },
         gallery: true,
         permission: 'file:manage'
+      },
+      {
+        icon: 'mdi-robot',
+        text:'ailog.menu',
+        link: { name: "AILogCrudPage" },
+        gallery: true,
+        permission: 'ailog:manage'
       },
     ]
   },

@@ -8,9 +8,13 @@ import CallLogCrud from '../modules/caller/cruds/CallLogCrud'
 import CallSuccessTypeCrud from '../modules/caller/cruds/CallSuccessTypeCrud'
 import CovenantCrud from '../modules/collections/cruds/CovenantCrud'
 import GroupZoneCrud from '../modules/collections/cruds/GroupZoneCrud'
-import AffiliateCrud from '../modules/transferencias/cruds/AffiliateCrud'
+import MailboxCrud from '../modules/mail/cruds/MailboxCrud'
+import InboundEmailCrud from '../modules/mail/cruds/InboundEmailCrud'
+import AffiliateCrud from '../modules/premedic/cruds/AffiliateCrud'
+import AffiliateTypeCrud from '../modules/premedic/cruds/AffiliateTypeCrud'
 import BankMovementCrud from '../modules/transferencias/cruds/BankMovementCrud'
 import PayerEntityCrud from '../modules/transferencias/cruds/PayerEntityCrud'
+import TransferEmailCrud from '../modules/transferencias/cruds/TransferEmailCrud'
 
 function setupEntities(){
   const entityStore = useEntityStore()
@@ -25,9 +29,13 @@ function setupEntities(){
   entityStore.addEntity(CallSuccessTypeCrud.instance)
   entityStore.addEntity(CovenantCrud.instance)
   entityStore.addEntity(GroupZoneCrud.instance)
+  entityStore.addEntity(MailboxCrud.instance)
+  entityStore.addEntity(InboundEmailCrud.instance)
   entityStore.addEntity(AffiliateCrud.instance)
+  entityStore.addEntity(AffiliateTypeCrud.instance)
   entityStore.addEntity(BankMovementCrud.instance)
   entityStore.addEntity(PayerEntityCrud.instance)
+  entityStore.addEntity(TransferEmailCrud.instance)
   //TODO Add domain entities here...
 
 }
