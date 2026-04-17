@@ -20,9 +20,12 @@ const total = ref(0)
 const page = ref(1)
 const limit = ref(10)
 const showCompleted = ref(false)
+const search = ref<string | null>('')
 const selectedCallLog = ref<ICallLog | null>(null)
 const dialogOpen = ref(false)
 
+const normalizedSearch = computed(() => search.value?.trim() ?? '')
+const isSearching = computed(() => normalizedSearch.value.length > 0)
 const pageCount = computed(() => Math.max(Math.ceil(total.value / limit.value), 1))
 
 const filters = computed(() => {
@@ -41,6 +44,11 @@ watch(() => props.callList._id, () => {
 })
 
 watch(showCompleted, () => {
+  page.value = 1
+  void fetchItems()
+})
+
+watch(search, () => {
   page.value = 1
   void fetchItems()
 })
@@ -76,7 +84,16 @@ function stateColor(state?: string) {
 async function fetchItems() {
   loading.value = true
   try {
-    const result = await CallLogProvider.instance.paginate({
+    const result = isSearching.value
+      ? await CallLogProvider.instance.paginateByDataSearch({
+      page: page.value,
+      limit: limit.value,
+      orderBy: 'attempts',
+      order: 'asc',
+      search: normalizedSearch.value,
+      filters: filters.value
+    })
+      : await CallLogProvider.instance.paginate({
       page: page.value,
       limit: limit.value,
       orderBy: 'attempts',
@@ -111,6 +128,17 @@ async function handleUpdated() {
       <v-card-subtitle>
         Registros de la lista con acceso directo al panel de tipificación.
       </v-card-subtitle>
+      <div class="mt-4">
+        <v-text-field
+          v-model="search"
+          clearable
+          density="compact"
+          hide-details
+          label="Buscar por nombre, DNI o cualquier dato"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+        />
+      </div>
       <template #append>
         <div class="d-flex align-center ga-3">
           <v-switch
@@ -158,7 +186,7 @@ async function handleUpdated() {
 
         <tr v-else-if="!items.length">
           <td colspan="7" class="text-center py-8 text-medium-emphasis">
-            No hay registros para mostrar.
+            {{ isSearching ? `No se encontraron coincidencias para "${normalizedSearch}".` : 'No hay registros para mostrar.' }}
           </td>
         </tr>
 

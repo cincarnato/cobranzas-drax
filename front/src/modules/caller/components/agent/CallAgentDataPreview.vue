@@ -2,7 +2,7 @@
 import {computed} from "vue";
 
 const props = withDefaults(defineProps<{
-  data?: Record<string, unknown> | null
+  data?: Record<string, unknown> | Array<Record<string, unknown>> | null
   mode?: 'simple' | 'table' | 'chips'
   maxEntries?: number
 }>(), {
@@ -11,9 +11,20 @@ const props = withDefaults(defineProps<{
   maxEntries: 8
 })
 
+function normalizeDataEntries(source: Record<string, unknown> | Array<Record<string, unknown>> | null | undefined) {
+  if (!source) return []
+
+  if (Array.isArray(source)) {
+    return source.flatMap((item, index) =>
+      Object.entries(item ?? {}).map(([key, value]) => [`${key} ${index + 1}`, value] as const)
+    )
+  }
+
+  return Object.entries(source)
+}
+
 const entries = computed(() => {
-  const source = props.data ?? {}
-  return Object.entries(source).slice(0, props.maxEntries)
+  return normalizeDataEntries(props.data).slice(0, props.maxEntries)
 })
 
 function formatValue(value: unknown) {

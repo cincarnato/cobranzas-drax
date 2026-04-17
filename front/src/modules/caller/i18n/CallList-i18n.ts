@@ -19,6 +19,7 @@ const messages = {
            success: 'Successful Calls',
            promises: 'Promises',
            failed:'Failed Calls',
+           isExportable: 'Exportable',
            deadline:'Deadline',
            name:'Name',
            headers:'Headers'
@@ -51,6 +52,7 @@ const messages = {
            success: 'Llamadas exitosas',
            promises: 'Promesas',
            failed:'Llamadas fallidas',
+           isExportable: 'Exportable',
            deadline:'Fecha limite',
            name:'Nombre',
            headers:'Encabezados'

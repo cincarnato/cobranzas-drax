@@ -7,7 +7,7 @@ interface ICallLogBase {
     state?: string
     promiseDate?: Date | null
     done?: boolean
-    data?: Record<string, any>
+    data?: Record<string, any> | Array<Record<string, any>>
     createdAt?: Date
     updatedAt?: Date
 }
@@ -21,7 +21,7 @@ interface ICallLog {
     state?: string
     promiseDate?: Date | null
     done?: boolean
-    data?: Record<string, any>
+    data?: Record<string, any> | Array<Record<string, any>>
     createdAt?: Date
     updatedAt?: Date
 }
