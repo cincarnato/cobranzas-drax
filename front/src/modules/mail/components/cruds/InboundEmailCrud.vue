@@ -3,32 +3,7 @@
 import InboundEmailCrud from '../../cruds/InboundEmailCrud'
 import {Crud} from "@drax/crud-vue";
 import {formatDate} from "@drax/common-front"
-import {DraxImagePreview} from "@drax/common-vue"
 import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
-
-interface InboundAttachment {
-  filename: string
-  filepath: string
-  size: number
-  mimetype?: string
-  url: string
-}
-
-function formatFileSize(size?: number) {
-  if (!size) return '0 B'
-
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = size
-  let unitIndex = 0
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex += 1
-  }
-
-  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
-}
-
 </script>
 
 <template>

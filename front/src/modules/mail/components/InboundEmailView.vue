@@ -25,14 +25,6 @@ const processingColor = computed(() => {
   return 'default';
 });
 
-const reviewColor = computed(() => {
-  const s = inboundEmail.reviewStatus?.toLowerCase();
-  if (s === 'approved') return 'success';
-  if (s === 'rejected') return 'error';
-  if (s === 'pending') return 'warning';
-  return 'default';
-});
-
 const sentimentColor = computed(() => {
   const val = inboundEmail.sentiment?.toLowerCase();
   if (val === 'positive' || val === 'positivo') return 'success';
