@@ -56,7 +56,8 @@ class CallListCrud extends EntityCrud implements IEntityCrud {
       {title: 'attempts', key: 'attempts', align: 'start'},
       {title: 'success', key: 'success', align: 'start'},
       {title: 'promises', key: 'promises', align: 'start'},
-      {title: 'failed', key: 'failed', align: 'start'}
+      {title: 'failed', key: 'failed', align: 'start'},
+      {title: 'isExportable', key: 'isExportable', align: 'start'}
     ]
   }
 
@@ -127,6 +128,7 @@ class CallListCrud extends EntityCrud implements IEntityCrud {
       {name: 'success', type: 'number', label: 'success', default: 0},
       {name: 'promises', type: 'number', label: 'promises', default: 0},
       {name: 'failed', type: 'number', label: 'failed', default: 0},
+      {name: 'isExportable', type: 'boolean', label: 'isExportable', default: false},
 
 
       {name: 'headers', type: 'array.string', label: 'headers', default: []}
@@ -134,7 +136,7 @@ class CallListCrud extends EntityCrud implements IEntityCrud {
   }
 
   get formFields(){
-    return ['name','deadline','file','group','user']
+    return ['name','deadline','file','group','user', 'isExportable']
   }
 
   get createFields() {
@@ -225,4 +227,3 @@ class CallListCrud extends EntityCrud implements IEntityCrud {
 }
 
 export default CallListCrud
-

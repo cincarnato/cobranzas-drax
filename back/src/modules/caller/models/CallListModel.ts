@@ -32,6 +32,7 @@ const CallListSchema = new mongoose.Schema<ICallList>({
     success: {type: Number, required: false, index: false, unique: false},
     promises: {type: Number, required: false, index: false, unique: false},
     failed: {type: Number, required: false, index: false, unique: false},
+    isExportable: {type: Boolean, required: false, index: false, unique: false, default: false},
     deadline: {type: Date, required: false, index: false, unique: false},
     name: {type: String, required: true, index: true, unique: true},
     headers: [{type: String, required: false, index: false, unique: false}]

@@ -5,6 +5,7 @@ interface Link {
 interface MenuItem {
   icon: string;
   text: string;
+  description?: string;
   link?: Link;
   gallery: boolean;
   children?: MenuItem[];

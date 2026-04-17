@@ -1,4 +1,5 @@
 import {UserPermissions} from '@drax/identity-back'
+import PadronPermissions from "../../../modules/afilmed/permissions/PadronPermissions.js";
 import GroupZonePermissions from "../../../modules/collections/permissions/GroupZonePermissions.js";
 import CovenantPermissions from "../../../modules/collections/permissions/CovenantPermissions.js";
 
@@ -12,6 +13,12 @@ const role = {
     permissions: [
         UserPermissions.View,
         GroupZonePermissions.View,
+
+        PadronPermissions.Manage,
+        PadronPermissions.Create,
+        PadronPermissions.View,
+        PadronPermissions.Update,
+        PadronPermissions.Delete,
 
         CovenantPermissions.Manage,
         CovenantPermissions.Create,

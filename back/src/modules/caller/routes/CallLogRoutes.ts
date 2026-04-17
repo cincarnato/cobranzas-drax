@@ -9,6 +9,8 @@ async function CallLogFastifyRoutes(fastify, options) {
     const schemas = new CrudSchemaBuilder(CallLogSchema, CallLogBaseSchema,CallLogBaseSchema, 'CallLog', 'openapi-3.0', ['CallLog']);
 
     fastify.get('/api/call-logs', {schema: schemas.paginateSchema}, (req,rep) => controller.paginate(req,rep))
+
+    fastify.get('/api/call-logs/paginate-data-search', {schema: schemas.paginateSchema}, (req,rep) => controller.paginateByDataSearch(req as any,rep))
     
     fastify.get('/api/call-logs/find', {schema: schemas.findSchema}, (req,rep) => controller.find(req,rep))
     
@@ -64,6 +66,8 @@ async function CallLogFastifyRoutes(fastify, options) {
     fastify.delete('/api/call-logs/:id', {schema: schemas.deleteSchema}, (req,rep) =>controller.delete(req,rep))
     
     fastify.get('/api/call-logs/export', (req,rep) =>controller.export(req,rep))
+
+    fastify.get('/api/call-logs/export-excel', (req,rep) =>controller.exportExcel(req,rep))
     
 }
 

@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import {computed} from "vue";
+import {computed, ref} from "vue";
 import type {ICallList} from "../../interfaces/ICallList";
+import CallLogProvider from "../../providers/CallLogProvider";
 
 const props = defineProps<{
   callList: ICallList
   loading?: boolean
 }>()
+
+const exportLoading = ref(false)
+const exportError = ref('')
 
 const processed = computed(() => (props.callList.success ?? 0) + (props.callList.failed ?? 0) + (props.callList.promises ?? 0))
 const missing = computed(() => Math.max((props.callList.total ?? 0) - processed.value, 0))
@@ -36,28 +40,89 @@ function percentage(count?: number) {
   if (!total) return 0
   return Math.round(((count ?? 0) / total) * 100)
 }
+
+function resolveFileName(response: Response) {
+  const contentDisposition = response.headers.get('content-disposition') ?? ''
+  const match = contentDisposition.match(/filename=\"?([^"]+)\"?/)
+  return match?.[1] ?? `${props.callList.name}.xlsx`
+}
+
+async function exportCallLog() {
+  if (!props.callList._id) return
+
+  exportLoading.value = true
+  exportError.value = ''
+
+  try {
+    const response = await CallLogProvider.instance.exportExcel(props.callList._id)
+
+    if (!response.ok) {
+      let message = 'No se pudo exportar el archivo.'
+
+      try {
+        const body = await response.json()
+        message = body?.message ?? message
+      } catch {
+        // ignore invalid json error bodies
+      }
+
+      throw new Error(message)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = resolveFileName(response)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(downloadUrl)
+  } catch (e: any) {
+    exportError.value = e?.message ?? 'Ocurrio un error al exportar.'
+  } finally {
+    exportLoading.value = false
+  }
+}
 </script>
 
 <template>
-  <v-card
+    <v-card
     :loading="loading"
     class="fill-height"
   >
     <v-card-item>
-      <v-card-title>{{ callList.name }}</v-card-title>
-      <v-card-subtitle class="d-flex flex-wrap ga-2 align-center">
-        <span v-if="callList.group?.name">{{ callList.group.name }}</span>
-        <span v-if="callList.group?.name && callList.user?.username">-</span>
-        <span v-if="callList.user?.username">{{ callList.user.username }}</span>
-        <v-chip
-          v-if="callList.deadline"
-          :color="deadlineVariant"
+      <div class="d-flex align-start justify-space-between ga-3">
+        <div class="min-width-0 flex-grow-1">
+          <v-card-title class="px-0">{{ callList.name }}</v-card-title>
+          <v-card-subtitle class="d-flex flex-wrap ga-2 align-center px-0">
+            <span v-if="callList.group?.name">{{ callList.group.name }}</span>
+            <span v-if="callList.group?.name && callList.user?.username">-</span>
+            <span v-if="callList.user?.username">{{ callList.user.username }}</span>
+            <v-chip
+              v-if="callList.deadline"
+              :color="deadlineVariant"
+              size="small"
+              variant="tonal"
+            >
+              Vence {{ formatDate(callList.deadline) }}
+            </v-chip>
+          </v-card-subtitle>
+        </div>
+
+        <v-btn
+          v-if="callList.isExportable"
+          color="primary"
+          variant="outlined"
+          prepend-icon="mdi-file-excel-outline"
           size="small"
-          variant="tonal"
+          density="comfortable"
+          :loading="exportLoading"
+          @click="exportCallLog"
         >
-          Vence {{ formatDate(callList.deadline) }}
-        </v-chip>
-      </v-card-subtitle>
+          Exportar
+        </v-btn>
+      </div>
     </v-card-item>
 
     <v-card-text class="d-flex flex-column ga-4">
@@ -115,6 +180,15 @@ function percentage(count?: number) {
           </div>
         </div>
       </div>
+
+      <v-alert
+        v-if="exportError"
+        type="error"
+        variant="tonal"
+        density="compact"
+      >
+        {{ exportError }}
+      </v-alert>
     </v-card-text>
   </v-card>
 </template>

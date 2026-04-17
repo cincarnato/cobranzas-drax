@@ -18,12 +18,22 @@ import { AuditRoutes } from "@drax/audit-back";
 import { GoogleFastifyRoutes } from "../modules/google/routes/GoogleRoutes.js"
 import { HealthRoutes } from "../modules/base/routes/HealthRoutes.js"
 import { NotificationFastifyRoutes } from "../modules/base/routes/NotificationRoutes.js"
+import { PadronFastifyRoutes } from "../modules/afilmed/routes/PadronRoutes.js"
 import { CallFailedTypeFastifyRoutes } from "../modules/caller/routes/CallFailedTypeRoutes.js"
 import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.js"
 import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js"
 import { CallSuccessTypeFastifyRoutes } from "../modules/caller/routes/CallSuccessTypeRoutes.js"
 import { CovenantFastifyRoutes } from "../modules/collections/routes/CovenantRoutes.js"
 import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneRoutes.js"
+import { InboundEmailFastifyRoutes } from "../modules/mail/routes/InboundEmailRoutes.js"
+import { InboundEmailMailboxRoutes } from "../modules/mail/routes/InboundEmailMailboxRoutes.js"
+import { MailToolsRoutes } from "../modules/mail/routes/MailToolsRoutes.js"
+import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js"
+import { BankMovementFastifyRoutes } from "../modules/transferencias/routes/BankMovementRoutes.js"
+import { PayerEntityFastifyRoutes } from "../modules/transferencias/routes/PayerEntityRoutes.js"
+import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/TransferEmailRoutes.js"
+import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js"
+import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js"
 
 function FastifyServerFactory(rootDir: string) {
     const server = new FastifyServer(rootDir);
@@ -53,6 +63,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(GoogleFastifyRoutes)
     server.fastifyRegister(HealthRoutes)
     server.fastifyRegister(NotificationFastifyRoutes)
+    server.fastifyRegister(PadronFastifyRoutes)
 
     server.fastifyRegister(CallFailedTypeFastifyRoutes)
     server.fastifyRegister(CallListFastifyRoutes)
@@ -61,6 +72,15 @@ function FastifyServerFactory(rootDir: string) {
 
     server.fastifyRegister(CovenantFastifyRoutes)
     server.fastifyRegister(GroupZoneFastifyRoutes)
+    server.fastifyRegister(InboundEmailFastifyRoutes)
+    server.fastifyRegister(InboundEmailMailboxRoutes)
+    server.fastifyRegister(MailToolsRoutes)
+    server.fastifyRegister(MailboxFastifyRoutes)
+    server.fastifyRegister(AffiliateFastifyRoutes)
+    server.fastifyRegister(AffiliateTypeFastifyRoutes)
+    server.fastifyRegister(BankMovementFastifyRoutes)
+    server.fastifyRegister(PayerEntityFastifyRoutes)
+    server.fastifyRegister(TransferEmailFastifyRoutes)
 
 
     return server

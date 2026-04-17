@@ -16,6 +16,7 @@ interface ICallListBase {
     success?: number
     promises?: number
     failed?: number
+    isExportable?: boolean
     deadline?: Date
     name: string
     headers?: Array<string>
@@ -41,6 +42,7 @@ interface ICallList {
     success?: number
     promises?: number
     failed?: number
+    isExportable?: boolean
     deadline?: Date
     name: string
     headers?: Array<string>
