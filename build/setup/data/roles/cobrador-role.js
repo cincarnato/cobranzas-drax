@@ -5,6 +5,7 @@ import CovenantPermissions from "../../../modules/collections/permissions/Covena
 import CallListPermissions from "../../../modules/caller/permissions/CallListPermissions.js";
 import CallLogPermissions from "../../../modules/caller/permissions/CallLogPermissions.js";
 import CallFailedTypePermissions from "../../../modules/caller/permissions/CallFailedTypePermissions.js";
+import MultichannelPermissions from "../../../modules/caller/permissions/MultichannelPermissions.js";
 import CallSuccessTypePermissions from "../../../modules/caller/permissions/CallSuccessTypePermissions.js";
 const role = {
     name: "Cobrador",
@@ -24,6 +25,7 @@ const role = {
         CallListPermissions.View,
         CallLogPermissions.View,
         CallLogPermissions.Update,
+        MultichannelPermissions.SendWhatsappTemplate,
         CallFailedTypePermissions.View,
         CallSuccessTypePermissions.View,
     ],

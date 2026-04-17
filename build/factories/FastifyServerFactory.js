@@ -12,6 +12,7 @@ import { PadronFastifyRoutes } from "../modules/afilmed/routes/PadronRoutes.js";
 import { CallFailedTypeFastifyRoutes } from "../modules/caller/routes/CallFailedTypeRoutes.js";
 import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.js";
 import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js";
+import { MultichannelFastifyRoutes } from "../modules/caller/routes/MultichannelRoutes.js";
 import { CallSuccessTypeFastifyRoutes } from "../modules/caller/routes/CallSuccessTypeRoutes.js";
 import { CovenantFastifyRoutes } from "../modules/collections/routes/CovenantRoutes.js";
 import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneRoutes.js";
@@ -52,6 +53,7 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(CallFailedTypeFastifyRoutes);
     server.fastifyRegister(CallListFastifyRoutes);
     server.fastifyRegister(CallLogFastifyRoutes);
+    server.fastifyRegister(MultichannelFastifyRoutes);
     server.fastifyRegister(CallSuccessTypeFastifyRoutes);
     server.fastifyRegister(CovenantFastifyRoutes);
     server.fastifyRegister(GroupZoneFastifyRoutes);
