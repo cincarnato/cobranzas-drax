@@ -18,6 +18,7 @@ import { PadronPermissions } from "../modules/afilmed/permissions/PadronPermissi
 import { CallFailedTypePermissions } from "../modules/caller/permissions/CallFailedTypePermissions.js";
 import { CallListPermissions } from "../modules/caller/permissions/CallListPermissions.js";
 import { CallLogPermissions } from "../modules/caller/permissions/CallLogPermissions.js";
+import { MultichannelPermissions } from "../modules/caller/permissions/MultichannelPermissions.js";
 import { CallSuccessTypePermissions } from "../modules/caller/permissions/CallSuccessTypePermissions.js";
 import { CovenantPermissions } from "../modules/collections/permissions/CovenantPermissions.js";
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
@@ -52,6 +53,7 @@ function InitializePermissions() {
         ...Object.values(CallFailedTypePermissions),
         ...Object.values(CallListPermissions),
         ...Object.values(CallLogPermissions),
+        ...Object.values(MultichannelPermissions),
         ...Object.values(CallSuccessTypePermissions),
         ...Object.values(CovenantPermissions),
         ...Object.values(GroupZonePermissions),

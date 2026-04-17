@@ -5,6 +5,7 @@ import type {ICallLog} from "../../interfaces/ICallLog";
 import CallLogProvider from "../../providers/CallLogProvider";
 import CallAgentDataPreview from "./CallAgentDataPreview.vue";
 import CallAgentLogDialog from "./CallAgentLogDialog.vue";
+import CallAgentWhatsappDialog from "./CallAgentWhatsappDialog.vue";
 
 const props = defineProps<{
   callList: ICallList
@@ -23,6 +24,7 @@ const showCompleted = ref(false)
 const search = ref<string | null>('')
 const selectedCallLog = ref<ICallLog | null>(null)
 const dialogOpen = ref(false)
+const whatsappDialogOpen = ref(false)
 
 const normalizedSearch = computed(() => search.value?.trim() ?? '')
 const isSearching = computed(() => normalizedSearch.value.length > 0)
@@ -113,6 +115,11 @@ async function fetchItems() {
 function openDialog(item: ICallLog) {
   selectedCallLog.value = item
   dialogOpen.value = true
+}
+
+function openWhatsappDialog(item: ICallLog) {
+  selectedCallLog.value = item
+  whatsappDialogOpen.value = true
 }
 
 async function handleUpdated() {
@@ -214,14 +221,23 @@ async function handleUpdated() {
           </td>
           <td>{{ formatDate(item.promiseDate) }}</td>
           <td class="text-right">
-            <v-btn
-              color="primary"
-              size="small"
-              variant="outlined"
-              @click="openDialog(item)"
-            >
-              Llamar
-            </v-btn>
+            <div class="d-flex justify-end ga-2">
+              <v-btn
+                color="success"
+                icon="mdi-whatsapp"
+                size="small"
+                variant="outlined"
+                @click="openWhatsappDialog(item)"
+              />
+              <v-btn
+                color="primary"
+                size="small"
+                variant="outlined"
+                @click="openDialog(item)"
+              >
+                Llamar
+              </v-btn>
+            </div>
           </td>
         </tr>
         </tbody>
@@ -246,6 +262,11 @@ async function handleUpdated() {
       v-model="dialogOpen"
       :call-log="selectedCallLog"
       @updated="handleUpdated"
+    />
+
+    <CallAgentWhatsappDialog
+      v-model="whatsappDialogOpen"
+      :call-log="selectedCallLog"
     />
   </v-card>
 </template>

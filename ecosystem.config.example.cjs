@@ -23,6 +23,11 @@ module.exports = {
 				DRAX_BASE_URL: 'http://localhost:9090',
 				DRAX_MAX_UPLOAD_SIZE: '5000000',
 				DRAX_FILE_DIR: 'uploads',
+
+				//#MULTICHANNEL
+				MULTICHANNEL_API_KEY: '',
+				MULTICHANNEL_MESSENGER_NUMBER: '',
+				MULTICHANNEL_ENDPOINT_URL: 'https://multicapi.sondeosglobal.com/webServiceMessage',
 			}
 		}
 
