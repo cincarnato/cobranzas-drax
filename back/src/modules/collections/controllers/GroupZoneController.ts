@@ -3,6 +3,7 @@ import GroupZoneServiceFactory from "../factory/services/GroupZoneServiceFactory
 import {AbstractFastifyController} from "@drax/crud-back";
 import GroupZonePermissions from "../permissions/GroupZonePermissions.js";
 import type {IGroupZone, IGroupZoneBase} from "../interfaces/IGroupZone";
+import {IDraxFieldFilter} from "@drax/crud-share";
 
 class GroupZoneController extends AbstractFastifyController<IGroupZone, IGroupZoneBase, IGroupZoneBase>   {
 
@@ -15,9 +16,15 @@ class GroupZoneController extends AbstractFastifyController<IGroupZone, IGroupZo
         this.tenantSetter = false;
         this.tenantAssert = false;
 
-        this.userFilter = true;
+        this.userFilter = false;
         this.userSetter = false;
         this.userAssert = false;
+    }
+
+    async preRead(request:any, filters: IDraxFieldFilter[]) {
+        const userId = request.rbac.userId
+        filters.push({field: this.userField, operator: "eq", value: userId})
+        return filters
     }
 
 }

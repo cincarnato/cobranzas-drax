@@ -13,6 +13,7 @@ const role = {
     name: "Cobrador",
     permissions: [
         UserPermissions.View,
+        UserPermissions.Manage,
         GroupZonePermissions.View,
 
         PadronPermissions.Manage,
