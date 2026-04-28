@@ -9,9 +9,14 @@ class GroupZoneController extends AbstractFastifyController {
         this.tenantFilter = false;
         this.tenantSetter = false;
         this.tenantAssert = false;
-        this.userFilter = true;
+        this.userFilter = false;
         this.userSetter = false;
         this.userAssert = false;
+    }
+    async preRead(request, filters) {
+        const userId = request.rbac.userId;
+        filters.push({ field: this.userField, operator: "eq", value: userId });
+        return filters;
     }
 }
 export default GroupZoneController;

@@ -5,6 +5,7 @@ const projectPasswordPolicy = {
     requireLowercase: true,
     requireNumber: true,
     requireSpecialChar: false,
+    allowedSpecialChars: "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
     disallowSpaces: true,
     preventReuse: 3,
     expirationDays: null
