@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import {computed, ref} from "vue";
+import {ref} from "vue";
 import {VDateInput} from "vuetify/labs/VDateInput";
-import {DashboardView} from "@drax/dashboard-vue";
-import type {IDashboardBase} from "@drax/dashboard-share";
-import createCovenantDashboard from "../dashboards/CovenantDashboard";
-
+import CustomDashboard from "../components/dashboards/CustomDashboard.vue";
 
 const today = new Date(new Date().setHours(0, 0, 0, 0));
 
 const filters = ref([
   {field: "date", operator: "eq", value: today},
 ])
-
-const dashboard = computed<IDashboardBase>(() => createCovenantDashboard(filters.value));
 </script>
 
 <template>
@@ -28,6 +23,6 @@ const dashboard = computed<IDashboardBase>(() => createCovenantDashboard(filters
         />
       </v-col>
     </v-row>
-    <dashboard-view :dashboard="dashboard" />
+    <custom-dashboard :filters="filters" />
   </v-container>
 </template>

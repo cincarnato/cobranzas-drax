@@ -6,7 +6,7 @@ class CovenantService extends AbstractService {
         super(CovenantRepository, baseSchema, fullSchema);
         this._validateOutput = true;
     }
-    async exportExcel(date, groupId, createdBy) {
+    async exportExcel(date, groupId) {
         const rows = await this.find({
             limit: 100000,
             orderBy: 'locality',
@@ -14,7 +14,6 @@ class CovenantService extends AbstractService {
             filters: [
                 { field: 'date', operator: 'eq', value: date },
                 { field: 'group', operator: 'eq', value: groupId },
-                ...(createdBy ? [{ field: 'createdBy', operator: 'eq', value: createdBy }] : []),
             ]
         });
         const group = await GroupZoneServiceFactory.instance.findById(groupId);
