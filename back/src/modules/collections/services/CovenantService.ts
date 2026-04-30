@@ -21,7 +21,7 @@ class CovenantService extends AbstractService<ICovenant, ICovenantBase, ICovenan
         
     }
 
-    async exportExcel(date: string, groupId: string, createdBy?: string): Promise<ICovenantExcelExportResult> {
+    async exportExcel(date: string, groupId: string): Promise<ICovenantExcelExportResult> {
         const rows = await this.find({
             limit: 100000,
             orderBy: 'locality',
@@ -29,7 +29,6 @@ class CovenantService extends AbstractService<ICovenant, ICovenantBase, ICovenan
             filters: [
                 {field: 'date', operator: 'eq', value: date},
                 {field: 'group', operator: 'eq', value: groupId},
-                ...(createdBy ? [{field: 'createdBy', operator: 'eq', value: createdBy}] : []),
             ]
         })
 

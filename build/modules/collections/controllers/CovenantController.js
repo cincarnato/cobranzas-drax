@@ -10,9 +10,9 @@ class CovenantController extends AbstractFastifyController {
         this.tenantFilter = false;
         this.tenantSetter = false;
         this.tenantAssert = false;
-        this.userFilter = true;
+        this.userFilter = false;
         this.userSetter = true;
-        this.userAssert = true;
+        this.userAssert = false;
     }
     preCreate(request, payload) {
         payload.updatedBy = request.rbac.getAuthUser.id;
@@ -31,12 +31,7 @@ class CovenantController extends AbstractFastifyController {
             if (!date || !group) {
                 throw new BadRequestError('date and group are required');
             }
-            const permission = this.permission;
-            const globalPermissions = [permission.All, permission.ViewAll].filter((item) => !!item);
-            const createdBy = request.rbac.hasSomePermission(globalPermissions)
-                ? undefined
-                : request.rbac.userId;
-            const exported = await CovenantServiceFactory.instance.exportExcel(date, group, createdBy);
+            const exported = await CovenantServiceFactory.instance.exportExcel(date, group);
             reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             reply.header('Content-Disposition', `attachment; filename="${exported.fileName}"`);
             return reply.send(exported.buffer);
