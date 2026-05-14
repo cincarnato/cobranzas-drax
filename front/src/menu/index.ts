@@ -188,8 +188,13 @@ const menu: MenuItem[] = [
     text: 'Administración',
     description: 'Ajustes del sistema, usuarios, roles y seguridad de la plataforma',
     gallery: true,
-    permission: 'user:manage',
     children: [
+      {
+        icon: 'mdi-database-sync-outline',
+        text: 'recovery.menu',
+        link: { name: "RecoveryPage" },
+        gallery: true
+      },
       {
         icon: 'mdi-map-marker-radius',
         text: 'groupzone.menu',
