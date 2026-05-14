@@ -2,7 +2,7 @@ import {Readable} from "node:stream";
 import {extname} from "node:path";
 import {z} from "zod";
 import type {IAIProvider} from "@drax/ai-back";
-import {OpenAiProviderFactory} from "@drax/ai-back";
+import {AiProviderFactory} from "@drax/ai-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import type InboundEmailService from "../services/InboundEmailService.js";
@@ -120,7 +120,7 @@ class InboundEmailMailboxProvider {
     private inboundEmailService: InboundEmailService;
     private affiliateService: AffiliateService;
     private mediaService: MediaService;
-    private openAiProvider: IAIProvider;
+    private aiProvider: IAIProvider;
     private pollTimer?: NodeJS.Timeout;
     private syncInProgress = false;
     private readonly mailboxRunState = new Map<string, { running: boolean; lastRunAt?: number }>();
@@ -132,7 +132,7 @@ class InboundEmailMailboxProvider {
         this.inboundEmailService = InboundEmailServiceFactory.instance;
         this.affiliateService = AffiliateServiceFactory.instance;
         this.mediaService = new MediaService();
-        this.openAiProvider = OpenAiProviderFactory.instance();
+        this.aiProvider = AiProviderFactory.instance('OllamaAi');
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
     }
@@ -719,7 +719,7 @@ class InboundEmailMailboxProvider {
             description: entity.description,
         }));
 
-        const response = await this.openAiProvider.prompt({
+        const response = await this.aiProvider.prompt({
             systemPrompt: [
                 "Sos un analista de correos entrantes para un sistema de cobranzas y salud.",
                 "Todo el analisis debe basarse exclusivamente en la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",

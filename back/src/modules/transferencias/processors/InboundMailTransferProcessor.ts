@@ -2,7 +2,7 @@ import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmail
 import type {IInboundEmail} from "../../mail/interfaces/IInboundEmail.js";
 import InboundEmailService from "../../mail/services/InboundEmailService.js";
 import type {IAIProvider} from "@drax/ai-back";
-import {OpenAiProviderFactory} from "@drax/ai-back";
+import {AiProviderFactory} from "@drax/ai-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import type {ITransferEmail, ITransferEmailBase} from "../interfaces/ITransferEmail.js";
 import TransferEmailService from "../services/TransferEmailService.js";
@@ -42,16 +42,16 @@ type TransferEmailAiExtraction = z.infer<typeof transferEmailAiSchema>;
 class InboundMailTransferProcessor {
     private inboundMailService: InboundEmailService;
     private transferEmailService: TransferEmailService;
-    private openAiProvider: IAIProvider;
+    private aiProvider: IAIProvider;
 
     constructor(
         inboundMailService: InboundEmailService = InboundEmailServiceFactory.instance,
         transferEmailService: TransferEmailService = TransferEmailServiceFactory.instance,
-        openAiProvider: IAIProvider = OpenAiProviderFactory.instance()
+        openAiProvider: IAIProvider = AiProviderFactory.instance('OllamaAi')
     ) {
         this.inboundMailService = inboundMailService;
         this.transferEmailService = transferEmailService;
-        this.openAiProvider = openAiProvider;
+        this.aiProvider = openAiProvider;
     }
 
     async process(): Promise<ProcessTransfersResult> {
@@ -214,7 +214,7 @@ class InboundMailTransferProcessor {
     }
 
     private async extractTransferDataWithAi(inboundEmail: IInboundEmail): Promise<TransferEmailAiExtraction> {
-        const response = await this.openAiProvider.prompt({
+        const response = await this.aiProvider.prompt({
             systemPrompt: [
                 "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
                 "Debes decidir si el email corresponde a un comprobante o aviso de transferencia bancaria y extraer todos los datos posibles.",
