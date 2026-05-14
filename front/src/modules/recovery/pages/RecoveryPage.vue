@@ -237,7 +237,7 @@ function selectedFile(value: File | File[] | null): File | null {
         </v-avatar>
         <div>
           <h1>Recovery</h1>
-          <p class="text-medium-emphasis">Backup y restore de MongoDB y archivos del sistema.</p>
+          <p>Backup y restore de MongoDB y archivos del sistema.</p>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ function selectedFile(value: File | File[] | null): File | null {
                 Tu usuario no tiene el permiso recovery:fileBackup.
               </v-alert>
 
-              <p class="operation-description text-medium-emphasis">
+              <p class="operation-description">
                 Comprime el directorio configurado en <strong>DRAX_FILE_DIR</strong> y guarda el archivo en <strong>recovery-file-backups</strong>.
               </p>
 
@@ -427,7 +427,7 @@ function selectedFile(value: File | File[] | null): File | null {
                 Tu usuario no tiene el permiso recovery:dump.
               </v-alert>
 
-              <p class="operation-description text-medium-emphasis">
+              <p class="operation-description">
                 Genera un archivo comprimido dentro de <strong>recovery-dumps</strong> en el backend.
               </p>
 
@@ -577,27 +577,27 @@ function selectedFile(value: File | File[] | null): File | null {
 
       <v-card-text class="result-grid">
         <div>
-          <span class="text-medium-emphasis">Operacion</span>
+          <span>Operacion</span>
           <strong>{{ lastResult.command }}</strong>
         </div>
         <div>
-          <span class="text-medium-emphasis">Archivo</span>
+          <span>Archivo</span>
           <strong>{{ lastResult.filename }}</strong>
         </div>
         <div class="full">
-          <span class="text-medium-emphasis">Ruta</span>
+          <span>Ruta</span>
           <v-sheet color="surface-variant" rounded class="result-code">
             <code>{{ lastResult.archivePath }}</code>
           </v-sheet>
         </div>
         <div v-if="lastResult.sourceDirectory" class="full">
-          <span class="text-medium-emphasis">Directorio</span>
+          <span>Directorio</span>
           <v-sheet color="surface-variant" rounded class="result-code">
             <code>{{ lastResult.sourceDirectory }}</code>
           </v-sheet>
         </div>
         <div v-if="lastResult.output" class="full">
-          <span class="text-medium-emphasis">Salida</span>
+          <span>Salida</span>
           <v-sheet color="surface-variant" rounded class="result-code">
             <pre>{{ lastResult.output }}</pre>
           </v-sheet>
@@ -666,10 +666,6 @@ function selectedFile(value: File | File[] | null): File | null {
   height: 100%;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
-}
-
-.destructive-card {
-  border-color: rgb(var(--v-theme-error));
 }
 
 .operation-title {
@@ -766,7 +762,6 @@ function selectedFile(value: File | File[] | null): File | null {
 .result-code pre {
   display: block;
   margin: 0;
-  color: inherit;
   white-space: pre-wrap;
   word-break: break-word;
 }
