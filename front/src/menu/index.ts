@@ -75,6 +75,13 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'callfailedtype:manage'
       },
+      {
+        icon: 'mdi-whatsapp',
+        text: 'whatsappmessage.menu',
+        link: { name: "WhatsappMessageCrudPage" },
+        gallery: true,
+        permission: 'whatsappmessage:manage'
+      },
     ],
   },
 

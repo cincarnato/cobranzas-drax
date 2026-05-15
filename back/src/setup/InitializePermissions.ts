@@ -20,6 +20,7 @@ import { CallListPermissions } from "../modules/caller/permissions/CallListPermi
 import { CallLogPermissions } from "../modules/caller/permissions/CallLogPermissions.js";
 import { MultichannelPermissions } from "../modules/caller/permissions/MultichannelPermissions.js";
 import { CallSuccessTypePermissions } from "../modules/caller/permissions/CallSuccessTypePermissions.js";
+import { WhatsappMessagePermissions } from "../modules/caller/permissions/WhatsappMessagePermissions.js";
 import { CovenantPermissions } from "../modules/collections/permissions/CovenantPermissions.js";
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
 import { InboundEmailPermissions } from "../modules/mail/permissions/InboundEmailPermissions.js";
@@ -56,6 +57,7 @@ function InitializePermissions() {
         ...Object.values(CallLogPermissions),
         ...Object.values(MultichannelPermissions),
         ...Object.values(CallSuccessTypePermissions),
+        ...Object.values(WhatsappMessagePermissions),
         ...Object.values(CovenantPermissions),
         ...Object.values(GroupZonePermissions),
         ...Object.values(InboundEmailPermissions),

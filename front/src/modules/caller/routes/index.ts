@@ -4,6 +4,7 @@ import CallListDashboardRoute from "./CallListDashboardRoute"
 import CallListCrudRoute from "./CallListCrudRoute"
 import CallLogCrudRoute from "./CallLogCrudRoute"
 import CallSuccessTypeCrudRoute from "./CallSuccessTypeCrudRoute"
+import WhatsappMessageCrudRoute from "./WhatsappMessageCrudRoute"
 
 export const routes = [
     ...CallAgentRoute,
@@ -11,7 +12,8 @@ export const routes = [
 ...CallFailedTypeCrudRoute,
 ...CallListCrudRoute,
 ...CallLogCrudRoute,
-...CallSuccessTypeCrudRoute
+...CallSuccessTypeCrudRoute,
+...WhatsappMessageCrudRoute
 ]
 
 export default routes

@@ -5,6 +5,7 @@ import PadronCrud from '../modules/afilmed/cruds/PadronCrud'
 import CallFailedTypeCrud from '../modules/caller/cruds/CallFailedTypeCrud'
 import CallListCrud from '../modules/caller/cruds/CallListCrud'
 import CallLogCrud from '../modules/caller/cruds/CallLogCrud'
+import WhatsappMessageCrud from '../modules/caller/cruds/WhatsappMessageCrud'
 import CallSuccessTypeCrud from '../modules/caller/cruds/CallSuccessTypeCrud'
 import CovenantCrud from '../modules/collections/cruds/CovenantCrud'
 import GroupZoneCrud from '../modules/collections/cruds/GroupZoneCrud'
@@ -36,6 +37,7 @@ function setupEntities(){
   entityStore.addEntity(BankMovementCrud.instance)
   entityStore.addEntity(PayerEntityCrud.instance)
   entityStore.addEntity(TransferEmailCrud.instance)
+  entityStore.addEntity(WhatsappMessageCrud.instance)
   //TODO Add domain entities here...
 
 }

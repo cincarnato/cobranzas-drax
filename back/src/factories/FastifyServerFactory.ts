@@ -24,6 +24,7 @@ import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.j
 import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js"
 import { MultichannelFastifyRoutes } from "../modules/caller/routes/MultichannelRoutes.js"
 import { CallSuccessTypeFastifyRoutes } from "../modules/caller/routes/CallSuccessTypeRoutes.js"
+import { WhatsappMessageFastifyRoutes } from "../modules/caller/routes/WhatsappMessageRoutes.js"
 import { CovenantFastifyRoutes } from "../modules/collections/routes/CovenantRoutes.js"
 import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneRoutes.js"
 import { InboundEmailFastifyRoutes } from "../modules/mail/routes/InboundEmailRoutes.js"
@@ -72,6 +73,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(CallLogFastifyRoutes)
     server.fastifyRegister(MultichannelFastifyRoutes)
     server.fastifyRegister(CallSuccessTypeFastifyRoutes)
+    server.fastifyRegister(WhatsappMessageFastifyRoutes)
 
     server.fastifyRegister(CovenantFastifyRoutes)
     server.fastifyRegister(GroupZoneFastifyRoutes)

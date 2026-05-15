@@ -19,13 +19,14 @@ const templates = [
 ]
 
 const loading = ref(false)
+const messageSent = ref(false)
 const telefono = ref('')
 const template = ref<string | null>(templates[0] ?? null)
 const successMessage = ref('')
 const errorMessage = ref('')
 
 const canSend = computed(() => {
-  return !!sanitizePhoneNumber(telefono.value) && !!template.value
+  return !loading.value && !messageSent.value && !!sanitizePhoneNumber(telefono.value) && !!template.value
 })
 
 watch(() => props.callLog, (value) => {
@@ -36,6 +37,7 @@ watch(modelValue, (open) => {
   if (open) {
     successMessage.value = ''
     errorMessage.value = ''
+    messageSent.value = false
     template.value = templates[0] ?? null
     telefono.value = sanitizePhoneNumber(extractPhoneNumber(props.callLog?.data))
   }
@@ -88,6 +90,7 @@ async function sendWhatsapp() {
     telefono.value = sanitizedPhone
 
     successMessage.value = result.status?.message || 'El mensaje se envió correctamente.'
+    messageSent.value = true
   } catch (error: any) {
     console.error('Error sending WhatsApp template:', error)
 
