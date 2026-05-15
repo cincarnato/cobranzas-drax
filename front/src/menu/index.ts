@@ -84,7 +84,28 @@ const menu: MenuItem[] = [
       },
     ],
   },
-
+  {
+    icon: 'mdi-account-cancel-outline',
+    text: 'Bajas',
+    description: 'Carga, seguimiento y exportacion de bonificaciones del sector de bajas',
+    gallery: true,
+    children: [
+      {
+        icon: 'mdi-ticket-percent-outline',
+        text: 'bonus.menu',
+        link: { name: "BonusCrudPage" },
+        gallery: true,
+        permission: 'bonus:view'
+      },
+      {
+        icon: 'mdi-file-excel-outline',
+        text: 'bonus.exportMenu',
+        link: { name: "BonusExportPage" },
+        gallery: true,
+        permission: 'bonus:export'
+      },
+    ],
+  },
   {
     icon: 'mdi-bank-transfer',
     text: 'Transferencias',
@@ -121,6 +142,8 @@ const menu: MenuItem[] = [
       },
     ],
   },
+
+
 
   {
     icon: 'mdi-email-outline',

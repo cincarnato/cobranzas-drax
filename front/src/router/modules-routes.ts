@@ -7,6 +7,7 @@ import mailRoutes from '../modules/mail/routes/index.js'
 import premedicRoutes from '../modules/premedic/routes/index.js'
 import recoveryRoutes from '../modules/recovery/routes/index.js'
 import transferenciasRoutes from '../modules/transferencias/routes/index.js'
+import bajasRoutes from '../modules/bajas/routes/index.js'
 
 const modulesRoutes = [
   ...afilmedRoutes,
@@ -17,7 +18,8 @@ const modulesRoutes = [
   ...mailRoutes,
   ...premedicRoutes,
   ...recoveryRoutes,
-  ...transferenciasRoutes
+  ...transferenciasRoutes,
+  ...bajasRoutes
 
 ]
 

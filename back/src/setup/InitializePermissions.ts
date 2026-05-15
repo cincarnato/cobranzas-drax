@@ -31,6 +31,7 @@ import { TransferEmailPermissions } from "../modules/transferencias/permissions/
 import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliatePermissions.js";
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
 import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
+import { BonusPermissions } from "../modules/bajas/permissions/BonusPermissions.js";
 
 function InitializePermissions() {
 
@@ -68,6 +69,7 @@ function InitializePermissions() {
         ...Object.values(PayerEntityPermissions),
         ...Object.values(TransferEmailPermissions),
         ...Object.values(RecoveryPermissions),
+        ...Object.values(BonusPermissions),
     ]
 
     //Load All Permissions

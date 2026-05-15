@@ -37,6 +37,7 @@ import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/Tra
 import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js"
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js"
 import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js"
+import { BonusFastifyRoutes } from "../modules/bajas/routes/BonusRoutes.js"
 
 function FastifyServerFactory(rootDir: string) {
     const server = new FastifyServer(rootDir);
@@ -87,6 +88,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(PayerEntityFastifyRoutes)
     server.fastifyRegister(TransferEmailFastifyRoutes)
     server.fastifyRegister(RecoveryFastifyRoutes)
+    server.fastifyRegister(BonusFastifyRoutes)
 
 
     return server

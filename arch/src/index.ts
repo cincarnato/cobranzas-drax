@@ -13,6 +13,7 @@ import InboundEmailSchema from './schemas/mail/InboundEmailSchema';
 import MailboxSchema from './schemas/mail/MailboxSchema';
 import AffiliateSchema from './schemas/premedic/AffiliateSchema';
 import AffiliateTypeSchema from './schemas/premedic/AffiliateTypeSchema';
+import BonusSchema from './schemas/bajas/BonusSchema';
 import BankMovementSchema from './schemas/transferencias/BankMovementSchema';
 import PayerEntitySchema from './schemas/transferencias/PayerEntitySchema';
 import TransferEmailSchema from './schemas/transferencias/TransferEmailSchema';
@@ -40,6 +41,9 @@ const schemas = [
     //Premedic
     AffiliateSchema,
     AffiliateTypeSchema,
+
+    //Bajas
+    BonusSchema,
 
     //Transferencias
     BankMovementSchema,

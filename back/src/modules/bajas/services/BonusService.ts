@@ -1,0 +1,99 @@
+
+import type{IBonusRepository} from "../interfaces/IBonusRepository";
+import type {IBonusBase, IBonus} from "../interfaces/IBonus";
+import {AbstractService} from "@drax/crud-back";
+import type {ZodObject, ZodRawShape} from "zod";
+import ExcelJS from "exceljs";
+import type {IDraxFieldFilter} from "@drax/crud-share";
+
+interface IBonusExcelExportResult {
+    buffer: Buffer
+    fileName: string
+}
+
+class BonusService extends AbstractService<IBonus, IBonusBase, IBonusBase> {
+
+
+    constructor(BonusRepository: IBonusRepository, baseSchema?: ZodObject<ZodRawShape>, fullSchema?: ZodObject<ZodRawShape>) {
+        super(BonusRepository, baseSchema, fullSchema);
+        
+        this._validateOutput = true
+        
+    }
+
+    async exportExcel(from: string, to: string, operator?: string): Promise<IBonusExcelExportResult> {
+        const filters: IDraxFieldFilter[] = [
+            {field: 'createdAt', operator: 'gte', value: from},
+            {field: 'createdAt', operator: 'lte', value: to}
+        ]
+
+        if (operator) {
+            filters.push({field: 'createdBy', operator: 'eq', value: operator})
+        }
+
+        const rows = await this.find({
+            limit: 100000,
+            orderBy: 'createdAt',
+            order: 'asc',
+            filters
+        })
+
+        const workbook = new ExcelJS.Workbook()
+        const fileName = `bonificaciones_${from.slice(0, 10)}_${to.slice(0, 10)}.xlsx`
+        const worksheet = workbook.addWorksheet('bonificaciones')
+
+        worksheet.columns = [
+            {header: 'Fecha de carga', key: 'createdAt', width: 18},
+            {header: 'Operador', key: 'createdBy', width: 24},
+            {header: 'DNI', key: 'dni', width: 14},
+            {header: 'Nombre y apellido', key: 'fullname', width: 28},
+            {header: 'Plan', key: 'plan', width: 18},
+            {header: 'Aplica (mes)', key: 'appliedMonth', width: 14},
+            {header: 'Forma de pago', key: 'paymentMethod', width: 18},
+            {header: 'Bonificacion', key: 'bonus', width: 18},
+            {header: 'Valor neto bonificado', key: 'bonifiedNetValue', width: 20},
+            {header: 'Estado', key: 'status', width: 14},
+            {header: 'Observacion', key: 'observation', width: 32},
+        ]
+
+        for (const row of rows) {
+            worksheet.addRow({
+                createdAt: row.createdAt ? new Date(row.createdAt).toLocaleString('es-AR') : '',
+                createdBy: this.resolveUserName(row.createdBy),
+                dni: row.dni,
+                fullname: row.fullname,
+                plan: row.plan,
+                appliedMonth: row.appliedMonth,
+                paymentMethod: row.paymentMethod,
+                bonus: row.bonus,
+                bonifiedNetValue: row.bonifiedNetValue,
+                status: row.status,
+                observation: row.observation ?? '',
+            })
+        }
+
+        worksheet.getRow(1).font = {bold: true}
+        worksheet.views = [{state: 'frozen', ySplit: 1}]
+
+        return {
+            buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+            fileName
+        }
+    }
+
+    private resolveUserName(user: any) {
+        if (!user) {
+            return ''
+        }
+
+        if (typeof user === 'string') {
+            return user
+        }
+
+        return user.name ?? user.username ?? user._id?.toString() ?? ''
+    }
+
+}
+
+export default BonusService
+export {BonusService}
