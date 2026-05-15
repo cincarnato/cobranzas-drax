@@ -173,6 +173,10 @@ template: [(v: any) => !!v || 'validation.required']
     return true
   }
 
+  get containerFluid(){
+    return true
+  }
+
 
 }
 

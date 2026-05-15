@@ -223,6 +223,10 @@ class CallListCrud extends EntityCrud implements IEntityCrud {
     return true
   }
 
+  get containerFluid(){
+    return true
+  }
+
 
 }
 

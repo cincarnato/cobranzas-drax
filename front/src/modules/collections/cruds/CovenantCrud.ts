@@ -282,6 +282,10 @@ class CovenantCrud extends EntityCrud implements IEntityCrud {
     return false
   }
 
+  get containerFluid(){
+    return true
+  }
+
 }
 
 export default CovenantCrud

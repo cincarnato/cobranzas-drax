@@ -1,11 +1,10 @@
-
 import {EntityCrud, useCrudStore} from "@drax/crud-vue";
-import type{
+import type {
   IDraxCrudProvider,
   IEntityCrud,
   IEntityCrudField,
   IEntityCrudFilter,
-  IEntityCrudHeader, 
+  IEntityCrudHeader,
   IEntityCrudPermissions,
   IEntityCrudRefs,
   IEntityCrudRules
@@ -25,45 +24,45 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
     this.name = 'Bonus'
     this.store = useCrudStore(this.name)
   }
-  
+
   static get instance(): BonusCrud {
-    if(!BonusCrud.singleton){
+    if (!BonusCrud.singleton) {
       BonusCrud.singleton = new BonusCrud()
     }
     return BonusCrud.singleton
   }
 
-  get permissions(): IEntityCrudPermissions{
+  get permissions(): IEntityCrudPermissions {
     return {
-      manage: 'bonus:manage', 
-      view: 'bonus:view', 
-      create: 'bonus:create', 
-      update: 'bonus:update', 
+      manage: 'bonus:manage',
+      view: 'bonus:view',
+      create: 'bonus:create',
+      update: 'bonus:update',
       delete: 'bonus:delete'
     }
   }
 
   get headers(): IEntityCrudHeader[] {
     return [
-        {title: 'createdAt',key:'createdAt', align: 'start'},
-{title: 'createdBy',key:'createdBy', align: 'start'},
-{title: 'dni',key:'dni', align: 'start'},
-{title: 'fullname',key:'fullname', align: 'start'},
-{title: 'plan',key:'plan', align: 'start'},
-{title: 'appliedMonth',key:'appliedMonth', align: 'start'},
-{title: 'paymentMethod',key:'paymentMethod', align: 'start'},
-{title: 'bonus',key:'bonus', align: 'start'},
-{title: 'bonifiedNetValue',key:'bonifiedNetValue', align: 'start'},
-{title: 'status',key:'status', align: 'start'},
-{title: 'observation',key:'observation', align: 'start'}
+      {title: 'createdAt', key: 'createdAt', align: 'start'},
+      {title: 'createdBy', key: 'createdBy', align: 'start'},
+      {title: 'status', key: 'status', align: 'start'},
+      {title: 'dni', key: 'dni', align: 'start'},
+      {title: 'fullname', key: 'fullname', align: 'start'},
+      {title: 'plan', key: 'plan', align: 'start'},
+      {title: 'appliedMonth', key: 'appliedMonth', align: 'start'},
+      {title: 'paymentMethod', key: 'paymentMethod', align: 'start'},
+      {title: 'bonus', key: 'bonus', align: 'start'},
+      {title: 'bonifiedNetValue', key: 'bonifiedNetValue', align: 'start'},
+      {title: 'observation', key: 'observation', align: 'start'}
     ]
   }
-  
+
   get selectedHeaders(): string[] {
     return this.headers.map(header => header.key)
   }
-  
-  get actionHeaders():IEntityCrudHeader[]{
+
+  get actionHeaders(): IEntityCrudHeader[] {
     return [
       {
         title: 'action.actions',
@@ -76,70 +75,91 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
     ]
   }
 
-  get provider(): IDraxCrudProvider<any, any, any>{
+  get provider(): IDraxCrudProvider<any, any, any> {
     return BonusProvider.instance
   }
-  
-  get refs(): IEntityCrudRefs{
+
+  get refs(): IEntityCrudRefs {
     return {
-      User: UserCrud.instance 
+      User: UserCrud.instance
     }
   }
 
-  get rules():IEntityCrudRules{
+  get rules(): IEntityCrudRules {
     return {
       dni: [(v: any) => !!v || 'validation.required'],
-fullname: [(v: any) => !!v || 'validation.required'],
-plan: [(v: any) => !!v || 'validation.required'],
-appliedMonth: [(v: any) => !!v || 'validation.required'],
-paymentMethod: [(v: any) => !!v || 'validation.required'],
-bonus: [(v: any) => !!v || 'validation.required'],
-bonifiedNetValue: [(v: any) => !!v || 'validation.required'],
-status: [(v: any) => !!v || 'validation.required'],
-observation: [
-  (v: any) => this.store.getFieldValue('status') !== 'No aplicado' || !!v || 'validation.required'
-]
+      fullname: [(v: any) => !!v || 'validation.required'],
+      plan: [(v: any) => !!v || 'validation.required'],
+      appliedMonth: [(v: any) => !!v || 'validation.required'],
+      paymentMethod: [(v: any) => !!v || 'validation.required'],
+      bonus: [(v: any) => !!v || 'validation.required'],
+      bonifiedNetValue: [(v: any) => !!v || 'validation.required'],
+      status: [(v: any) => !!v || 'validation.required'],
+      observation: [
+        (v: any) => this.store.getFieldValue('status') !== 'No aplicado' || !!v || 'validation.required'
+      ]
     }
   }
 
-  get fields(): IEntityCrudField[]{
+  get fields(): IEntityCrudField[] {
     return [
-        {name:'dni',type:'string',label:'dni',default:''},
-{name:'fullname',type:'string',label:'fullname',default:''},
-{name:'plan',type:'string',label:'plan',default:''},
-{name:'appliedMonth',type:'string',label:'appliedMonth',default:''},
-{name:'paymentMethod',type:'string',label:'paymentMethod',default:''},
-{name:'bonus',type:'string',label:'bonus',default:''},
-{name:'bonifiedNetValue',type:'number',label:'bonifiedNetValue',default:null},
-{name:'status',type:'enum',label:'status',default:'Pendiente',enum: ['Pendiente', 'Aplicado', 'No aplicado']},
-{name:'observation',type:'longString',label:'observation',default:''},
-{name:'createdBy',type:'ref',label:'createdBy',default:null,ref: 'User',refDisplay: 'name'}
+      {name: 'dni', type: 'string', label: 'dni', default: ''},
+      {name: 'fullname', type: 'string', label: 'fullname', default: ''},
+      {name: 'plan', type: 'string', label: 'plan', default: ''},
+      {name: 'appliedMonth', type: 'string', label: 'appliedMonth', default: ''},
+      {name: 'paymentMethod', type: 'string', label: 'paymentMethod', default: ''},
+      {name: 'bonus', type: 'string', label: 'bonus', default: ''},
+      {name: 'bonifiedNetValue', type: 'number', label: 'bonifiedNetValue', default: null},
+      {
+        name: 'status',
+        type: 'enum',
+        label: 'status',
+        default: 'Pendiente',
+        enum: ['Pendiente', 'Aplicado', 'No aplicado']
+      },
+      {name: 'observation', type: 'longString', label: 'observation', default: ''},
+      {name: 'createdBy', type: 'ref', label: 'createdBy', default: null, ref: 'User', refDisplay: 'name'}
     ]
   }
 
-  get createFields(){
+  get createFields() {
     return this.fields.filter(field => !['createdBy', 'status', 'observation'].includes(field.name))
   }
 
-  get updateFields(){
+  get updateFields() {
     return this.fields.filter(field => field.name !== 'createdBy')
   }
-  
-  get filters():IEntityCrudFilter[]{
+
+  get filters(): IEntityCrudFilter[] {
     return [
-      {name:'dni', type:'string', label:'dni', default:'', operator:'eq'},
-      {name:'fullname', type:'string', label:'fullname', default:'', operator:'like'},
-      {name:'plan', type:'string', label:'plan', default:'', operator:'like'},
-      {name:'status', type:'enum', label:'status', default:null, enum: ['Pendiente', 'Aplicado', 'No aplicado'], operator:'in'},
-      {name:'createdBy', type:'ref', label:'createdBy', default:null, ref: 'User', refDisplay: 'name', operator:'in'},
+      {name: 'dni', type: 'string', label: 'dni', default: '', operator: 'eq'},
+      {name: 'fullname', type: 'string', label: 'fullname', default: '', operator: 'like'},
+      {name: 'plan', type: 'string', label: 'plan', default: '', operator: 'like'},
+      {
+        name: 'status',
+        type: 'enum',
+        label: 'status',
+        default: null,
+        enum: ['Pendiente', 'Aplicado', 'No aplicado'],
+        operator: 'in'
+      },
+      {
+        name: 'createdBy',
+        type: 'ref',
+        label: 'createdBy',
+        default: null,
+        ref: 'User',
+        refDisplay: 'name',
+        operator: 'in'
+      },
     ]
   }
-  
-  get isViewable(){
+
+  get isViewable() {
     return true
   }
 
-  get isEditable(){
+  get isEditable() {
     return true
   }
 
@@ -156,30 +176,30 @@ observation: [
     return !!authUserId && authUserId === createdBy && this.isToday(item?.createdAt)
   }
 
-  get isCreatable(){
+  get isCreatable() {
     return true
   }
 
-  get isDeletable(){
+  get isDeletable() {
     return false
   }
 
-  get isExportable(){
+  get isExportable() {
     return this.hasPermission('bonus:export')
   }
 
-  get exportFormats(){
+  get exportFormats() {
     return ['CSV', 'JSON']
   }
 
-  get exportHeaders(){
+  get exportHeaders() {
     return this.headers.map(header => header.key)
   }
 
-  get isImportable(){
+  get isImportable() {
     return false
   }
-  
+
   get isColumnSelectable() {
     return true
   }
@@ -188,35 +208,35 @@ observation: [
     return true
   }
 
-  get importFormats(){
+  get importFormats() {
     return ['CSV', 'JSON']
   }
 
-  get dialogFullscreen(){
+  get dialogFullscreen() {
     return false
   }
-  
+
   get tabs() {
-    return [
-     
-    ]
+    return []
   }
-  
+
   get menus() {
-    return [
-     
-    ]
+    return []
   }
-  
+
   get searchEnable() {
     return true
   }
 
-   get filtersEnable(){
+  get filtersEnable() {
     return true
   }
 
-  get dynamicFiltersEnable(){
+  get dynamicFiltersEnable() {
+    return true
+  }
+
+  get containerFluid(){
     return true
   }
 
@@ -254,6 +274,8 @@ observation: [
       && date.getMonth() === today.getMonth()
       && date.getDate() === today.getDate()
   }
+
+
 
 
 }
