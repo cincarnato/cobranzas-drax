@@ -1,8 +1,8 @@
 const projectPasswordPolicy = {
-    minLength: 8,
+    minLength: 6,
     maxLength: 32,
-    requireUppercase: true,
-    requireLowercase: true,
+    requireUppercase: false,
+    requireLowercase: false,
     requireNumber: true,
     requireSpecialChar: false,
     allowedSpecialChars: "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",

@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { extname } from "node:path";
 import { z } from "zod";
-import { OpenAiProviderFactory } from "@drax/ai-back";
+import { AiProviderFactory } from "@drax/ai-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import AffiliateServiceFactory from "../../premedic/factory/services/AffiliateServiceFactory.js";
@@ -33,6 +33,7 @@ const inboundEmailAiSchema = z.object({
 const DEFAULT_POLL_INTERVAL_MS = 60000;
 const DEFAULT_FETCH_LIMIT = 25;
 const DEFAULT_LOOKBACK_DAYS = 10;
+const DEFAULT_AI_PROVIDER = "OllamaAi";
 class InboundEmailMailboxProvider {
     constructor() {
         this.syncInProgress = false;
@@ -41,7 +42,7 @@ class InboundEmailMailboxProvider {
         this.inboundEmailService = InboundEmailServiceFactory.instance;
         this.affiliateService = AffiliateServiceFactory.instance;
         this.mediaService = new MediaService();
-        this.openAiProvider = OpenAiProviderFactory.instance();
+        this.aiProvider = AiProviderFactory.instance(this.resolveAiProviderName());
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
     }
@@ -520,7 +521,7 @@ class InboundEmailMailboxProvider {
             name: entity.name,
             description: entity.description,
         }));
-        const response = await this.openAiProvider.prompt({
+        const response = await this.aiProvider.prompt({
             systemPrompt: [
                 "Sos un analista de correos entrantes para un sistema de cobranzas y salud.",
                 "Todo el analisis debe basarse exclusivamente en la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
@@ -748,6 +749,9 @@ class InboundEmailMailboxProvider {
     }
     resolveAiModelName() {
         return process.env.OPENAI_MODEL || process.env.OPENAI_DEFAULT_MODEL || "openai";
+    }
+    resolveAiProviderName() {
+        return process.env.AI_PROVIDER || DEFAULT_AI_PROVIDER;
     }
     readNumberEnv(key, fallback) {
         const value = process.env[key];

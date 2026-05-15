@@ -12,6 +12,7 @@ import { CallListPermissions } from "../modules/caller/permissions/CallListPermi
 import { CallLogPermissions } from "../modules/caller/permissions/CallLogPermissions.js";
 import { MultichannelPermissions } from "../modules/caller/permissions/MultichannelPermissions.js";
 import { CallSuccessTypePermissions } from "../modules/caller/permissions/CallSuccessTypePermissions.js";
+import { WhatsappMessagePermissions } from "../modules/caller/permissions/WhatsappMessagePermissions.js";
 import { CovenantPermissions } from "../modules/collections/permissions/CovenantPermissions.js";
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
 import { InboundEmailPermissions } from "../modules/mail/permissions/InboundEmailPermissions.js";
@@ -21,6 +22,8 @@ import { PayerEntityPermissions } from "../modules/transferencias/permissions/Pa
 import { TransferEmailPermissions } from "../modules/transferencias/permissions/TransferEmailPermissions.js";
 import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliatePermissions.js";
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
+import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
+import { BonusPermissions } from "../modules/bajas/permissions/BonusPermissions.js";
 function InitializePermissions() {
     //Merge All Permissions
     const permissions = [
@@ -44,6 +47,7 @@ function InitializePermissions() {
         ...Object.values(CallLogPermissions),
         ...Object.values(MultichannelPermissions),
         ...Object.values(CallSuccessTypePermissions),
+        ...Object.values(WhatsappMessagePermissions),
         ...Object.values(CovenantPermissions),
         ...Object.values(GroupZonePermissions),
         ...Object.values(InboundEmailPermissions),
@@ -53,6 +57,8 @@ function InitializePermissions() {
         ...Object.values(BankMovementPermissions),
         ...Object.values(PayerEntityPermissions),
         ...Object.values(TransferEmailPermissions),
+        ...Object.values(RecoveryPermissions),
+        ...Object.values(BonusPermissions),
     ];
     //Load All Permissions
     LoadPermissions(permissions);

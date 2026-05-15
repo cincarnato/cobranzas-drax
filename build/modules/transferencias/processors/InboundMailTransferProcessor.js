@@ -1,5 +1,5 @@
 import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmailServiceFactory.js";
-import { OpenAiProviderFactory } from "@drax/ai-back";
+import { AiProviderFactory } from "@drax/ai-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import { z } from "zod";
 const transferEmailAiSchema = z.object({
@@ -23,11 +23,15 @@ const transferEmailAiSchema = z.object({
     needsHumanReview: z.boolean().nullable(),
     reasoning: z.string().nullable(),
 });
+const DEFAULT_AI_PROVIDER = "OllamaAi";
+function resolveAiProviderName() {
+    return process.env.AI_PROVIDER || DEFAULT_AI_PROVIDER;
+}
 class InboundMailTransferProcessor {
-    constructor(inboundMailService = InboundEmailServiceFactory.instance, transferEmailService = TransferEmailServiceFactory.instance, openAiProvider = OpenAiProviderFactory.instance()) {
+    constructor(inboundMailService = InboundEmailServiceFactory.instance, transferEmailService = TransferEmailServiceFactory.instance, openAiProvider = AiProviderFactory.instance(resolveAiProviderName())) {
         this.inboundMailService = inboundMailService;
         this.transferEmailService = transferEmailService;
-        this.openAiProvider = openAiProvider;
+        this.aiProvider = openAiProvider;
     }
     async process() {
         const since = await this.getProcessingStartDate();
@@ -156,7 +160,7 @@ class InboundMailTransferProcessor {
         return this.removeUndefinedFields(payload);
     }
     async extractTransferDataWithAi(inboundEmail) {
-        const response = await this.openAiProvider.prompt({
+        const response = await this.aiProvider.prompt({
             systemPrompt: [
                 "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
                 "Debes decidir si el email corresponde a un comprobante o aviso de transferencia bancaria y extraer todos los datos posibles.",

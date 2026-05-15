@@ -1,6 +1,7 @@
 import { MultichannelProviderError } from "../providers/MultichannelProvider.js";
 import MultichannelProviderFactory from "../factory/providers/MultichannelProviderFactory.js";
 import MultichannelPermissions from "../permissions/MultichannelPermissions.js";
+import WhatsappMessageServiceFactory from "../factory/services/WhatsappMessageServiceFactory.js";
 class MultichannelController {
     async sendWhatsappTemplate(request, reply) {
         try {
@@ -8,6 +9,13 @@ class MultichannelController {
             request?.rbac.assertPermission(MultichannelPermissions.SendWhatsappTemplate);
             const body = request.body;
             const result = await MultichannelProviderFactory.instance.sendWhatsappTemplate(body);
+            const userId = request.rbac.userId || request.rbac.getAuthUser?.id;
+            await WhatsappMessageServiceFactory.instance.create({
+                sentAt: new Date(),
+                user: userId,
+                destinationNumber: this.normalizePhone(body.destinatario),
+                template: body.template,
+            });
             return reply.status(200).send(result);
         }
         catch (error) {
@@ -25,6 +33,9 @@ class MultichannelController {
                 message: error?.message || "Failed to send WhatsApp template message",
             });
         }
+    }
+    normalizePhone(value) {
+        return String(value ?? '').replace(/\D/g, '');
     }
 }
 export default MultichannelController;

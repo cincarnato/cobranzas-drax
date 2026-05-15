@@ -1,0 +1,144 @@
+import { spawn } from "node:child_process";
+import { createWriteStream } from "node:fs";
+import { access, mkdir, rm } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
+import { pipeline } from "node:stream/promises";
+class FileRecoveryService {
+    constructor() {
+        this.backupsDirectory = resolve(process.cwd(), "recovery-file-backups");
+    }
+    async backup(masterPassword) {
+        this.assertRecoveryEnabled();
+        this.assertMasterPassword(masterPassword);
+        const fileDirectory = this.getFileDirectory();
+        await access(fileDirectory);
+        await mkdir(this.backupsDirectory, { recursive: true });
+        const filename = `file-backup-${this.getTimestamp()}.tar.gz`;
+        const archivePath = resolve(this.backupsDirectory, filename);
+        const output = await this.runTarCommand([
+            "-czf",
+            archivePath,
+            "-C",
+            dirname(fileDirectory),
+            basename(fileDirectory),
+        ]);
+        return {
+            archivePath,
+            filename,
+            sourceDirectory: fileDirectory,
+            command: "tar",
+            output,
+        };
+    }
+    async saveUploadedArchive(fileStream, filename) {
+        this.assertRecoveryEnabled();
+        await mkdir(this.backupsDirectory, { recursive: true });
+        const safeFilename = basename(filename || "uploaded-file-backup.tar.gz");
+        const archivePath = resolve(this.backupsDirectory, `uploaded-file-backup-${this.getTimestamp()}-${safeFilename}`);
+        await pipeline(fileStream, createWriteStream(archivePath));
+        return archivePath;
+    }
+    async resolveDownloadPath(archivePath) {
+        this.assertRecoveryEnabled();
+        const resolvedArchivePath = this.resolveArchivePath(archivePath);
+        await access(resolvedArchivePath);
+        return resolvedArchivePath;
+    }
+    async restore(masterPassword, archivePath, cleanTarget = false) {
+        this.assertRecoveryEnabled();
+        this.assertMasterPassword(masterPassword);
+        const fileDirectory = this.getFileDirectory();
+        const resolvedArchivePath = this.resolveArchivePath(archivePath);
+        await access(resolvedArchivePath);
+        await mkdir(dirname(fileDirectory), { recursive: true });
+        if (cleanTarget) {
+            await rm(fileDirectory, { recursive: true, force: true });
+        }
+        const output = await this.runTarCommand([
+            "-xzf",
+            resolvedArchivePath,
+            "-C",
+            dirname(fileDirectory),
+        ]);
+        return {
+            archivePath: resolvedArchivePath,
+            filename: basename(resolvedArchivePath),
+            sourceDirectory: fileDirectory,
+            command: "tar",
+            output,
+        };
+    }
+    assertRecoveryEnabled() {
+        const enabled = ["true", "1", "yes", "on"].includes((process.env.RECOVERY_ENABLED || "").toLowerCase());
+        if (!enabled) {
+            const error = new Error("Recovery esta deshabilitado. Configure RECOVERY_ENABLED=true para habilitarlo.");
+            error.statusCode = 403;
+            throw error;
+        }
+    }
+    assertMasterPassword(masterPassword) {
+        const configuredPassword = process.env.RECOVERY_MASTER_PASSWORD;
+        if (!configuredPassword) {
+            const error = new Error("RECOVERY_MASTER_PASSWORD no esta configurada.");
+            error.statusCode = 500;
+            throw error;
+        }
+        if (!masterPassword || masterPassword !== configuredPassword) {
+            const error = new Error("Password maestra invalida.");
+            error.statusCode = 403;
+            throw error;
+        }
+    }
+    getFileDirectory() {
+        if (!process.env.DRAX_FILE_DIR) {
+            const error = new Error("DRAX_FILE_DIR no esta configurada.");
+            error.statusCode = 500;
+            throw error;
+        }
+        return resolve(process.env.DRAX_FILE_DIR);
+    }
+    resolveArchivePath(archivePath) {
+        if (!archivePath) {
+            const error = new Error("Debe indicar el archivo de backup a restaurar.");
+            error.statusCode = 400;
+            throw error;
+        }
+        const resolvedArchivePath = resolve(archivePath);
+        const backupsDirectory = this.backupsDirectory + "/";
+        if (!resolvedArchivePath.startsWith(backupsDirectory)) {
+            const error = new Error("El archivo de restore debe estar dentro del directorio recovery-file-backups.");
+            error.statusCode = 400;
+            throw error;
+        }
+        return resolvedArchivePath;
+    }
+    getTimestamp() {
+        return new Date().toISOString().replace(/[:.]/g, "-");
+    }
+    runTarCommand(args) {
+        return new Promise((resolvePromise, rejectPromise) => {
+            const child = spawn("tar", args, { shell: false });
+            const output = [];
+            child.stdout.on("data", (data) => output.push(data.toString()));
+            child.stderr.on("data", (data) => output.push(data.toString()));
+            child.on("error", (error) => {
+                if (error?.code === "ENOENT") {
+                    error.message = "tar no esta instalado o no esta disponible en PATH.";
+                }
+                rejectPromise(error);
+            });
+            child.on("close", (code) => {
+                const joinedOutput = output.join("").trim();
+                if (code === 0) {
+                    resolvePromise(joinedOutput);
+                    return;
+                }
+                const error = new Error(joinedOutput || `tar finalizo con codigo ${code}.`);
+                error.statusCode = 500;
+                rejectPromise(error);
+            });
+        });
+    }
+}
+export default FileRecoveryService;
+export { FileRecoveryService };

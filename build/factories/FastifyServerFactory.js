@@ -14,6 +14,7 @@ import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.j
 import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js";
 import { MultichannelFastifyRoutes } from "../modules/caller/routes/MultichannelRoutes.js";
 import { CallSuccessTypeFastifyRoutes } from "../modules/caller/routes/CallSuccessTypeRoutes.js";
+import { WhatsappMessageFastifyRoutes } from "../modules/caller/routes/WhatsappMessageRoutes.js";
 import { CovenantFastifyRoutes } from "../modules/collections/routes/CovenantRoutes.js";
 import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneRoutes.js";
 import { InboundEmailFastifyRoutes } from "../modules/mail/routes/InboundEmailRoutes.js";
@@ -25,6 +26,8 @@ import { PayerEntityFastifyRoutes } from "../modules/transferencias/routes/Payer
 import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/TransferEmailRoutes.js";
 import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js";
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js";
+import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js";
+import { BonusFastifyRoutes } from "../modules/bajas/routes/BonusRoutes.js";
 function FastifyServerFactory(rootDir) {
     const server = new FastifyServer(rootDir);
     server.fastifyDecorateRequest('authUser', null);
@@ -55,6 +58,7 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(CallLogFastifyRoutes);
     server.fastifyRegister(MultichannelFastifyRoutes);
     server.fastifyRegister(CallSuccessTypeFastifyRoutes);
+    server.fastifyRegister(WhatsappMessageFastifyRoutes);
     server.fastifyRegister(CovenantFastifyRoutes);
     server.fastifyRegister(GroupZoneFastifyRoutes);
     server.fastifyRegister(InboundEmailFastifyRoutes);
@@ -66,6 +70,8 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(BankMovementFastifyRoutes);
     server.fastifyRegister(PayerEntityFastifyRoutes);
     server.fastifyRegister(TransferEmailFastifyRoutes);
+    server.fastifyRegister(RecoveryFastifyRoutes);
+    server.fastifyRegister(BonusFastifyRoutes);
     return server;
 }
 export default FastifyServerFactory;
