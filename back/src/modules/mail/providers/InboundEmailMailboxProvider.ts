@@ -113,6 +113,7 @@ type InboundEmailAiExtraction = z.infer<typeof inboundEmailAiSchema>;
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
 const DEFAULT_FETCH_LIMIT = 25;
 const DEFAULT_LOOKBACK_DAYS = 10;
+const DEFAULT_AI_PROVIDER = "OllamaAi";
 
 class InboundEmailMailboxProvider {
     private static singleton: InboundEmailMailboxProvider;
@@ -132,7 +133,7 @@ class InboundEmailMailboxProvider {
         this.inboundEmailService = InboundEmailServiceFactory.instance;
         this.affiliateService = AffiliateServiceFactory.instance;
         this.mediaService = new MediaService();
-        this.aiProvider = AiProviderFactory.instance('OllamaAi');
+        this.aiProvider = AiProviderFactory.instance(this.resolveAiProviderName());
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
     }
@@ -1011,6 +1012,10 @@ class InboundEmailMailboxProvider {
 
     private resolveAiModelName(): string {
         return process.env.OPENAI_MODEL || process.env.OPENAI_DEFAULT_MODEL || "openai";
+    }
+
+    private resolveAiProviderName(): string {
+        return process.env.AI_PROVIDER || DEFAULT_AI_PROVIDER;
     }
 
     private readNumberEnv(key: string, fallback: number): number {

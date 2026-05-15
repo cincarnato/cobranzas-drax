@@ -103,6 +103,7 @@ class CallLogService extends AbstractService<ICallLog, ICallLogBase, ICallLogBas
         const currentAttempts = currentCallLog.attempts ?? 0;
         const nextAttempts = currentAttempts + 1;
         const state = payload.state ?? currentCallLog.state;
+        const stateCounterDeltas = this.getStateCounterDeltas(currentCallLog.state, state);
         const typification = state === 'promesa'
             ? (payload.typification?.trim() || 'Promesa de pago')
             : (payload.typification ?? '');
@@ -162,12 +163,24 @@ class CallLogService extends AbstractService<ICallLog, ICallLogBase, ICallLogBas
         await callListService.updatePartial(callListId, {
             attempts: (currentCallList.attempts ?? 0) + 1,
             attemptsControl,
-            failed: (currentCallList.failed ?? 0) + (state === 'fallida' ? 1 : 0),
-            success: (currentCallList.success ?? 0) + (state === 'exitosa' ? 1 : 0),
-            promises: (currentCallList.promises ?? 0) + (state === 'promesa' ? 1 : 0)
+            failed: Math.max((currentCallList.failed ?? 0) + stateCounterDeltas.failed, 0),
+            success: Math.max((currentCallList.success ?? 0) + stateCounterDeltas.success, 0),
+            promises: Math.max((currentCallList.promises ?? 0) + stateCounterDeltas.promises, 0)
         });
 
         return updatedCallLog;
+    }
+
+    private getStateCounterDeltas(previousState?: string, nextState?: string) {
+        return {
+            failed: this.stateCounterDelta(previousState, nextState, 'fallida'),
+            success: this.stateCounterDelta(previousState, nextState, 'exitosa'),
+            promises: this.stateCounterDelta(previousState, nextState, 'promesa')
+        }
+    }
+
+    private stateCounterDelta(previousState: string | undefined, nextState: string | undefined, state: string) {
+        return (nextState === state ? 1 : 0) - (previousState === state ? 1 : 0)
     }
 
     async exportExcel(callListId: string): Promise<ExportCallLogResult> {

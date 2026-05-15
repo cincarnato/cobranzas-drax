@@ -30,6 +30,20 @@ const deadlineVariant = computed(() => {
 
 const attemptsControl = computed(() => props.callList.attemptsControl ?? [])
 
+function successInPreviousAttempts(attemptNumber?: number) {
+  if (!attemptNumber) return 0
+
+  return attemptsControl.value.reduce((total, attempt) => {
+    if ((attempt.number ?? 0) >= attemptNumber) return total
+    return total + (attempt.success ?? 0)
+  }, 0)
+}
+
+function attemptTarget(attemptNumber?: number) {
+  const total = props.callList.total ?? 0
+  return Math.max(total - successInPreviousAttempts(attemptNumber), 0)
+}
+
 function formatDate(date?: Date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('es-AR')
@@ -39,6 +53,12 @@ function percentage(count?: number) {
   const total = props.callList.total ?? 0
   if (!total) return 0
   return Math.round(((count ?? 0) / total) * 100)
+}
+
+function attemptPercentage(attempt: NonNullable<ICallList['attemptsControl']>[number]) {
+  const total = attemptTarget(attempt.number)
+  if (!total) return 0
+  return Math.min(Math.round(((attempt.count ?? 0) / total) * 100), 100)
 }
 
 function resolveFileName(response: Response) {
@@ -163,11 +183,11 @@ async function exportCallLog() {
           >
             <div class="d-flex justify-space-between text-caption mb-1">
               <span>Intento {{ attempt.number ?? '-' }}</span>
-              <span>{{ attempt.count ?? 0 }} registros</span>
+              <span>{{ attempt.count ?? 0 }} / {{ attemptTarget(attempt.number) }} registros</span>
             </div>
             <v-progress-linear
               color="primary"
-              :model-value="percentage(attempt.count)"
+              :model-value="attemptPercentage(attempt)"
               height="8"
               rounded
             />

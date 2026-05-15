@@ -39,6 +39,12 @@ const transferEmailAiSchema = z.object({
 
 type TransferEmailAiExtraction = z.infer<typeof transferEmailAiSchema>;
 
+const DEFAULT_AI_PROVIDER = "OllamaAi";
+
+function resolveAiProviderName(): string {
+    return process.env.AI_PROVIDER || DEFAULT_AI_PROVIDER;
+}
+
 class InboundMailTransferProcessor {
     private inboundMailService: InboundEmailService;
     private transferEmailService: TransferEmailService;
@@ -47,7 +53,7 @@ class InboundMailTransferProcessor {
     constructor(
         inboundMailService: InboundEmailService = InboundEmailServiceFactory.instance,
         transferEmailService: TransferEmailService = TransferEmailServiceFactory.instance,
-        openAiProvider: IAIProvider = AiProviderFactory.instance('OllamaAi')
+        openAiProvider: IAIProvider = AiProviderFactory.instance(resolveAiProviderName())
     ) {
         this.inboundMailService = inboundMailService;
         this.transferEmailService = transferEmailService;
