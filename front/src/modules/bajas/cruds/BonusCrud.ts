@@ -103,13 +103,14 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
 
   get fields(): IEntityCrudField[] {
     return [
-      {name: 'dni', type: 'string', label: 'dni', default: ''},
-      {name: 'fullname', type: 'string', label: 'fullname', default: ''},
-      {name: 'plan', type: 'string', label: 'plan', default: ''},
-      {name: 'appliedMonth', type: 'string', label: 'appliedMonth', default: ''},
-      {name: 'paymentMethod', type: 'string', label: 'paymentMethod', default: ''},
-      {name: 'bonus', type: 'string', label: 'bonus', default: ''},
-      {name: 'bonifiedNetValue', type: 'number', label: 'bonifiedNetValue', default: null},
+
+      {name: 'dni', type: 'string', label: 'dni', default: '', md: 6},
+      {name: 'fullname', type: 'string', label: 'fullname', default: '', md: 6},
+      {name: 'plan', type: 'string', label: 'plan', default: '', md: 4},
+      {name: 'appliedMonth', type: 'string', label: 'appliedMonth', default: '', md: 4},
+      {name: 'paymentMethod', type: 'string', label: 'paymentMethod', default: '', md: 4},
+      {name: 'bonus', type: 'string', label: 'bonus', default: '', md: 6},
+      {name: 'bonifiedNetValue', type: 'number', label: 'bonifiedNetValue', default: null, md: 6},
       {
         name: 'status',
         type: 'enum',
