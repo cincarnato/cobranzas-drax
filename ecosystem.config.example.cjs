@@ -13,7 +13,7 @@ module.exports = {
 				DRAX_JWT_ISSUER: 'DRAX SCAFFOLD',
 				DRAX_APIKEY_SECRET:'',
 
-				//DB
+				//DBx
 				DRAX_DB_ENGINE: 'mongo', //sqlite or mongo
 				DRAX_MONGO_URI: 'mongodb://127.0.0.1:27017/drax-scaffold',
 				DRAX_SQLITE_FILE: 'drax.db',
