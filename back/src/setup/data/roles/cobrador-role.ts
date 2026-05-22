@@ -34,7 +34,7 @@ const role = {
         CallLogPermissions.View,
         CallLogPermissions.Update,
 
-        CallAttemptPermissions.View,
+
 
         MultichannelPermissions.SendWhatsappTemplate,
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from "vue";
 import type {IDraxFieldFilter} from "@drax/crud-share";
+import {useAuth} from "@drax/identity-vue";
 import CovenantProvider from "../../providers/CovenantProvider";
 import CallAttemptProvider from "../../../caller/providers/CallAttemptProvider";
 import WhatsappMessageProvider from "../../../caller/providers/WhatsappMessageProvider";
@@ -42,6 +43,8 @@ const emit = defineEmits<{
   (event: "loading-change", value: boolean): void
 }>();
 
+const {hasPermission} = useAuth();
+
 const zoneRows = ref<SummaryRow[]>([]);
 const userRows = ref<SummaryRow[]>([]);
 const attemptUserRows = ref<SummaryRow[]>([]);
@@ -64,63 +67,73 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 2,
 });
 
+const canViewCovenants = computed(() => hasPermission("covenant:view"));
+const canViewCallAttempts = computed(() => hasPermission("callattempt:view"));
+const canViewWhatsappMessages = computed(() => hasPermission("whatsappmessage:view"));
+
 const cards = computed<SummaryConfig[]>(() => [
-  {
-    title: "Resumen por zona",
-    label: "Zona",
-    dimension: "group",
-    icon: "mdi-map-marker-radius-outline",
-    accent: "zone",
-    showAmount: true,
-    rows: zoneRows.value,
-  },
-  {
-    title: "Resumen por usuario",
-    label: "Usuario",
-    dimension: "createdBy",
-    icon: "mdi-account-heart-outline",
-    accent: "user",
-    showAmount: true,
-    rows: userRows.value,
-  },
-  {
-    title: "Intentos por usuario",
-    label: "Usuario",
-    dimension: "user",
-    icon: "mdi-phone-outgoing-outline",
-    accent: "attempts",
-    showAmount: false,
-    rows: attemptUserRows.value,
-  },
-  {
-    title: "Intentos por usuario y resultado",
-    label: "Usuario",
-    secondaryLabel: "Resultado",
-    dimension: "userResult",
-    icon: "mdi-chart-bar-stacked",
-    accent: "results",
-    showAmount: false,
-    rows: attemptUserResultRows.value,
-  },
-  {
-    title: "Whatsapps enviados por usuario",
-    label: "Usuario",
-    dimension: "whatsappUser",
-    icon: "mdi-whatsapp",
-    accent: "whatsapp",
-    showAmount: false,
-    rows: whatsappUserRows.value,
-  },
-  {
-    title: "Whatsapps enviados por usuario y template",
-    label: "Usuario",
-    secondaryLabel: "Template",
-    dimension: "whatsappUserTemplate",
-    icon: "mdi-message-text-outline",
-    accent: "templates",
-    showAmount: false,
-    rows: whatsappUserTemplateRows.value,
-  },
+  ...(canViewCovenants.value ? [
+    {
+      title: "Resumen por zona",
+      label: "Zona",
+      dimension: "group" as const,
+      icon: "mdi-map-marker-radius-outline",
+      accent: "zone" as const,
+      showAmount: true,
+      rows: zoneRows.value,
+    },
+    {
+      title: "Resumen por usuario",
+      label: "Usuario",
+      dimension: "createdBy" as const,
+      icon: "mdi-account-heart-outline",
+      accent: "user" as const,
+      showAmount: true,
+      rows: userRows.value,
+    },
+  ] : []),
+  ...(canViewCallAttempts.value ? [
+    {
+      title: "Intentos por usuario",
+      label: "Usuario",
+      dimension: "user" as const,
+      icon: "mdi-phone-outgoing-outline",
+      accent: "attempts" as const,
+      showAmount: false,
+      rows: attemptUserRows.value,
+    },
+    {
+      title: "Intentos por usuario y resultado",
+      label: "Usuario",
+      secondaryLabel: "Resultado",
+      dimension: "userResult" as const,
+      icon: "mdi-chart-bar-stacked",
+      accent: "results" as const,
+      showAmount: false,
+      rows: attemptUserResultRows.value,
+    },
+  ] : []),
+  ...(canViewWhatsappMessages.value ? [
+    {
+      title: "Whatsapps enviados por usuario",
+      label: "Usuario",
+      dimension: "whatsappUser" as const,
+      icon: "mdi-whatsapp",
+      accent: "whatsapp" as const,
+      showAmount: false,
+      rows: whatsappUserRows.value,
+    },
+    {
+      title: "Whatsapps enviados por usuario y template",
+      label: "Usuario",
+      secondaryLabel: "Template",
+      dimension: "whatsappUserTemplate" as const,
+      icon: "mdi-message-text-outline",
+      accent: "templates" as const,
+      showAmount: false,
+      rows: whatsappUserTemplateRows.value,
+    },
+  ] : []),
 ]);
 
 function parseAmount(value: unknown): number {
@@ -246,6 +259,15 @@ function getTotalCount(rows: SummaryRow[]): number {
   return rows.reduce((sum, row) => sum + row.count, 0);
 }
 
+function clearDashboardRows() {
+  zoneRows.value = [];
+  userRows.value = [];
+  attemptUserRows.value = [];
+  attemptUserResultRows.value = [];
+  whatsappUserRows.value = [];
+  whatsappUserTemplateRows.value = [];
+}
+
 async function fetchDashboardData() {
   const currentRequestId = ++requestId;
   loading.value = true;
@@ -263,30 +285,30 @@ async function fetchDashboardData() {
       whatsappUserData,
       whatsappUserTemplateData,
     ] = await Promise.all([
-      CovenantProvider.instance.groupBy({
+      canViewCovenants.value ? CovenantProvider.instance.groupBy({
         fields: ["group", "amount"],
         filters,
-      }),
-      CovenantProvider.instance.groupBy({
+      }) : Promise.resolve([]),
+      canViewCovenants.value ? CovenantProvider.instance.groupBy({
         fields: ["createdBy", "amount"],
         filters,
-      }),
-      CallAttemptProvider.instance.groupBy({
+      }) : Promise.resolve([]),
+      canViewCallAttempts.value ? CallAttemptProvider.instance.groupBy({
         fields: ["user"],
         filters,
-      }),
-      CallAttemptProvider.instance.groupBy({
+      }) : Promise.resolve([]),
+      canViewCallAttempts.value ? CallAttemptProvider.instance.groupBy({
         fields: ["user", "result"],
         filters,
-      }),
-      WhatsappMessageProvider.instance.groupBy({
+      }) : Promise.resolve([]),
+      canViewWhatsappMessages.value ? WhatsappMessageProvider.instance.groupBy({
         fields: ["user"],
         filters: whatsappFilters,
-      }),
-      WhatsappMessageProvider.instance.groupBy({
+      }) : Promise.resolve([]),
+      canViewWhatsappMessages.value ? WhatsappMessageProvider.instance.groupBy({
         fields: ["user", "template"],
         filters: whatsappFilters,
-      }),
+      }) : Promise.resolve([]),
     ]);
 
     if (currentRequestId !== requestId) return;
@@ -301,12 +323,7 @@ async function fetchDashboardData() {
     if (currentRequestId !== requestId) return;
 
     console.error("Error loading covenant dashboard", fetchError);
-    zoneRows.value = [];
-    userRows.value = [];
-    attemptUserRows.value = [];
-    attemptUserResultRows.value = [];
-    whatsappUserRows.value = [];
-    whatsappUserTemplateRows.value = [];
+    clearDashboardRows();
     error.value = "No se pudo cargar el resumen de cobranzas.";
   } finally {
     if (currentRequestId === requestId) {
@@ -317,7 +334,7 @@ async function fetchDashboardData() {
 }
 
 watch(
-  () => props.filters,
+  [() => props.filters, canViewCovenants, canViewCallAttempts, canViewWhatsappMessages],
   () => {
     fetchDashboardData();
   },
