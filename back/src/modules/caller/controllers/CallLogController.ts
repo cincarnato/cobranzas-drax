@@ -39,7 +39,8 @@ class CallLogController extends AbstractFastifyController<ICallLog, ICallLogBase
                 return reply.send({error: 'BAD REQUEST'})
             }
 
-            const item = await this.callLogService.registerAttempt(id, request.body as ICallLogBase)
+            const userId = request.rbac.userId || request.rbac.getAuthUser?.id
+            const item = await this.callLogService.registerAttempt(id, request.body as ICallLogBase, userId)
             return item
         } catch (e) {
             this.handleError(e, reply)

@@ -5,6 +5,7 @@ import {AbstractService} from "@drax/crud-back";
 import type {ZodObject, ZodRawShape} from "zod";
 import {BadRequestError, NotFoundError} from "@drax/common-back";
 import CallListServiceFactory from "../factory/services/CallListServiceFactory.js";
+import CallAttemptServiceFactory from "../factory/services/CallAttemptServiceFactory.js";
 import ExcelJS from "exceljs";
 import type {IDraxFieldFilter, IDraxPaginateOptions, IDraxPaginateResult} from "@drax/crud-share";
 
@@ -93,7 +94,7 @@ class CallLogService extends AbstractService<ICallLog, ICallLogBase, ICallLogBas
         return pagination
     }
 
-    async registerAttempt(id: string, payload: RegisterAttemptPayload): Promise<ICallLog> {
+    async registerAttempt(id: string, payload: RegisterAttemptPayload, userId?: string): Promise<ICallLog> {
         const currentCallLog = await this.findById(id);
 
         if (!currentCallLog) {
@@ -166,6 +167,15 @@ class CallLogService extends AbstractService<ICallLog, ICallLogBase, ICallLogBas
             failed: Math.max((currentCallList.failed ?? 0) + stateCounterDeltas.failed, 0),
             success: Math.max((currentCallList.success ?? 0) + stateCounterDeltas.success, 0),
             promises: Math.max((currentCallList.promises ?? 0) + stateCounterDeltas.promises, 0)
+        });
+
+        await CallAttemptServiceFactory.instance.create({
+            date: new Date(),
+            user: userId,
+            result: state ?? 'sin_resultado',
+            callListName: currentCallList.name,
+            callLogId: id,
+            callLog: id
         });
 
         return updatedCallLog;

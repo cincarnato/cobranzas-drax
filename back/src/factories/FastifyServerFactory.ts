@@ -20,6 +20,7 @@ import { HealthRoutes } from "../modules/base/routes/HealthRoutes.js"
 import { NotificationFastifyRoutes } from "../modules/base/routes/NotificationRoutes.js"
 import { PadronFastifyRoutes } from "../modules/afilmed/routes/PadronRoutes.js"
 import { CallFailedTypeFastifyRoutes } from "../modules/caller/routes/CallFailedTypeRoutes.js"
+import { CallAttemptFastifyRoutes } from "../modules/caller/routes/CallAttemptRoutes.js"
 import { CallListFastifyRoutes } from "../modules/caller/routes/CallListRoutes.js"
 import { CallLogFastifyRoutes } from "../modules/caller/routes/CallLogRoutes.js"
 import { MultichannelFastifyRoutes } from "../modules/caller/routes/MultichannelRoutes.js"
@@ -70,6 +71,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(PadronFastifyRoutes)
 
     server.fastifyRegister(CallFailedTypeFastifyRoutes)
+    server.fastifyRegister(CallAttemptFastifyRoutes)
     server.fastifyRegister(CallListFastifyRoutes)
     server.fastifyRegister(CallLogFastifyRoutes)
     server.fastifyRegister(MultichannelFastifyRoutes)

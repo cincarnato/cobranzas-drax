@@ -2,16 +2,22 @@
 import {computed, ref, watch} from "vue";
 import type {IDraxFieldFilter} from "@drax/crud-share";
 import CovenantProvider from "../../providers/CovenantProvider";
+import CallAttemptProvider from "../../../caller/providers/CallAttemptProvider";
+import WhatsappMessageProvider from "../../../caller/providers/WhatsappMessageProvider";
 
 type GroupByRow = {
   group?: unknown
   createdBy?: unknown
+  user?: unknown
+  result?: string | null
+  template?: string | null
   amount?: number | string | null
   count?: number
 }
 
 type SummaryRow = {
   label: string
+  secondaryLabel?: string
   amount: number
   count: number
   percentage: number
@@ -20,9 +26,11 @@ type SummaryRow = {
 type SummaryConfig = {
   title: string
   label: string
-  dimension: "group" | "createdBy"
+  secondaryLabel?: string
+  dimension: "group" | "createdBy" | "user" | "userResult" | "whatsappUser" | "whatsappUserTemplate"
   icon: string
-  accent: "zone" | "user"
+  accent: "zone" | "user" | "attempts" | "results" | "whatsapp" | "templates"
+  showAmount: boolean
   rows: SummaryRow[]
 }
 
@@ -32,6 +40,10 @@ const props = defineProps<{
 
 const zoneRows = ref<SummaryRow[]>([]);
 const userRows = ref<SummaryRow[]>([]);
+const attemptUserRows = ref<SummaryRow[]>([]);
+const attemptUserResultRows = ref<SummaryRow[]>([]);
+const whatsappUserRows = ref<SummaryRow[]>([]);
+const whatsappUserTemplateRows = ref<SummaryRow[]>([]);
 const loading = ref(false);
 const error = ref("");
 let requestId = 0;
@@ -55,6 +67,7 @@ const cards = computed<SummaryConfig[]>(() => [
     dimension: "group",
     icon: "mdi-map-marker-radius-outline",
     accent: "zone",
+    showAmount: true,
     rows: zoneRows.value,
   },
   {
@@ -63,7 +76,46 @@ const cards = computed<SummaryConfig[]>(() => [
     dimension: "createdBy",
     icon: "mdi-account-heart-outline",
     accent: "user",
+    showAmount: true,
     rows: userRows.value,
+  },
+  {
+    title: "Intentos por usuario",
+    label: "Usuario",
+    dimension: "user",
+    icon: "mdi-phone-outgoing-outline",
+    accent: "attempts",
+    showAmount: false,
+    rows: attemptUserRows.value,
+  },
+  {
+    title: "Intentos por usuario y resultado",
+    label: "Usuario",
+    secondaryLabel: "Resultado",
+    dimension: "userResult",
+    icon: "mdi-chart-bar-stacked",
+    accent: "results",
+    showAmount: false,
+    rows: attemptUserResultRows.value,
+  },
+  {
+    title: "Whatsapps enviados por usuario",
+    label: "Usuario",
+    dimension: "whatsappUser",
+    icon: "mdi-whatsapp",
+    accent: "whatsapp",
+    showAmount: false,
+    rows: whatsappUserRows.value,
+  },
+  {
+    title: "Whatsapps enviados por usuario y template",
+    label: "Usuario",
+    secondaryLabel: "Template",
+    dimension: "whatsappUserTemplate",
+    icon: "mdi-message-text-outline",
+    accent: "templates",
+    showAmount: false,
+    rows: whatsappUserTemplateRows.value,
   },
 ]);
 
@@ -105,7 +157,37 @@ function getDisplayValue(value: unknown): string {
   return String(value);
 }
 
-function toSummaryRows(rows: GroupByRow[], dimension: "group" | "createdBy"): SummaryRow[] {
+function getStartOfDay(value: Date): Date {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function getNextDay(value: Date): Date {
+  const date = getStartOfDay(value);
+  date.setDate(date.getDate() + 1);
+  return date;
+}
+
+function normalizeDateFilters(filters: IDraxFieldFilter[] = [], dateField = "date"): IDraxFieldFilter[] {
+  return filters.flatMap(filter => {
+    if (filter.field !== "date" || filter.operator !== "eq" || !filter.value) {
+      return [{...filter, field: filter.field === "date" ? dateField : filter.field}];
+    }
+
+    const date = new Date(filter.value);
+    if (Number.isNaN(date.getTime())) {
+      return [{...filter, field: dateField}];
+    }
+
+    return [
+      {field: dateField, operator: "gte", value: getStartOfDay(date)},
+      {field: dateField, operator: "lt", value: getNextDay(date)},
+    ];
+  });
+}
+
+function toSummaryRows(rows: GroupByRow[], dimension: "group" | "createdBy" | "user"): SummaryRow[] {
   const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
 
   return rows.map(row => {
@@ -114,6 +196,38 @@ function toSummaryRows(rows: GroupByRow[], dimension: "group" | "createdBy"): Su
     return {
       label: getDisplayValue(row[dimension]),
       amount: parseAmount(row.amount),
+      count,
+      percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
+    };
+  });
+}
+
+function toUserResultSummaryRows(rows: GroupByRow[]): SummaryRow[] {
+  const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
+
+  return rows.map(row => {
+    const count = Number(row.count ?? 0);
+
+    return {
+      label: getDisplayValue(row.user),
+      secondaryLabel: row.result ? String(row.result) : "Sin resultado",
+      amount: 0,
+      count,
+      percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
+    };
+  });
+}
+
+function toUserTemplateSummaryRows(rows: GroupByRow[]): SummaryRow[] {
+  const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
+
+  return rows.map(row => {
+    const count = Number(row.count ?? 0);
+
+    return {
+      label: getDisplayValue(row.user),
+      secondaryLabel: row.template ? String(row.template) : "Sin template",
+      amount: 0,
       count,
       percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
     };
@@ -134,14 +248,39 @@ async function fetchDashboardData() {
   error.value = "";
 
   try {
-    const [zoneData, userData] = await Promise.all([
+    const filters = normalizeDateFilters(props.filters ?? []);
+    const whatsappFilters = normalizeDateFilters(props.filters ?? [], "sentAt");
+    const [
+      zoneData,
+      userData,
+      attemptUserData,
+      attemptUserResultData,
+      whatsappUserData,
+      whatsappUserTemplateData,
+    ] = await Promise.all([
       CovenantProvider.instance.groupBy({
         fields: ["group", "amount"],
-        filters: props.filters ?? [],
+        filters,
       }),
       CovenantProvider.instance.groupBy({
         fields: ["createdBy", "amount"],
-        filters: props.filters ?? [],
+        filters,
+      }),
+      CallAttemptProvider.instance.groupBy({
+        fields: ["user"],
+        filters,
+      }),
+      CallAttemptProvider.instance.groupBy({
+        fields: ["user", "result"],
+        filters,
+      }),
+      WhatsappMessageProvider.instance.groupBy({
+        fields: ["user"],
+        filters: whatsappFilters,
+      }),
+      WhatsappMessageProvider.instance.groupBy({
+        fields: ["user", "template"],
+        filters: whatsappFilters,
       }),
     ]);
 
@@ -149,12 +288,20 @@ async function fetchDashboardData() {
 
     zoneRows.value = toSummaryRows(zoneData as GroupByRow[], "group");
     userRows.value = toSummaryRows(userData as GroupByRow[], "createdBy");
+    attemptUserRows.value = toSummaryRows(attemptUserData as GroupByRow[], "user");
+    attemptUserResultRows.value = toUserResultSummaryRows(attemptUserResultData as GroupByRow[]);
+    whatsappUserRows.value = toSummaryRows(whatsappUserData as GroupByRow[], "user");
+    whatsappUserTemplateRows.value = toUserTemplateSummaryRows(whatsappUserTemplateData as GroupByRow[]);
   } catch (fetchError) {
     if (currentRequestId !== requestId) return;
 
     console.error("Error loading covenant dashboard", fetchError);
     zoneRows.value = [];
     userRows.value = [];
+    attemptUserRows.value = [];
+    attemptUserResultRows.value = [];
+    whatsappUserRows.value = [];
+    whatsappUserTemplateRows.value = [];
     error.value = "No se pudo cargar el resumen de cobranzas.";
   } finally {
     if (currentRequestId === requestId) {
@@ -214,6 +361,7 @@ watch(
 
             <div class="custom-dashboard__metrics">
               <v-chip
+                v-if="card.showAmount"
                 class="custom-dashboard__metric"
                 size="small"
                 variant="flat"
@@ -249,8 +397,19 @@ watch(
             <thead>
               <tr>
                 <th class="text-left">{{ card.label }}</th>
-                <th class="text-right">Monto</th>
-                <th class="text-right">Items</th>
+                <th
+                  v-if="card.secondaryLabel"
+                  class="text-left"
+                >
+                  {{ card.secondaryLabel }}
+                </th>
+                <th
+                  v-if="card.showAmount"
+                  class="text-right"
+                >
+                  Monto
+                </th>
+                <th class="text-right">Cantidad</th>
                 <th class="text-right">%</th>
               </tr>
             </thead>
@@ -258,7 +417,7 @@ watch(
               <tr v-if="!loading && card.rows.length === 0">
                 <td
                   class="text-center text-medium-emphasis"
-                  colspan="4"
+                  :colspan="card.showAmount ? 4 : card.secondaryLabel ? 4 : 3"
                 >
                   No hay datos para la fecha seleccionada
                 </td>
@@ -279,7 +438,18 @@ watch(
                     </div>
                   </div>
                 </td>
-                <td class="text-right custom-dashboard__amount">{{ formatCurrency(row.amount) }}</td>
+                <td
+                  v-if="card.secondaryLabel"
+                  class="custom-dashboard__result"
+                >
+                  {{ row.secondaryLabel }}
+                </td>
+                <td
+                  v-if="card.showAmount"
+                  class="text-right custom-dashboard__amount"
+                >
+                  {{ formatCurrency(row.amount) }}
+                </td>
                 <td class="text-right">{{ formatNumber(row.count) }}</td>
                 <td class="text-right">
                   <v-chip
@@ -297,7 +467,13 @@ watch(
                 <td>
                   <span class="custom-dashboard__total-label">Total</span>
                 </td>
-                <td class="text-right">{{ formatCurrency(getTotalAmount(card.rows)) }}</td>
+                <td v-if="card.secondaryLabel"></td>
+                <td
+                  v-if="card.showAmount"
+                  class="text-right"
+                >
+                  {{ formatCurrency(getTotalAmount(card.rows)) }}
+                </td>
                 <td class="text-right">{{ formatNumber(getTotalCount(card.rows)) }}</td>
                 <td class="text-right">{{ card.rows.length ? "100,0%" : "0,0%" }}</td>
               </tr>
@@ -342,6 +518,30 @@ watch(
   --dashboard-accent: #d81b60;
   --dashboard-accent-soft: #fce4ec;
   --dashboard-accent-text: #ad1457;
+}
+
+.custom-dashboard__card--attempts {
+  --dashboard-accent: #1976d2;
+  --dashboard-accent-soft: #e3f2fd;
+  --dashboard-accent-text: #0d47a1;
+}
+
+.custom-dashboard__card--results {
+  --dashboard-accent: #6d4c41;
+  --dashboard-accent-soft: #efebe9;
+  --dashboard-accent-text: #4e342e;
+}
+
+.custom-dashboard__card--whatsapp {
+  --dashboard-accent: #2e7d32;
+  --dashboard-accent-soft: #e8f5e9;
+  --dashboard-accent-text: #1b5e20;
+}
+
+.custom-dashboard__card--templates {
+  --dashboard-accent: #5e35b1;
+  --dashboard-accent-soft: #ede7f6;
+  --dashboard-accent-text: #4527a0;
 }
 
 .custom-dashboard__header {
@@ -473,6 +673,11 @@ watch(
 .custom-dashboard__amount {
   color: var(--dashboard-accent-text);
   font-weight: 700;
+}
+
+.custom-dashboard__result {
+  color: rgba(var(--v-theme-on-surface), .72);
+  font-weight: 600;
 }
 
 .custom-dashboard__percentage {

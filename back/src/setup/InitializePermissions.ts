@@ -16,6 +16,7 @@ import { BasePermissions } from "../modules/base/permissions/BasePermissions.js"
 import { NotificationPermissions } from "../modules/base/permissions/NotificationPermissions.js";
 import { PadronPermissions } from "../modules/afilmed/permissions/PadronPermissions.js";
 import { CallFailedTypePermissions } from "../modules/caller/permissions/CallFailedTypePermissions.js";
+import { CallAttemptPermissions } from "../modules/caller/permissions/CallAttemptPermissions.js";
 import { CallListPermissions } from "../modules/caller/permissions/CallListPermissions.js";
 import { CallLogPermissions } from "../modules/caller/permissions/CallLogPermissions.js";
 import { MultichannelPermissions } from "../modules/caller/permissions/MultichannelPermissions.js";
@@ -54,6 +55,7 @@ function InitializePermissions() {
         ...Object.values(NotificationPermissions),
         ...Object.values(PadronPermissions),
         ...Object.values(CallFailedTypePermissions),
+        ...Object.values(CallAttemptPermissions),
         ...Object.values(CallListPermissions),
         ...Object.values(CallLogPermissions),
         ...Object.values(MultichannelPermissions),
