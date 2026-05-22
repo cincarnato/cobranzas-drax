@@ -38,6 +38,10 @@ const props = defineProps<{
   filters?: IDraxFieldFilter[]
 }>();
 
+const emit = defineEmits<{
+  (event: "loading-change", value: boolean): void
+}>();
+
 const zoneRows = ref<SummaryRow[]>([]);
 const userRows = ref<SummaryRow[]>([]);
 const attemptUserRows = ref<SummaryRow[]>([]);
@@ -245,6 +249,7 @@ function getTotalCount(rows: SummaryRow[]): number {
 async function fetchDashboardData() {
   const currentRequestId = ++requestId;
   loading.value = true;
+  emit("loading-change", true);
   error.value = "";
 
   try {
@@ -306,6 +311,7 @@ async function fetchDashboardData() {
   } finally {
     if (currentRequestId === requestId) {
       loading.value = false;
+      emit("loading-change", false);
     }
   }
 }
@@ -317,23 +323,14 @@ watch(
   },
   {deep: true, immediate: true},
 );
+
+defineExpose({
+  refresh: fetchDashboardData,
+});
 </script>
 
 <template>
   <div class="custom-dashboard">
-    <div class="custom-dashboard__actions">
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-refresh"
-        variant="tonal"
-        :loading="loading"
-        :disabled="loading"
-        @click="fetchDashboardData"
-      >
-        Actualizar
-      </v-btn>
-    </div>
-
     <v-alert
       v-if="error"
       class="mb-4"
@@ -501,12 +498,6 @@ watch(
 <style scoped>
 .custom-dashboard {
   width: 100%;
-}
-
-.custom-dashboard__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
 }
 
 .custom-dashboard__cards {
