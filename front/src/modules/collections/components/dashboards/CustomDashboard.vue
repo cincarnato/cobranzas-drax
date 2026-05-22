@@ -321,6 +321,19 @@ watch(
 
 <template>
   <div class="custom-dashboard">
+    <div class="custom-dashboard__actions">
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-refresh"
+        variant="tonal"
+        :loading="loading"
+        :disabled="loading"
+        @click="fetchDashboardData"
+      >
+        Actualizar
+      </v-btn>
+    </div>
+
     <v-alert
       v-if="error"
       class="mb-4"
@@ -488,6 +501,12 @@ watch(
 <style scoped>
 .custom-dashboard {
   width: 100%;
+}
+
+.custom-dashboard__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .custom-dashboard__cards {
