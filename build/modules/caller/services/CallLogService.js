@@ -1,6 +1,7 @@
 import { AbstractService } from "@drax/crud-back";
 import { BadRequestError, NotFoundError } from "@drax/common-back";
 import CallListServiceFactory from "../factory/services/CallListServiceFactory.js";
+import CallAttemptServiceFactory from "../factory/services/CallAttemptServiceFactory.js";
 import ExcelJS from "exceljs";
 class CallLogService extends AbstractService {
     constructor(CallLogRepository, baseSchema, fullSchema) {
@@ -55,7 +56,7 @@ class CallLogService extends AbstractService {
         }
         return pagination;
     }
-    async registerAttempt(id, payload) {
+    async registerAttempt(id, payload, userId) {
         const currentCallLog = await this.findById(id);
         if (!currentCallLog) {
             throw new NotFoundError();
@@ -118,6 +119,14 @@ class CallLogService extends AbstractService {
             failed: Math.max((currentCallList.failed ?? 0) + stateCounterDeltas.failed, 0),
             success: Math.max((currentCallList.success ?? 0) + stateCounterDeltas.success, 0),
             promises: Math.max((currentCallList.promises ?? 0) + stateCounterDeltas.promises, 0)
+        });
+        await CallAttemptServiceFactory.instance.create({
+            date: new Date(),
+            user: userId,
+            result: state ?? 'sin_resultado',
+            callListName: currentCallList.name,
+            callLogId: id,
+            callLog: id
         });
         return updatedCallLog;
     }
