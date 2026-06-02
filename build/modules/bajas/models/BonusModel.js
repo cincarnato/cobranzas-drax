@@ -8,6 +8,7 @@ const BonusSchema = new mongoose.Schema({
     appliedMonth: { type: String, required: true, index: false, unique: false },
     paymentMethod: { type: String, required: true, index: false, unique: false },
     bonus: { type: String, required: true, index: false, unique: false },
+    period: { type: String, enum: ['1 Mes', '2 Meses', '3 Meses', '4 Meses', '5 Meses', '6 Meses'], required: false, index: false, unique: false },
     bonifiedNetValue: { type: Number, required: true, index: false, unique: false },
     status: { type: String, enum: ['Pendiente', 'Aplicado', 'No aplicado'], required: true, index: false, unique: false },
     observation: { type: String, required: false, index: false, unique: false },
