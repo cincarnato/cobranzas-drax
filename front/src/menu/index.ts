@@ -152,14 +152,14 @@ const menu: MenuItem[] = [
     gallery: true,
     children: [
       {
-        icon: 'mdi-email-cog-outline',
+        icon: 'mdi-card-account-mail',
         text: 'mailbox.menu',
         link: { name: "MailboxCrudPage" },
         gallery: true,
         permission: 'mailbox:manage'
       },
       {
-        icon: 'mdi-email-receive-outline',
+        icon: 'mdi-email-arrow-left-outline',
         text: 'inboundemail.menu',
         link: { name: "InboundEmailCrudPage" },
         gallery: true,

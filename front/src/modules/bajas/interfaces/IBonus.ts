@@ -6,6 +6,7 @@ interface IBonusBase {
     appliedMonth: string
     paymentMethod: string
     bonus: string
+    period: string
     bonifiedNetValue: number
     status: string
     observation?: string
@@ -22,6 +23,7 @@ interface IBonus {
     appliedMonth: string
     paymentMethod: string
     bonus: string
+    period?: string
     bonifiedNetValue: number
     status: string
     observation?: string

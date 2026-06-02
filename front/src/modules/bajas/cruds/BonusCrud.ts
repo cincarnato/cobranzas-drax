@@ -53,6 +53,7 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
       {title: 'appliedMonth', key: 'appliedMonth', align: 'start'},
       {title: 'paymentMethod', key: 'paymentMethod', align: 'start'},
       {title: 'bonus', key: 'bonus', align: 'start'},
+      {title: 'period', key: 'period', align: 'start'},
       {title: 'bonifiedNetValue', key: 'bonifiedNetValue', align: 'start'},
       {title: 'observation', key: 'observation', align: 'start'}
     ]
@@ -93,6 +94,7 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
       appliedMonth: [(v: any) => !!v || 'validation.required'],
       paymentMethod: [(v: any) => !!v || 'validation.required'],
       bonus: [(v: any) => !!v || 'validation.required'],
+      period: [(v: any) => !!v || 'validation.required'],
       bonifiedNetValue: [(v: any) => !!v || 'validation.required'],
       status: [(v: any) => !!v || 'validation.required'],
       observation: [
@@ -106,11 +108,47 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
 
       {name: 'dni', type: 'string', label: 'dni', default: '', md: 6},
       {name: 'fullname', type: 'string', label: 'fullname', default: '', md: 6},
-      {name: 'plan', type: 'string', label: 'plan', default: '', md: 4},
-      {name: 'appliedMonth', type: 'string', label: 'appliedMonth', default: '', md: 4},
-      {name: 'paymentMethod', type: 'string', label: 'paymentMethod', default: '', md: 4},
-      {name: 'bonus', type: 'string', label: 'bonus', default: '', md: 6},
-      {name: 'bonifiedNetValue', type: 'number', label: 'bonifiedNetValue', default: null, md: 6},
+      {name: 'plan', type: 'select', label: 'plan', default: null, md: 4, items: [
+          { title: "100", value: "100" },
+          { title: "200", value: "200" },
+          { title: "300", value: "300" },
+          { title: "400", value: "400" },
+          { title: "500", value: "500" },
+          { title: "Plan Simple", value: "Plan Simple" },
+          { title: "Plan Bronce", value: "Plan Bronce" },
+          { title: "Plan Plata", value: "Plan Plata" }
+        ]
+      },
+      {name: 'appliedMonth', type: 'select', label: 'appliedMonth', default: null, md: 4, items: [
+          { title: "Enero", value: "Enero" },
+          { title: "Febrero", value: "Febrero" },
+          { title: "Marzo", value: "Marzo" },
+          { title: "Abril", value: "Abril" },
+          { title: "Mayo", value: "Mayo" },
+          { title: "Junio", value: "Junio" },
+          { title: "Julio", value: "Julio" },
+          { title: "Agosto", value: "Agosto" },
+          { title: "Septiembre", value: "Septiembre" },
+          { title: "Octubre", value: "Octubre" },
+          { title: "Noviembre", value: "Noviembre" },
+          { title: "Diciembre", value: "Diciembre" }
+        ]
+      },
+      {name: 'paymentMethod', type: 'select', label: 'paymentMethod', default: null, md: 4, items: [
+          { title: "Cobrador", value: "Cobrador" },
+          { title: "Débito Automático", value: "Débito Automático" }
+        ]
+      },
+      {name: 'bonus', type: 'string', label: 'bonus', default: '', md: 4},
+      {
+        name: 'period',
+        type: 'enum',
+        label: 'period',
+        default: null,
+        md: 4,
+        enum: ['1 Mes', '2 Meses', '3 Meses', '4 Meses', '5 Meses', '6 Meses']
+      },
+      {name: 'bonifiedNetValue', type: 'number', label: 'bonifiedNetValue', default: null, md: 4},
       {
         name: 'status',
         type: 'enum',

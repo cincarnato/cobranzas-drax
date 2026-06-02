@@ -1,7 +1,7 @@
 
 const messages = {
   en: {
-  
+
     bonus: {
           entity: 'Bonus',
           menu: 'Bonuses',
@@ -14,7 +14,8 @@ const messages = {
            plan:'Plan',
            appliedMonth:'Applies month',
            paymentMethod:'Payment method',
-           bonus:'Bonus',
+           bonus:'Bonus (%)',
+           period:'Period',
            bonifiedNetValue:'Bonified net value',
            status:'Status',
            observation:'Observation',
@@ -44,7 +45,8 @@ const messages = {
            plan:'Plan',
            appliedMonth:'Aplica (mes)',
            paymentMethod:'Forma de pago',
-           bonus:'Bonificacion',
+           bonus:'Bonificacion (%)',
+           period:'Periodo',
            bonifiedNetValue:'Valor neto bonificado',
            status:'Estado',
            observation:'Observacion',
@@ -63,4 +65,4 @@ const messages = {
   }
 }
 
-export default messages;  
+export default messages;
