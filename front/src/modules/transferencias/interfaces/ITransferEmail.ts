@@ -18,6 +18,8 @@ interface ITransferEmailBase {
     affiliateName?: string
     affiliateEmail?: string
     affiliateDocumentNumber?: string
+    month?: string
+    observations?: string
     needsHumanReview?: boolean
     createdAt?: Date
     updatedAt?: Date
@@ -43,6 +45,8 @@ interface ITransferEmail {
     affiliateName?: string
     affiliateEmail?: string
     affiliateDocumentNumber?: string
+    month?: string
+    observations?: string
     needsHumanReview?: boolean
     createdAt?: Date
     updatedAt?: Date

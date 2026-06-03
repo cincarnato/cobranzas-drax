@@ -24,6 +24,8 @@ const messages = {
         affiliateName: 'Affiliate Name',
         affiliateEmail: 'Affiliate Email',
         affiliateDocumentNumber: 'Affiliate Document Number',
+        month: 'Month',
+        observations: 'Observations',
         needsHumanReview: 'Needs Human Review'
       }
     },
@@ -59,6 +61,8 @@ const messages = {
         affiliateName: 'Nombre del afiliado',
         affiliateEmail: 'Email del afiliado',
         affiliateDocumentNumber: 'Documento del afiliado',
+        month: 'Mes',
+        observations: 'Observaciones',
         needsHumanReview: 'Requiere revisión humana'
       }
     },

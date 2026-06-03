@@ -24,6 +24,8 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
             affiliateName: {type: String,   required: false, index: false, unique: false },
             affiliateEmail: {type: String,   required: false, index: false, unique: false },
             affiliateDocumentNumber: {type: String,   required: false, index: false, unique: false },
+            month: {type: String,   required: false, index: true, unique: false },
+            observations: {type: String,   required: false, index: false, unique: false },
             needsHumanReview: {type: Boolean,   required: false, index: false, unique: false }
 }, {timestamps: true});
 

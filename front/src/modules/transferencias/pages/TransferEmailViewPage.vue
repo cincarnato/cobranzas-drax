@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from "vue";
 import {useRoute} from "vue-router";
-import TransferEmailView from "@/modules/transferencias/components/TransferEmailView.vue";
+import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
 import type {ITransferEmail} from "@/modules/transferencias/interfaces/ITransferEmail";
 import TransferEmailProvider from "../providers/TransferEmailProvider";
 
@@ -57,7 +57,7 @@ async function fetchTransferEmail() {
     </v-alert>
 
     <template v-else-if="transferEmail">
-      <TransferEmailView :transfer-email="transferEmail" />
+      <TransferEmail :transfer-email="transferEmail" readonly />
     </template>
 
     <v-skeleton-loader

@@ -21,6 +21,8 @@ const TransferEmailBaseSchema = z.object({
     affiliateName: z.string().optional(),
     affiliateEmail: z.string().optional(),
     affiliateDocumentNumber: z.string().optional(),
+    month: z.string().optional(),
+    observations: z.string().optional(),
     needsHumanReview: z.boolean().optional()
 });
 

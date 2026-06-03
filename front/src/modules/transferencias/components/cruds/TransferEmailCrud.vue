@@ -3,7 +3,7 @@
 import TransferEmailCrud from '../../cruds/TransferEmailCrud'
 import {Crud} from "@drax/crud-vue";
 import {formatDate} from "@drax/common-front"
-import TransferEmailView from "@/modules/transferencias/components/TransferEmailView.vue";
+import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
 
 </script>
 
@@ -13,7 +13,11 @@ import TransferEmailView from "@/modules/transferencias/components/TransferEmail
     <template v-slot:item.transferDate="{value}">{{formatDate(value)}}</template>
 
     <template v-slot:form="{form, operation}">
-      <transfer-email-view v-if="operation === 'view'" :transfer-email="form"></transfer-email-view>
+      <transfer-email
+        v-if="operation === 'view' || operation === 'edit'"
+        :transfer-email="form"
+        :readonly="operation === 'view'"
+      />
     </template>
 
   </crud>
@@ -22,4 +26,3 @@ import TransferEmailView from "@/modules/transferencias/components/TransferEmail
 <style scoped>
 
 </style>
-

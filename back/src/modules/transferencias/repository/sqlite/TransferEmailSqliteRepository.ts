@@ -37,6 +37,8 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
 {name: "affiliateName", type: "TEXT", unique: undefined, primary: false},
 {name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false},
 {name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false},
+{name: "month", type: "TEXT", unique: undefined, primary: false},
+{name: "observations", type: "TEXT", unique: undefined, primary: false},
 {name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false}
     ]
   

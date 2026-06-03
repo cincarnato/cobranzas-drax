@@ -5,10 +5,11 @@ import type{
   IEntityCrud,
   IEntityCrudField,
   IEntityCrudFilter,
-  IEntityCrudHeader, 
+  IEntityCrudHeader,
   IEntityCrudPermissions,
   IEntityCrudRefs,
-  IEntityCrudRules
+  IEntityCrudRules,
+  IEntityCrudOperation
 } from "@drax/crud-share";
 import TransferEmailProvider from "../providers/TransferEmailProvider";
 
@@ -23,7 +24,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
     super();
     this.name = 'TransferEmail'
   }
-  
+
   static get instance(): TransferEmailCrud {
     if(!TransferEmailCrud.singleton){
       TransferEmailCrud.singleton = new TransferEmailCrud()
@@ -33,10 +34,10 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get permissions(): IEntityCrudPermissions{
     return {
-      manage: 'transferemail:manage', 
-      view: 'transferemail:view', 
-      create: 'transferemail:create', 
-      update: 'transferemail:update', 
+      manage: 'transferemail:manage',
+      view: 'transferemail:view',
+      create: 'transferemail:create',
+      update: 'transferemail:update',
       delete: 'transferemail:delete'
     }
   }
@@ -46,16 +47,17 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
         {title: 'isTransferProof',key:'isTransferProof', align: 'start'},
 {title: 'amount',key:'amount', align: 'start'},
 {title: 'transferDate',key:'transferDate', align: 'start'},
+{title: 'month',key:'month', align: 'start'},
 {title: 'operationNumber',key:'operationNumber', align: 'start'},
 {title: 'destinationAccount',key:'destinationAccount', align: 'start'},
 {title: 'needsHumanReview',key:'needsHumanReview', align: 'start'}
     ]
   }
-  
+
   get selectedHeaders(): string[] {
     return this.headers.map(header => header.key)
   }
-  
+
   get actionHeaders():IEntityCrudHeader[]{
     return [
       {
@@ -72,16 +74,16 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   get provider(): IDraxCrudProvider<any, any, any>{
     return TransferEmailProvider.instance
   }
-  
+
   get refs(): IEntityCrudRefs{
     return {
-      InboundEmail: InboundEmailCrud.instance 
+      InboundEmail: InboundEmailCrud.instance
     }
   }
 
   get rules():IEntityCrudRules{
     return {
-      
+
     }
   }
 
@@ -105,16 +107,31 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'affiliateName',type:'string',label:'affiliateName',default:''},
 {name:'affiliateEmail',type:'string',label:'affiliateEmail',default:''},
 {name:'affiliateDocumentNumber',type:'string',label:'affiliateDocumentNumber',default:''},
+{name:'month',type:'select',label:'month',default:null,items: [
+  {title: 'Enero', value: 'Enero'},
+  {title: 'Febrero', value: 'Febrero'},
+  {title: 'Marzo', value: 'Marzo'},
+  {title: 'Abril', value: 'Abril'},
+  {title: 'Mayo', value: 'Mayo'},
+  {title: 'Junio', value: 'Junio'},
+  {title: 'Julio', value: 'Julio'},
+  {title: 'Agosto', value: 'Agosto'},
+  {title: 'Septiembre', value: 'Septiembre'},
+  {title: 'Octubre', value: 'Octubre'},
+  {title: 'Noviembre', value: 'Noviembre'},
+  {title: 'Diciembre', value: 'Diciembre'}
+]},
+{name:'observations',type:'longString',label:'observations',default:''},
 {name:'needsHumanReview',type:'boolean',label:'needsHumanReview',default:false}
     ]
   }
-  
+
   get filters():IEntityCrudFilter[]{
     return [
       //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
     ]
   }
-  
+
   get isViewable(){
     return true
   }
@@ -140,13 +157,13 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id']
+    return ['_id','affiliateName','affiliateDocumentNumber', 'amount','currency', 'transferDate', 'month', 'observations']
   }
 
   get isImportable(){
     return false
   }
-  
+
   get isColumnSelectable() {
     return true
   }
@@ -160,21 +177,21 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get dialogFullscreen(){
-    return false
+    return true
   }
-  
+
   get tabs() {
     return [
-     
+
     ]
   }
-  
+
   get menus() {
     return [
-     
+
     ]
   }
-  
+
   get searchEnable() {
     return true
   }
@@ -185,6 +202,10 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get dynamicFiltersEnable(){
     return true
+  }
+
+  get navigationOperations(): IEntityCrudOperation[]{
+    return ["view","edit"]
   }
 
 

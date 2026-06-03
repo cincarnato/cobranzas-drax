@@ -90,10 +90,18 @@ const menu: MenuItem[] = [
     description: 'Carga, seguimiento y exportacion de bonificaciones del sector de bajas',
     gallery: true,
     children: [
+
       {
         icon: 'mdi-ticket-percent-outline',
         text: 'bonus.menu',
         link: { name: "BonusCrudPage" },
+        gallery: true,
+        permission: 'bonus:view'
+      },
+      {
+        icon: 'mdi-view-dashboard-variant-outline',
+        text: 'Dashboard Bonificaciones',
+        link: { name: "BonusDashboardPage" },
         gallery: true,
         permission: 'bonus:view'
       },
