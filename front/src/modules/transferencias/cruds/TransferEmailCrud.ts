@@ -44,13 +44,30 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get headers(): IEntityCrudHeader[] {
     return [
-        {title: 'isTransferProof',key:'isTransferProof', align: 'start'},
-{title: 'amount',key:'amount', align: 'start'},
-{title: 'transferDate',key:'transferDate', align: 'start'},
-{title: 'month',key:'month', align: 'start'},
-{title: 'operationNumber',key:'operationNumber', align: 'start'},
-{title: 'destinationAccount',key:'destinationAccount', align: 'start'},
-{title: 'needsHumanReview',key:'needsHumanReview', align: 'start'}
+      {title: '_id', key: '_id', align: 'start'},
+      {title: 'inboundEmail', key: 'inboundEmail', align: 'start'},
+      {title: 'isTransferProof', key: 'isTransferProof', align: 'start'},
+      {title: 'amount', key: 'amount', align: 'end'},
+      {title: 'currency', key: 'currency', align: 'start'},
+      {title: 'transferDate', key: 'transferDate', align: 'start'},
+      {title: 'operationNumber', key: 'operationNumber', align: 'start'},
+      {title: 'concept', key: 'concept', align: 'start'},
+      {title: 'originAccount', key: 'originAccount', align: 'start'},
+      {title: 'originCbu', key: 'originCbu', align: 'start'},
+      {title: 'originAlias', key: 'originAlias', align: 'start'},
+      {title: 'originBank', key: 'originBank', align: 'start'},
+      {title: 'destinationAccount', key: 'destinationAccount', align: 'start'},
+      {title: 'destinationCbu', key: 'destinationCbu', align: 'start'},
+      {title: 'destinationAlias', key: 'destinationAlias', align: 'start'},
+      {title: 'destinationBank', key: 'destinationBank', align: 'start'},
+      {title: 'affiliateName', key: 'affiliateName', align: 'start'},
+      {title: 'affiliateEmail', key: 'affiliateEmail', align: 'start'},
+      {title: 'affiliateDocumentNumber', key: 'affiliateDocumentNumber', align: 'start'},
+      {title: 'month', key: 'month', align: 'start'},
+      {title: 'observations', key: 'observations', align: 'start'},
+      {title: 'needsHumanReview', key: 'needsHumanReview', align: 'start'},
+      {title: 'createdAt', key: 'createdAt', align: 'start'},
+      {title: 'updatedAt', key: 'updatedAt', align: 'start'}
     ]
   }
 

@@ -29,7 +29,9 @@ const TransferEmailBaseSchema = z.object({
 const TransferEmailSchema = TransferEmailBaseSchema
     .extend({
       _id: z.coerce.string(),
-       inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}).nullable().optional()
+       inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}).nullable().optional(),
+        createdAt: z.coerce.date(),
+        updatedAt: z.coerce.date(),
     })
 
 export default TransferEmailSchema;

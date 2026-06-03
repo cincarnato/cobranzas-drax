@@ -419,10 +419,9 @@ const valueOrDash = (value?: string | number | null) => {
 
 <style scoped>
 .transfer-email-layout {
-  --transfer-border: #252525;
-  --transfer-paper: #fffefb;
-  --transfer-muted: #6f6a62;
-  color: #1f1f1f;
+  --transfer-border: rgba(var(--v-theme-on-surface), 0.42);
+  --transfer-muted: rgba(var(--v-theme-on-surface), 0.68);
+  --transfer-preview-surface: rgb(var(--v-theme-surface-variant));
 }
 
 .transfer-email-grid {
@@ -438,7 +437,6 @@ const valueOrDash = (value?: string | number | null) => {
 }
 
 .sketch-card {
-  background: var(--transfer-paper);
   border: 2px solid var(--transfer-border);
   border-radius: 24px;
   box-shadow: none;
@@ -462,10 +460,10 @@ const valueOrDash = (value?: string | number | null) => {
 .summary-title {
   display: inline-block;
   padding: 2px 8px 2px 10px;
-  border-left: 4px solid #2563eb;
+  border-left: 4px solid rgb(var(--v-theme-primary));
   border-radius: 6px;
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0));
-  color: #15366f;
+  background: linear-gradient(90deg, rgba(var(--v-theme-primary), 0.12), rgba(var(--v-theme-primary), 0));
+  color: rgb(var(--v-theme-primary));
 }
 
 .summary-block p {
@@ -477,7 +475,7 @@ const valueOrDash = (value?: string | number | null) => {
 }
 
 .summary-separator {
-  border-top: 1px solid #d1d5db;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.18);
   margin: 10px 0;
 }
 
@@ -491,18 +489,12 @@ const valueOrDash = (value?: string | number | null) => {
 }
 
 .metadata-save-state--error {
-  color: #b91c1c;
-}
-
-.sketch-input :deep(.v-field) {
-  background: var(--transfer-paper);
-  border-radius: 16px;
+  color: rgb(var(--v-theme-error));
 }
 
 .sketch-input :deep(.v-field__outline) {
   --v-field-border-width: 2px;
-  --v-field-border-opacity: 1;
-  color: var(--transfer-border);
+  --v-field-border-opacity: 0.42;
 }
 
 .observations-input :deep(textarea) {
@@ -544,8 +536,8 @@ const valueOrDash = (value?: string | number | null) => {
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #fff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  background: var(--transfer-preview-surface);
 }
 
 .proof-image {
@@ -565,8 +557,8 @@ const valueOrDash = (value?: string | number | null) => {
   min-height: 535px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #fff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  background: var(--transfer-preview-surface);
 }
 
 .proof-pdf-frame {
@@ -582,12 +574,12 @@ const valueOrDash = (value?: string | number | null) => {
   bottom: 10px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #1f1f1f;
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
   font-size: 0.78rem;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 8px rgba(var(--v-theme-on-surface), 0.18);
 }
 
 .proof-preview :deep(.drax-image-preview) {
