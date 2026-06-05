@@ -145,7 +145,10 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get filters():IEntityCrudFilter[]{
     return [
-      //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
+      {name: 'transferDate', type: 'date', label: 'Fecha mayor a', default: '', operator: 'gte' },
+      {name: 'transferDate', type: 'date', label: 'Fecha menor a', default: '', operator: 'lte' },
+      {name: 'affiliateName', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
+      {name: 'affiliateDocumentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'eq' },
     ]
   }
 

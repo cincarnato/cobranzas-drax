@@ -1,9 +1,23 @@
 
 <script setup lang="ts">
+import {computed} from 'vue'
 import TransferEmailCrud from '../../cruds/TransferEmailCrud'
-import {Crud} from "@drax/crud-vue";
+import {Crud, useCrudStore} from "@drax/crud-vue";
 import {formatDate} from "@drax/common-front"
 import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
+import TransferEmailProvider from "../../providers/TransferEmailProvider";
+import type {IDraxFieldFilter} from "@drax/crud-share";
+
+const transferEmailEntity = TransferEmailCrud.instance
+const crudStore = useCrudStore(transferEmailEntity.name)
+const exportExcelLoading = computed({
+  get() {
+    return crudStore.exportLoading
+  },
+  set(value: boolean) {
+    crudStore.setExportLoading(value)
+  }
+})
 
 const formatCurrency = (value?: number | null) => {
   if (value === null || value === undefined) {
@@ -17,10 +31,108 @@ const formatCurrency = (value?: number | null) => {
   }).format(Number(value))
 }
 
+function expandRangeFilters(filters: Array<any>): IDraxFieldFilter[] {
+  return filters.flatMap((filter) => {
+    if (filter.operator !== 'range') {
+      return [{
+        field: 'field' in filter ? filter.field : filter.name,
+        operator: filter.operator || 'eq',
+        value: filter.value
+      }]
+    }
+
+    const value = filter.value && typeof filter.value === 'object' && !Array.isArray(filter.value)
+      ? filter.value
+      : {from: null, to: null}
+    const field = 'field' in filter ? filter.field : filter.name
+    const expandedFilters: IDraxFieldFilter[] = []
+
+    if (value.from !== null && value.from !== undefined && value.from !== '') {
+      expandedFilters.push({field, operator: 'gte', value: value.from})
+    }
+
+    if (value.to !== null && value.to !== undefined && value.to !== '') {
+      expandedFilters.push({field, operator: 'lte', value: value.to})
+    }
+
+    return expandedFilters
+  })
+}
+
+function resolveFileName(response: Response) {
+  const contentDisposition = response.headers.get('content-disposition') ?? ''
+  const match = contentDisposition.match(/filename=\"?([^"]+)\"?/)
+  return match?.[1] ?? `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
+}
+
+async function exportExcel() {
+  exportExcelLoading.value = true
+  crudStore.setExportError(false)
+
+  try {
+    const filters = [
+      ...expandRangeFilters(crudStore.filters),
+      ...expandRangeFilters(crudStore.dynamicFilters)
+    ]
+
+    const response = await TransferEmailProvider.instance.exportExcel({
+      orderBy: crudStore.sortBy[0]?.key,
+      order: crudStore.sortBy[0]?.order,
+      search: crudStore.search,
+      filters,
+      limit: 100000
+    })
+
+    if (!response.ok) {
+      let message = 'No se pudo exportar el archivo.'
+
+      try {
+        const body = await response.json()
+        message = body?.message ?? message
+      } catch {
+        // ignore invalid json error bodies
+      }
+
+      throw new Error(message)
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = resolveFileName(response)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(downloadUrl)
+
+    crudStore.showMessage('El archivo Excel se genero correctamente.')
+  } catch (e: any) {
+    crudStore.setExportError(true)
+    crudStore.setError(e?.message ?? 'Ocurrio un error al exportar.')
+  } finally {
+    exportExcelLoading.value = false
+  }
+}
+
 </script>
 
 <template>
-  <crud :entity="TransferEmailCrud.instance">
+  <crud :entity="transferEmailEntity">
+    <template v-slot:toolbar>
+      <v-tooltip text="Exportar Excel segun filtros actuales" location="top">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="mdi-file-excel-outline"
+            :loading="exportExcelLoading"
+            :disabled="exportExcelLoading"
+            @click="exportExcel"
+          />
+        </template>
+      </v-tooltip>
+    </template>
+
     <template v-slot:item.inboundEmail="{value}">
       <span class="muted-cell">{{ value?.messageId || '-' }}</span>
     </template>
@@ -68,7 +180,7 @@ const formatCurrency = (value?: number | null) => {
     </template>
 
     <template v-slot:item.affiliateDocumentNumber="{value}">
-      <v-chip color="cyan" variant="tonal" size="small" prepend-icon="mdi-card-account-details-outline">
+      <v-chip color="cyan" variant="tonal"  >
         {{ value || '-' }}
       </v-chip>
     </template>

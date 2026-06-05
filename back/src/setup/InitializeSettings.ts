@@ -16,6 +16,26 @@ async function InitializeSettings() {
         permission: null
     })
 
+    await settingService.createOrUpdate({
+        category: 'Correo',
+        key: 'MailboxAutoSync',
+        value: 'false',
+        label: 'Habilitar sincronización automática correos',
+        type: 'boolean',
+        prefix: '',
+        suffix: ''
+    })
+
+    await settingService.createOrUpdate({
+        category: 'Correo',
+        key: 'MailboxAutoPurge',
+        value: 'false',
+        label: 'Habilitar purgado automático de correos',
+        type: 'boolean',
+        prefix: '',
+        suffix: ''
+    })
+
     // await settingService.createOrUpdate({
     //     category: 'Grupo 1',
     //     key: 'STRING',

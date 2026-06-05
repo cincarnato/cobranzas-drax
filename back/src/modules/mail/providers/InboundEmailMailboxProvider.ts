@@ -12,9 +12,11 @@ import type {IInboundEmail, IInboundEmailBase} from "../interfaces/IInboundEmail
 import AffiliateServiceFactory from "../../premedic/factory/services/AffiliateServiceFactory.js";
 import type AffiliateService from "../../premedic/services/AffiliateService.js";
 import {MediaService} from "@drax/media-back";
+import {SettingServiceFactory} from "@drax/settings-back";
 import {ImapFlow} from "imapflow";
 import {extractTextWithTesseract} from "../tools/TesseractOCR.js";
 import {extractTextFromPdf} from "../tools/PdfTextExtractor.js";
+import {InboundEmailModel} from "../models/InboundEmailModel.js";
 
 
 type ParsedAddress = {
@@ -64,6 +66,31 @@ type SyncAllResult = {
     fetchedEmails: number;
     skippedEmails: number;
     errors: Array<{ mailboxId: string; error: string }>;
+};
+
+type PurgeMailboxResult = {
+    mailboxId: string;
+    retentionDays: number;
+    cutoffDate: Date;
+    deletedEmails: number;
+    deletedAttachments: number;
+    attachmentErrors: number;
+};
+
+type PurgeAllResult = {
+    processedMailboxes: number;
+    deletedEmails: number;
+    deletedAttachments: number;
+    skippedMailboxes: number;
+    attachmentErrors: number;
+    errors: Array<{ mailboxId: string; error: string }>;
+};
+
+type PurgeableInboundEmail = Pick<IInboundEmail, "_id" | "attachments">;
+
+type AttachmentPurgeResult = {
+    deletedAttachments: number;
+    attachmentErrors: number;
 };
 
 type InboundEmailSyncOptions = {
@@ -124,9 +151,12 @@ const inboundEmailAiSchema = z.object({
 type InboundEmailAiExtraction = z.infer<typeof inboundEmailAiSchema>;
 
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
+const DEFAULT_PURGE_INTERVAL_MS = 60 * 60_000;
 const DEFAULT_FETCH_LIMIT = 25;
 const DEFAULT_LOOKBACK_DAYS = 10;
 const DEFAULT_AI_PROVIDER = "OllamaAi";
+const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
+const MAILBOX_AUTO_PURGE_SETTING_KEY = "MailboxAutoPurge";
 
 class InboundEmailMailboxProvider {
     private static singleton: InboundEmailMailboxProvider;
@@ -136,9 +166,12 @@ class InboundEmailMailboxProvider {
     private mediaService: MediaService;
     private aiProvider: IAIProvider;
     private pollTimer?: NodeJS.Timeout;
+    private purgeTimer?: NodeJS.Timeout;
     private syncInProgress = false;
+    private purgeInProgress = false;
     private readonly mailboxRunState = new Map<string, { running: boolean; lastRunAt?: number }>();
     private readonly pollIntervalMs: number;
+    private readonly purgeIntervalMs: number;
     private readonly fetchLimit: number;
 
     constructor() {
@@ -148,6 +181,7 @@ class InboundEmailMailboxProvider {
         this.mediaService = new MediaService();
         this.aiProvider = AiProviderFactory.instance(this.resolveAiProviderName());
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
+        this.purgeIntervalMs = this.readNumberEnv("INBOUND_EMAIL_PURGE_INTERVAL_MS", DEFAULT_PURGE_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
     }
 
@@ -160,21 +194,162 @@ class InboundEmailMailboxProvider {
     }
 
     start(): void {
+        this.startMailboxAutoSyncInterval();
+        this.startRetentionPurgeInterval();
+    }
+
+    stop(): void {
+        this.stopMailboxAutoSyncInterval();
+        this.stopRetentionPurgeInterval();
+    }
+
+    startMailboxAutoSyncInterval(intervalMs = this.pollIntervalMs): void {
         if (this.pollTimer) {
             return;
         }
 
-        void this.syncAllEnabledMailboxes();
+        void this.runMailboxAutoSync();
         this.pollTimer = setInterval(() => {
-            void this.syncAllEnabledMailboxes();
-        }, this.pollIntervalMs);
+            void this.runMailboxAutoSync();
+        }, intervalMs);
     }
 
-    stop(): void {
+    stopMailboxAutoSyncInterval(): void {
         if (this.pollTimer) {
             clearInterval(this.pollTimer);
             this.pollTimer = undefined;
         }
+    }
+
+    startRetentionPurgeInterval(intervalMs = this.purgeIntervalMs): void {
+        if (this.purgeTimer) {
+            return;
+        }
+
+        void this.runMailboxAutoPurge();
+        this.purgeTimer = setInterval(() => {
+            void this.runMailboxAutoPurge();
+        }, intervalMs);
+    }
+
+    stopRetentionPurgeInterval(): void {
+        if (this.purgeTimer) {
+            clearInterval(this.purgeTimer);
+            this.purgeTimer = undefined;
+        }
+    }
+
+    async purgeInboundEmailsByRetention(): Promise<PurgeAllResult> {
+        if (this.purgeInProgress) {
+            return {
+                processedMailboxes: 0,
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                skippedMailboxes: 0,
+                attachmentErrors: 0,
+                errors: [],
+            };
+        }
+
+        this.purgeInProgress = true;
+
+        try {
+            const mailboxes = await this.mailboxService.find({
+                limit: 0,
+                filters: [],
+            });
+
+            const result: PurgeAllResult = {
+                processedMailboxes: 0,
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                skippedMailboxes: 0,
+                attachmentErrors: 0,
+                errors: [],
+            };
+
+            for (const mailbox of mailboxes) {
+                if (!this.hasRetentionEnabled(mailbox)) {
+                    result.skippedMailboxes += 1;
+                    continue;
+                }
+
+                try {
+                    const purgeResult = await this.purgeMailboxInboundEmailsByRetention(mailbox);
+                    result.processedMailboxes += 1;
+                    result.deletedEmails += purgeResult.deletedEmails;
+                    result.deletedAttachments += purgeResult.deletedAttachments;
+                    result.attachmentErrors += purgeResult.attachmentErrors;
+                } catch (error: any) {
+                    this.logError("Error purging inbound emails by retention", error, {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                        retentionDays: mailbox.retentionDays,
+                    });
+                    result.errors.push({
+                        mailboxId: mailbox._id,
+                        error: this.formatError(error),
+                    });
+                }
+            }
+
+            return result;
+        } finally {
+            this.purgeInProgress = false;
+        }
+    }
+
+    async purgeMailboxInboundEmailsByRetention(mailbox: IMailbox): Promise<PurgeMailboxResult> {
+        const retentionDays = this.resolveRetentionDays(mailbox);
+        if (!retentionDays) {
+            return {
+                mailboxId: mailbox._id,
+                retentionDays: 0,
+                cutoffDate: new Date(),
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                attachmentErrors: 0,
+            };
+        }
+
+        const cutoffDate = this.buildRetentionCutoffDate(retentionDays);
+        const purgeFilter = {
+            mailbox: mailbox._id,
+            receivedAt: {$lt: cutoffDate},
+        };
+        const expiredEmails = await InboundEmailModel.find(purgeFilter)
+            .select("_id attachments")
+            .lean()
+            .exec() as PurgeableInboundEmail[];
+        const attachmentPurgeResult = await this.purgeInboundEmailAttachments(expiredEmails, mailbox);
+        const expiredEmailIds = expiredEmails.map((email) => email._id);
+        const deleteResult = expiredEmailIds.length
+            ? await InboundEmailModel.deleteMany({_id: {$in: expiredEmailIds}})
+            : {deletedCount: 0};
+        const deletedEmails = deleteResult.deletedCount || 0;
+
+        if (deletedEmails > 0 || attachmentPurgeResult.deletedAttachments > 0 || attachmentPurgeResult.attachmentErrors > 0) {
+            console.log("[InboundEmailRetention] Purged inbound emails", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                retentionDays,
+                cutoffDate: cutoffDate.toISOString(),
+                deletedEmails,
+                deletedAttachments: attachmentPurgeResult.deletedAttachments,
+                attachmentErrors: attachmentPurgeResult.attachmentErrors,
+            });
+        }
+
+        return {
+            mailboxId: mailbox._id,
+            retentionDays,
+            cutoffDate,
+            deletedEmails,
+            deletedAttachments: attachmentPurgeResult.deletedAttachments,
+            attachmentErrors: attachmentPurgeResult.attachmentErrors,
+        };
     }
 
     async syncAllEnabledMailboxes(options: InboundEmailSyncOptions = {}): Promise<SyncAllResult> {
@@ -254,6 +429,32 @@ class InboundEmailMailboxProvider {
             return result;
         } finally {
             this.syncInProgress = false;
+        }
+    }
+
+    private async runMailboxAutoSync(): Promise<void> {
+        if (!await this.isSettingEnabled(MAILBOX_AUTO_SYNC_SETTING_KEY)) {
+            return;
+        }
+
+        await this.syncAllEnabledMailboxes();
+    }
+
+    private async runMailboxAutoPurge(): Promise<void> {
+        if (!await this.isSettingEnabled(MAILBOX_AUTO_PURGE_SETTING_KEY)) {
+            return;
+        }
+
+        await this.purgeInboundEmailsByRetention();
+    }
+
+    private async isSettingEnabled(key: string): Promise<boolean> {
+        try {
+            const setting = await SettingServiceFactory().findByKey(key);
+            return setting?.value === true || setting?.value === "true";
+        } catch (error) {
+            this.logError("Error reading mailbox automation setting", error, {settingKey: key});
+            return false;
         }
     }
 
@@ -501,6 +702,56 @@ class InboundEmailMailboxProvider {
         }
 
         return Date.now() - state.lastRunAt >= intervalMinutes * 60_000;
+    }
+
+    private async purgeInboundEmailAttachments(
+        emails: PurgeableInboundEmail[],
+        mailbox: IMailbox
+    ): Promise<AttachmentPurgeResult> {
+        const result: AttachmentPurgeResult = {
+            deletedAttachments: 0,
+            attachmentErrors: 0,
+        };
+
+        for (const email of emails) {
+            for (const attachment of email.attachments || []) {
+                if (!attachment.filepath) {
+                    continue;
+                }
+
+                try {
+                    await this.mediaService.deleteFileByRelativePath({
+                        relativePath: attachment.filepath,
+                    });
+                    result.deletedAttachments += 1;
+                } catch (error: any) {
+                    result.attachmentErrors += 1;
+                    this.logError("Error deleting inbound email attachment by retention", error, {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                        inboundEmailId: email._id,
+                        attachmentFilename: attachment.filename,
+                        attachmentFilepath: attachment.filepath,
+                    });
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private hasRetentionEnabled(mailbox: IMailbox): boolean {
+        return Boolean(this.resolveRetentionDays(mailbox));
+    }
+
+    private resolveRetentionDays(mailbox: IMailbox): number | undefined {
+        const retentionDays = Number(mailbox.retentionDays);
+        return Number.isFinite(retentionDays) && retentionDays > 0 ? retentionDays : undefined;
+    }
+
+    private buildRetentionCutoffDate(retentionDays: number): Date {
+        return new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
     }
 
     private async buildSearchQuery(mailboxId: string, options: InboundEmailSyncOptions): Promise<ImapSearchQuery> {
@@ -1204,4 +1455,4 @@ class InboundEmailMailboxProvider {
 
 export default InboundEmailMailboxProvider;
 export {InboundEmailMailboxProvider};
-export type {InboundEmailSyncOptions};
+export type {InboundEmailSyncOptions, PurgeAllResult, PurgeMailboxResult};

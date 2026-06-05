@@ -10,10 +10,18 @@ import {z} from "zod";
 
 type ProcessTransfersResult = {
     since: Date | null;
+    limit: number;
     scanned: number;
     created: number;
     skipped: number;
 };
+
+type ProcessTransfersOptions = {
+    since?: Date | string | null;
+    limit?: number | string | null;
+};
+
+const DEFAULT_PROCESS_LIMIT = 10;
 
 const transferEmailAiSchema = z.object({
     isTransferProof: z.boolean(),
@@ -60,13 +68,15 @@ class InboundMailTransferProcessor {
         this.aiProvider = openAiProvider;
     }
 
-    async process(): Promise<ProcessTransfersResult> {
-        const since = await this.getProcessingStartDate();
-        const inboundEmails = await this.findInboundEmailsToProcess(since);
+    async process(options: ProcessTransfersOptions = {}): Promise<ProcessTransfersResult> {
+        const since = this.resolveSinceOption(options.since) ?? await this.getProcessingStartDate();
+        const limit = this.resolveLimitOption(options.limit);
+        const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
 
         if (inboundEmails.length === 0) {
             return {
                 since,
+                limit,
                 scanned: 0,
                 created: 0,
                 skipped: 0,
@@ -96,14 +106,52 @@ class InboundMailTransferProcessor {
 
         return {
             since,
+            limit,
             scanned: inboundEmails.length,
             created,
             skipped,
         };
     }
 
-    async processInboundEmails(): Promise<ProcessTransfersResult> {
-        return this.process();
+    async processInboundEmails(options: ProcessTransfersOptions = {}): Promise<ProcessTransfersResult> {
+        return this.process(options);
+    }
+
+    private resolveSinceOption(since?: Date | string | null): Date | null {
+        if (!since) {
+            return null;
+        }
+
+        if (since instanceof Date) {
+            if (Number.isNaN(since.getTime())) {
+                throw new Error("Invalid since date");
+            }
+
+            return since;
+        }
+
+        const parsedSince = new Date(since);
+        if (Number.isNaN(parsedSince.getTime())) {
+            throw new Error("Invalid since date");
+        }
+
+        return parsedSince;
+    }
+
+    private resolveLimitOption(limit?: number | string | null): number {
+        if (limit === undefined || limit === null || limit === "") {
+            return DEFAULT_PROCESS_LIMIT;
+        }
+
+        const parsedLimit = typeof limit === "number"
+            ? limit
+            : Number(limit);
+
+        if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
+            throw new Error("Invalid limit");
+        }
+
+        return parsedLimit;
     }
 
     private async getProcessingStartDate(): Promise<Date | null> {
@@ -132,7 +180,7 @@ class InboundMailTransferProcessor {
             || null;
     }
 
-    private async findInboundEmailsToProcess(since: Date | null): Promise<IInboundEmail[]> {
+    private async findInboundEmailsToProcess(since: Date | null, limit: number): Promise<IInboundEmail[]> {
         const filters: Array<{ field: string; operator: string; value: unknown }> = [
             {field: "processingStatus", operator: "eq", value: "PROCESSED"},
         ];
@@ -145,6 +193,7 @@ class InboundMailTransferProcessor {
             orderBy: "receivedAt",
             order: "asc",
             filters,
+            limit,
         });
     }
 

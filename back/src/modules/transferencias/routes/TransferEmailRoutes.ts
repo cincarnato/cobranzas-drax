@@ -13,6 +13,8 @@ async function TransferEmailFastifyRoutes(fastify, options) {
     fastify.get('/api/transfer-emails/find', {schema: schemas.findSchema}, (req,rep) => controller.find(req,rep))
     
     fastify.get('/api/transfer-emails/search', {schema: schemas.searchSchema}, (req,rep) => controller.search(req,rep))
+
+    fastify.get('/api/transfer-emails/export-excel', (req,rep) => controller.exportExcel(req as any,rep))
     
     fastify.get('/api/transfer-emails/:id', {schema: schemas.findByIdSchema}, (req,rep) => controller.findById(req,rep))
     
@@ -28,11 +30,20 @@ async function TransferEmailFastifyRoutes(fastify, options) {
             schema: {
                 tags: ["transferencias"],
                 summary: "Run inbound transfer email processing manually",
+                body: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                        since: {type: ["string", "null"], format: "date-time"},
+                        limit: {type: ["number", "string", "null"]},
+                    },
+                },
                 response: {
                     200: {
                         type: "object",
                         properties: {
                             since: {type: ["string", "null"], format: "date-time"},
+                            limit: {type: "number"},
                             scanned: {type: "number"},
                             created: {type: "number"},
                             skipped: {type: "number"},
