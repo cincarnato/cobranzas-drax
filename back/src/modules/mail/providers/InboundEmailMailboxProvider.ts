@@ -1001,7 +1001,7 @@ class InboundEmailMailboxProvider {
         }
 
         const storedAttachments: NonNullable<IInboundEmailBase["attachments"]> = [];
-        const dir = this.buildAttachmentDir(mailbox, messageId);
+        const dir = this.buildAttachmentDir(mailbox);
 
         for (const attachment of attachments) {
             if (!attachment.content?.length) {
@@ -1089,10 +1089,9 @@ class InboundEmailMailboxProvider {
         return [".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"].includes(extension);
     }
 
-    private buildAttachmentDir(mailbox: IMailbox, messageId: string): string {
+    private buildAttachmentDir(mailbox: IMailbox): string {
         const mailboxSegment = this.sanitizePathSegment(mailbox._id).slice(0, 20) || "mailbox";
-        const messageSegment = this.sanitizePathSegment(messageId.replace(/[<>]/g, "")).slice(0, 20) || "message";
-        return this.sanitizePathSegment(`inbound_${mailboxSegment}_${messageSegment}`);
+        return this.sanitizePathSegment(`inbound_${mailboxSegment}`);
     }
 
     private async analyzeInboundEmail(input: {
