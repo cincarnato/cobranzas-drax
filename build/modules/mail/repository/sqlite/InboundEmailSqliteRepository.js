@@ -13,6 +13,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "messageId", type: "TEXT", unique: true, primary: false },
             { name: "threadId", type: "TEXT", unique: undefined, primary: false },
             { name: "mailbox", type: "TEXT", unique: undefined, primary: false },
+            { name: "imapUid", type: "REAL", unique: undefined, primary: false },
             { name: "sourceChannel", type: "TEXT", unique: undefined, primary: false },
             { name: "receivedAt", type: "TEXT", unique: undefined, primary: false },
             { name: "subject", type: "TEXT", unique: undefined, primary: false },

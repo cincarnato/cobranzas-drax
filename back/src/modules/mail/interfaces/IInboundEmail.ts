@@ -2,6 +2,7 @@ interface IInboundEmailBase {
     messageId: string
     threadId?: string
     mailbox?: string
+    imapUid?: number
     sourceChannel: string
     receivedAt: Date
     subject?: string
@@ -56,6 +57,7 @@ interface IInboundEmail {
     messageId: string
     threadId?: string
     mailbox?: string
+    imapUid?: number
     sourceChannel: string
     receivedAt: Date
     subject?: string

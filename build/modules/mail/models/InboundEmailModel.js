@@ -5,6 +5,7 @@ const InboundEmailSchema = new mongoose.Schema({
     messageId: { type: String, required: true, index: true, unique: true },
     threadId: { type: String, required: false, index: true, unique: false },
     mailbox: { type: String, required: false, index: false, unique: false },
+    imapUid: { type: Number, required: false, index: true, unique: false },
     sourceChannel: { type: String, enum: ['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API'], required: true, index: false, unique: false },
     receivedAt: { type: Date, required: true, index: true, unique: false },
     subject: { type: String, required: false, index: true, unique: false },

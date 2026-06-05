@@ -2,17 +2,17 @@
 <script setup lang="ts">
 import InboundEmailCrud from '../../cruds/InboundEmailCrud'
 import {Crud} from "@drax/crud-vue";
-import {formatDate} from "@drax/common-front"
+import {formatDateTime} from "@drax/common-front"
 import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
 </script>
 
 <template>
   <crud :entity="InboundEmailCrud.instance">
-    <template v-slot:item.receivedAt="{value}">{{formatDate(value)}}</template>
+    <template v-slot:item.receivedAt="{value}">{{formatDateTime(value)}}</template>
     <template v-slot:item.toEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.ccEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.tags="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
-    <template v-slot:item.processedAt="{value}">{{formatDate(value)}}</template>
+    <template v-slot:item.processedAt="{value}">{{formatDateTime(value)}}</template>
     <template v-slot:item.hasAttachment="{value}">{{value ? 'si' : 'no'}}</template>
 
 

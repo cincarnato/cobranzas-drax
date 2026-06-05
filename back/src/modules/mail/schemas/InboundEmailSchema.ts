@@ -6,6 +6,7 @@ const InboundEmailBaseSchema = z.object({
       messageId: z.string().min(1,'validation.required'),
     threadId: z.string().optional(),
     mailbox: z.string().optional(),
+    imapUid: z.number().optional(),
     sourceChannel: z.enum(['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API']).default('EMAIL'),
     receivedAt: z.coerce.date({error: "validation.date"}),
     subject: z.string().optional(),

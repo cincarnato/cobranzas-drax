@@ -342,21 +342,28 @@ class InboundEmailMailboxProvider {
             const allUids = await client.search(searchQuery, { uid: true });
             const fetchLimit = options.limit || this.fetchLimit;
             const matchedUids = Array.isArray(allUids) ? allUids : [];
+            const shouldScanUntilCreated = !options.dateFrom && !options.dateTo && !searchQuery.uid;
             const uids = [...matchedUids]
                 .sort((a, b) => a - b)
-                .slice(0, fetchLimit);
+                .slice(0, shouldScanUntilCreated ? undefined : fetchLimit);
             console.log("[InboundEmailSync] IMAP search result", {
                 mailboxId: mailbox._id,
                 mailboxName: mailbox.name,
                 mailboxEmail: mailbox.email,
                 matchedUids: matchedUids.length,
                 fetchLimit,
-                selectedUids: uids,
+                uidCursor: searchQuery.uid,
+                scanUntilCreated: shouldScanUntilCreated,
+                selectedUidCount: uids.length,
+                selectedUids: uids.slice(0, 50),
             });
             if (!matchedUids.length && (options.dateFrom || options.dateTo)) {
                 await this.logMailboxDateDiagnostics(client, mailbox);
             }
             for (const uid of uids) {
+                if (shouldScanUntilCreated && result.created >= fetchLimit) {
+                    break;
+                }
                 result.fetched += 1;
                 try {
                     const fetched = await client.fetchOne(uid, { uid: true, internalDate: true, source: true }, { uid: true });
@@ -375,6 +382,7 @@ class InboundEmailMailboxProvider {
                     const messageId = this.resolveMessageId(parsedMail, mailbox, uid);
                     const duplicate = await this.findExistingByMessageId(messageId);
                     if (duplicate) {
+                        await this.backfillDuplicateImapUid(duplicate, mailbox, fetchMessage.uid);
                         result.skipped += 1;
                         continue;
                     }
@@ -415,6 +423,7 @@ class InboundEmailMailboxProvider {
             before: query.before?.toISOString(),
             sentSince: query.sentSince?.toISOString(),
             sentBefore: query.sentBefore?.toISOString(),
+            uid: query.uid,
         };
     }
     async logMailboxDateDiagnostics(client, mailbox) {
@@ -556,15 +565,32 @@ class InboundEmailMailboxProvider {
             query.sentSince = options.dateFrom;
         }
         else {
-            const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
-            query.since = latestEmail?.receivedAt
-                ? new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000)
-                : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+            const latestEmailWithUid = await this.findLatestInboundUidByMailbox(mailboxId);
+            if (!options.dateTo && latestEmailWithUid?.imapUid) {
+                query.uid = `${latestEmailWithUid.imapUid + 1}:*`;
+            }
+            else {
+                const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
+                query.since = latestEmail?.receivedAt
+                    ? new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000)
+                    : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+            }
         }
         if (options.dateTo) {
             query.sentBefore = new Date(options.dateTo.getTime() + 1);
         }
         return query;
+    }
+    async findLatestInboundUidByMailbox(mailboxId) {
+        const latest = await this.inboundEmailService.paginate({
+            page: 1,
+            limit: 1,
+            orderBy: "imapUid",
+            order: "desc",
+            filters: [{ field: "mailbox", operator: "eq", value: mailboxId }],
+        });
+        const email = latest.items[0] || null;
+        return Number.isFinite(Number(email?.imapUid)) ? email : null;
     }
     async findLatestInboundByMailbox(mailboxId) {
         const latest = await this.inboundEmailService.paginate({
@@ -580,6 +606,23 @@ class InboundEmailMailboxProvider {
         return await this.inboundEmailService.findOne({
             filters: [{ field: "messageId", operator: "eq", value: messageId }],
         });
+    }
+    async backfillDuplicateImapUid(duplicate, mailbox, imapUid) {
+        if (duplicate.mailbox !== mailbox._id || duplicate.imapUid) {
+            return;
+        }
+        try {
+            await this.inboundEmailService.updatePartial(duplicate._id, { imapUid });
+        }
+        catch (error) {
+            this.logError("Error backfilling duplicate IMAP UID", error, {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                inboundEmailId: duplicate._id,
+                imapUid,
+            });
+        }
     }
     async buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId) {
         const textBody = this.normalizeText(parsedMail.text || "");
@@ -604,6 +647,7 @@ class InboundEmailMailboxProvider {
             messageId,
             threadId: this.resolveThreadId(parsedMail),
             mailbox: mailbox._id,
+            imapUid: fetchMessage.uid,
             sourceChannel: "EMAIL",
             receivedAt: parsedMail.date || fetchMessage.internalDate || new Date(),
             subject: parsedMail.subject,
