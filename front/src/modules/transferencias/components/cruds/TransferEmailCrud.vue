@@ -137,6 +137,24 @@ async function exportExcel() {
       <span class="muted-cell">{{ value?.messageId || '-' }}</span>
     </template>
 
+    <template v-slot:item.emailMessageId="{value}">
+      <span class="muted-cell">{{ value || '-' }}</span>
+    </template>
+
+    <template v-slot:item.emailSubject="{value}">
+      <span class="subject-cell">{{ value || '-' }}</span>
+    </template>
+
+    <template v-slot:item.emailFromName="{value}">
+      <span>{{ value || '-' }}</span>
+    </template>
+
+    <template v-slot:item.emailFromEmail="{value}">
+      <v-chip color="blue-grey" variant="tonal" size="small" prepend-icon="mdi-email-outline">
+        {{ value || '-' }}
+      </v-chip>
+    </template>
+
     <template v-slot:item.isTransferProof="{value}">
       <v-chip
         :color="value ? 'success' : 'grey'"
@@ -261,6 +279,14 @@ async function exportExcel() {
 
 .muted-cell {
   color: rgba(var(--v-theme-on-surface), 0.64);
+}
+
+.subject-cell {
+  display: inline-block;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-chip {

@@ -7,6 +7,10 @@ const messages = {
       crud: 'Manage Transfer Emails',
       field: {
         inboundEmail: 'Inbound Email',
+        emailMessageId: 'Email Message ID',
+        emailSubject: 'Email Subject',
+        emailFromName: 'Email Sender Name',
+        emailFromEmail: 'Email Sender Address',
         isTransferProof: 'Is Transfer Proof',
         amount: 'Amount',
         currency: 'Currency',
@@ -46,6 +50,10 @@ const messages = {
       crud: 'Gestionar correos de transferencia',
       field: {
         inboundEmail: 'Correo entrante',
+        emailMessageId: 'ID del mail',
+        emailSubject: 'Asunto del mail',
+        emailFromName: 'Nombre del remitente',
+        emailFromEmail: 'Email del remitente',
         isTransferProof: 'Es comprobante de transferencia',
         amount: 'Monto',
         currency: 'Moneda',

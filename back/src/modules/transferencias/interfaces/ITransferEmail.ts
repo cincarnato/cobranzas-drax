@@ -1,6 +1,10 @@
 
 interface ITransferEmailBase {
     inboundEmail?: any
+    emailMessageId?: string
+    emailSubject?: string
+    emailFromName?: string
+    emailFromEmail?: string
     isTransferProof?: boolean
     amount?: number
     currency?: string
@@ -30,6 +34,10 @@ interface ITransferEmailBase {
 interface ITransferEmail {
     _id: string
     inboundEmail?: any
+    emailMessageId?: string
+    emailSubject?: string
+    emailFromName?: string
+    emailFromEmail?: string
     isTransferProof?: boolean
     amount?: number
     currency?: string

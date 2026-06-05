@@ -3,8 +3,7 @@ import { AiProviderFactory } from "@drax/ai-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import { z } from "zod";
 const DEFAULT_PROCESS_LIMIT = 10;
-const transferEmailAiSchema = z.object({
-    isTransferProof: z.boolean(),
+const transferEmailAiItemSchema = z.object({
     amount: z.number().nullable(),
     currency: z.enum(["ARS", "USD", "EUR", "OTHER"]).nullable(),
     transferDate: z.string().nullable(),
@@ -21,6 +20,12 @@ const transferEmailAiSchema = z.object({
     affiliateName: z.string().nullable(),
     affiliateEmail: z.string().nullable(),
     affiliateDocumentNumber: z.string().nullable(),
+    needsHumanReview: z.boolean().nullable(),
+    reasoning: z.string().nullable(),
+});
+const transferEmailAiSchema = z.object({
+    isTransferProof: z.boolean(),
+    transfers: z.array(transferEmailAiItemSchema),
     needsHumanReview: z.boolean().nullable(),
     reasoning: z.string().nullable(),
 });
@@ -55,13 +60,15 @@ class InboundMailTransferProcessor {
                 skipped++;
                 continue;
             }
-            const transferEmail = await this.buildTransferEmailPayload(inboundEmail);
-            if (!transferEmail) {
+            const transferEmails = await this.buildTransferEmailPayloads(inboundEmail);
+            if (transferEmails.length === 0) {
                 skipped++;
                 continue;
             }
-            await this.transferEmailService.create(transferEmail);
-            created++;
+            for (const transferEmail of transferEmails) {
+                await this.transferEmailService.create(transferEmail);
+                created++;
+            }
         }
         return {
             since,
@@ -117,6 +124,7 @@ class InboundMailTransferProcessor {
             ? latestTransferEmail.inboundEmail?.receivedAt
             : undefined;
         return inboundReceivedAt
+            || latestTransferEmail.emailDate
             || latestTransferEmail.transferDate
             || latestTransferEmail.createdAt
             || null;
@@ -141,7 +149,7 @@ class InboundMailTransferProcessor {
         }
         const existing = await this.transferEmailService.find({
             filters: [{ field: "inboundEmail", operator: "in", value: inboundEmailIds }],
-            limit: inboundEmailIds.length,
+            limit: Math.max(inboundEmailIds.length * 20, inboundEmailIds.length),
         });
         return new Set(existing
             .map((item) => {
@@ -155,53 +163,64 @@ class InboundMailTransferProcessor {
         })
             .filter((value) => Boolean(value)));
     }
-    async buildTransferEmailPayload(inboundEmail) {
-        const extraction = await this.extractTransferDataWithAi(inboundEmail);
-        if (!extraction.isTransferProof) {
-            return null;
+    async buildTransferEmailPayloads(inboundEmail) {
+        const extractionResult = await this.extractTransferDataWithAi(inboundEmail);
+        if (!extractionResult.isTransferProof || extractionResult.transfers.length === 0) {
+            return [];
         }
-        const affiliateDocumentNumber = this.normalizeDocumentNumber(extraction.affiliateDocumentNumber
-            || inboundEmail.customer?.documentNumber
-            || this.extractDocumentNumberFromCuil(inboundEmail.customer?.cuil));
-        const affiliateEmail = this.normalizeString(extraction.affiliateEmail) || inboundEmail.customer?.email || inboundEmail.fromEmail;
-        const amount = typeof extraction.amount === "number" && Number.isFinite(extraction.amount)
-            ? extraction.amount
-            : undefined;
-        const currency = extraction.currency || undefined;
-        const transferDate = this.parseTransferDate(extraction.transferDate) || inboundEmail.receivedAt;
-        const payload = {
-            inboundEmail: inboundEmail._id,
-            isTransferProof: true,
-            amount,
-            currency,
-            transferDate,
-            operationNumber: this.normalizeString(extraction.operationNumber),
-            concept: this.normalizeString(extraction.concept),
-            originAccount: this.normalizeString(extraction.originAccount),
-            originCbu: this.normalizeString(extraction.originCbu),
-            originAlias: this.normalizeString(extraction.originAlias),
-            originBank: this.normalizeString(extraction.originBank),
-            destinationAccount: this.normalizeString(extraction.destinationAccount),
-            destinationCbu: this.normalizeString(extraction.destinationCbu),
-            destinationAlias: this.normalizeString(extraction.destinationAlias),
-            destinationBank: this.normalizeString(extraction.destinationBank),
-            affiliateName: this.normalizeString(extraction.affiliateName) || inboundEmail.customer?.name || inboundEmail.fromName,
-            affiliateEmail,
-            affiliateDocumentNumber,
-            needsHumanReview: extraction.needsHumanReview ?? (!amount || !affiliateDocumentNumber),
-        };
-        return this.removeUndefinedFields(payload);
+        const processDate = new Date();
+        return extractionResult.transfers.map((extraction) => {
+            const affiliateDocumentNumber = this.normalizeDocumentNumber(extraction.affiliateDocumentNumber
+                || inboundEmail.customer?.documentNumber
+                || this.extractDocumentNumberFromCuil(inboundEmail.customer?.cuil));
+            const affiliateEmail = this.normalizeString(extraction.affiliateEmail) || inboundEmail.customer?.email || inboundEmail.fromEmail;
+            const amount = typeof extraction.amount === "number" && Number.isFinite(extraction.amount)
+                ? extraction.amount
+                : undefined;
+            const currency = extraction.currency || undefined;
+            const transferDate = this.parseTransferDate(extraction.transferDate);
+            const payload = {
+                inboundEmail: inboundEmail._id,
+                emailMessageId: inboundEmail.messageId,
+                emailSubject: this.normalizeString(inboundEmail.subject),
+                emailFromName: this.normalizeString(inboundEmail.fromName),
+                emailFromEmail: this.normalizeString(inboundEmail.fromEmail),
+                isTransferProof: true,
+                amount,
+                currency,
+                transferDate,
+                emailDate: inboundEmail.receivedAt,
+                processDate,
+                operationNumber: this.normalizeString(extraction.operationNumber),
+                concept: this.normalizeString(extraction.concept),
+                originAccount: this.normalizeString(extraction.originAccount),
+                originCbu: this.normalizeString(extraction.originCbu),
+                originAlias: this.normalizeString(extraction.originAlias),
+                originBank: this.normalizeString(extraction.originBank),
+                destinationAccount: this.normalizeString(extraction.destinationAccount),
+                destinationCbu: this.normalizeString(extraction.destinationCbu),
+                destinationAlias: this.normalizeString(extraction.destinationAlias),
+                destinationBank: this.normalizeString(extraction.destinationBank),
+                affiliateName: this.normalizeString(extraction.affiliateName) || inboundEmail.customer?.name || inboundEmail.fromName,
+                affiliateEmail,
+                affiliateDocumentNumber,
+                needsHumanReview: extraction.needsHumanReview ?? (!amount || !affiliateDocumentNumber || !transferDate),
+            };
+            return this.removeUndefinedFields(payload);
+        });
     }
     async extractTransferDataWithAi(inboundEmail) {
         const response = await this.aiProvider.prompt({
             systemPrompt: [
                 "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
-                "Debes decidir si el email corresponde a un comprobante o aviso de transferencia bancaria y extraer todos los datos posibles.",
+                "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
+                "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
+                "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
                 "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
                 "No inventes ni completes campos por inferencia débil.",
                 "Si un dato no está claro o no aparece, devuélvelo como null.",
-                "Si no es un comprobante de transferencia, devuelve isTransferProof=false y el resto null.",
-                "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible.",
+                "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
+                "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
                 "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
                 "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
             ].join("\n"),

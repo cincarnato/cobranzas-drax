@@ -4,7 +4,7 @@ class TransferEmailMongoRepository extends AbstractMongoRepository {
     constructor() {
         super();
         this._model = TransferEmailModel;
-        this._searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber'];
+        this._searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail'];
         this._populateFields = ['inboundEmail'];
         this._lean = true;
     }

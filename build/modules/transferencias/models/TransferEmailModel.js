@@ -3,10 +3,16 @@ import uniqueValidator from 'mongoose-unique-validator';
 import mongoosePaginate from 'mongoose-paginate-v2';
 const TransferEmailSchema = new mongoose.Schema({
     inboundEmail: { type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail', required: false, index: false, unique: false },
+    emailMessageId: { type: String, required: false, index: true, unique: false },
+    emailSubject: { type: String, required: false, index: true, unique: false },
+    emailFromName: { type: String, required: false, index: true, unique: false },
+    emailFromEmail: { type: String, required: false, index: true, unique: false },
     isTransferProof: { type: Boolean, required: false, index: false, unique: false },
     amount: { type: Number, required: false, index: false, unique: false },
     currency: { type: String, enum: ['ARS', 'USD', 'EUR', 'OTHER'], required: false, index: false, unique: false },
     transferDate: { type: Date, required: false, index: false, unique: false },
+    emailDate: { type: Date, required: false, index: true, unique: false },
+    processDate: { type: Date, required: false, index: true, unique: false },
     operationNumber: { type: String, required: false, index: true, unique: false },
     concept: { type: String, required: false, index: false, unique: false },
     originAccount: { type: String, required: false, index: true, unique: false },

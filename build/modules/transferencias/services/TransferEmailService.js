@@ -13,9 +13,15 @@ class TransferEmailService extends AbstractService {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('transferencias');
         worksheet.columns = [
+            { header: 'ID Mail', key: 'emailMessageId', width: 32 },
+            { header: 'Asunto Mail', key: 'emailSubject', width: 42 },
+            { header: 'Remitente Nombre', key: 'emailFromName', width: 28 },
+            { header: 'Remitente Email', key: 'emailFromEmail', width: 32 },
             { header: 'DNI Afiliado', key: 'affiliateDocumentNumber', width: 16 },
             { header: 'Nombre Afiliado', key: 'affiliateName', width: 32 },
             { header: 'Fecha Transferencia', key: 'transferDate', width: 20 },
+            { header: 'Fecha Email', key: 'emailDate', width: 20 },
+            { header: 'Fecha Proceso', key: 'processDate', width: 20 },
             { header: 'Monto', key: 'amount', width: 14 },
             { header: 'Mes', key: 'month', width: 14 },
             { header: 'Numero Operacion', key: 'operationNumber', width: 22 },
@@ -27,9 +33,15 @@ class TransferEmailService extends AbstractService {
         ];
         for (const row of rows) {
             worksheet.addRow({
+                emailMessageId: row.emailMessageId ?? '',
+                emailSubject: row.emailSubject ?? '',
+                emailFromName: row.emailFromName ?? '',
+                emailFromEmail: row.emailFromEmail ?? '',
                 affiliateDocumentNumber: row.affiliateDocumentNumber ?? '',
                 affiliateName: row.affiliateName ?? '',
                 transferDate: row.transferDate ? new Date(row.transferDate) : '',
+                emailDate: row.emailDate ? new Date(row.emailDate) : '',
+                processDate: row.processDate ? new Date(row.processDate) : '',
                 amount: row.amount ?? null,
                 month: row.month ?? '',
                 operationNumber: row.operationNumber ?? '',
@@ -43,6 +55,8 @@ class TransferEmailService extends AbstractService {
         worksheet.getRow(1).font = { bold: true };
         worksheet.views = [{ state: 'frozen', ySplit: 1 }];
         worksheet.getColumn('transferDate').numFmt = 'dd/mm/yyyy';
+        worksheet.getColumn('emailDate').numFmt = 'dd/mm/yyyy hh:mm';
+        worksheet.getColumn('processDate').numFmt = 'dd/mm/yyyy hh:mm';
         worksheet.getColumn('amount').numFmt = '$ #,##0.00';
         return {
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),

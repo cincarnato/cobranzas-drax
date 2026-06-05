@@ -4,6 +4,10 @@ import { z } from 'zod';
 
 const TransferEmailBaseSchema = z.object({
       inboundEmail: z.coerce.string().optional().nullable(),
+    emailMessageId: z.string().optional(),
+    emailSubject: z.string().optional(),
+    emailFromName: z.string().optional(),
+    emailFromEmail: z.string().optional(),
     isTransferProof: z.boolean().optional(),
     amount: z.number().nullable().optional(),
     currency: z.enum(['ARS', 'USD', 'EUR', 'OTHER']).optional(),

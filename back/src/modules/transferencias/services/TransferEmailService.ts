@@ -31,6 +31,10 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         const worksheet = workbook.addWorksheet('transferencias')
 
         worksheet.columns = [
+            {header: 'ID Mail', key: 'emailMessageId', width: 32},
+            {header: 'Asunto Mail', key: 'emailSubject', width: 42},
+            {header: 'Remitente Nombre', key: 'emailFromName', width: 28},
+            {header: 'Remitente Email', key: 'emailFromEmail', width: 32},
             {header: 'DNI Afiliado', key: 'affiliateDocumentNumber', width: 16},
             {header: 'Nombre Afiliado', key: 'affiliateName', width: 32},
             {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
@@ -48,6 +52,10 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
 
         for (const row of rows) {
             worksheet.addRow({
+                emailMessageId: row.emailMessageId ?? '',
+                emailSubject: row.emailSubject ?? '',
+                emailFromName: row.emailFromName ?? '',
+                emailFromEmail: row.emailFromEmail ?? '',
                 affiliateDocumentNumber: row.affiliateDocumentNumber ?? '',
                 affiliateName: row.affiliateName ?? '',
                 transferDate: row.transferDate ? new Date(row.transferDate) : '',

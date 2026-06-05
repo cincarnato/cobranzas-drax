@@ -217,6 +217,16 @@ const valueOrDash = (value?: string | number | null) => {
       <section class="transfer-email-left">
         <v-card class="sketch-card summary-card" variant="flat">
           <div class="summary-block">
+            <h3 class="summary-title">Datos del Mail</h3>
+            <p><span class="summary-label">ID Mail:</span> {{ valueOrDash(email.emailMessageId) }}</p>
+            <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
+            <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
+            <p><span class="summary-label">Email Remitente:</span> {{ valueOrDash(email.emailFromEmail) }}</p>
+          </div>
+
+          <div class="summary-separator" />
+
+          <div class="summary-block">
             <h3 class="summary-title">Datos del Afiliado</h3>
             <p><span class="summary-label">Nombre:</span> {{ valueOrDash(email.affiliateName) }}</p>
             <p><span class="summary-label">Email:</span> {{ valueOrDash(email.affiliateEmail) }}</p>

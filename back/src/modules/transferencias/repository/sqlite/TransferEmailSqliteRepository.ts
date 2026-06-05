@@ -9,7 +9,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
     protected db: any;
     protected tableName: string = 'TransferEmail';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber'];
+    protected searchFields: string[] = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail'];
     protected booleanFields: string[] = ['isTransferProof', 'needsHumanReview'];
     protected jsonFields: string[] = [];
     protected identifier: string = '_id';
@@ -19,6 +19,10 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
     protected verbose: boolean = false;
     protected tableFields: SqliteTableField[] = [
         {name: "inboundEmail", type: "TEXT", unique: undefined, primary: false},
+{name: "emailMessageId", type: "TEXT", unique: undefined, primary: false},
+{name: "emailSubject", type: "TEXT", unique: undefined, primary: false},
+{name: "emailFromName", type: "TEXT", unique: undefined, primary: false},
+{name: "emailFromEmail", type: "TEXT", unique: undefined, primary: false},
 {name: "isTransferProof", type: "TEXT", unique: undefined, primary: false},
 {name: "amount", type: "REAL", unique: undefined, primary: false},
 {name: "amount", type: "TEXT", unique: undefined, primary: false},

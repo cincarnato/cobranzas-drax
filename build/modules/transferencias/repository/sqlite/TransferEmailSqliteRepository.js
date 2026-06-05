@@ -3,7 +3,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
     constructor() {
         super(...arguments);
         this.tableName = 'TransferEmail';
-        this.searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber'];
+        this.searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail'];
         this.booleanFields = ['isTransferProof', 'needsHumanReview'];
         this.jsonFields = [];
         this.identifier = '_id';
@@ -13,11 +13,17 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
         this.verbose = false;
         this.tableFields = [
             { name: "inboundEmail", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailMessageId", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailSubject", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailFromName", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailFromEmail", type: "TEXT", unique: undefined, primary: false },
             { name: "isTransferProof", type: "TEXT", unique: undefined, primary: false },
             { name: "amount", type: "REAL", unique: undefined, primary: false },
             { name: "amount", type: "TEXT", unique: undefined, primary: false },
             { name: "currency", type: "TEXT", unique: undefined, primary: false },
             { name: "transferDate", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailDate", type: "TEXT", unique: undefined, primary: false },
+            { name: "processDate", type: "TEXT", unique: undefined, primary: false },
             { name: "operationNumber", type: "TEXT", unique: undefined, primary: false },
             { name: "concept", type: "TEXT", unique: undefined, primary: false },
             { name: "originAccount", type: "TEXT", unique: undefined, primary: false },
