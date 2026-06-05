@@ -13,6 +13,12 @@ type InboundEmailSyncResult = {
   }>
 }
 
+type InboundEmailSyncOptions = {
+  dateFrom?: string
+  dateTo?: string
+  limit?: number
+}
+
 class MailboxProvider extends AbstractCrudRestProvider<IMailbox, IMailboxBase, IMailboxBase> {
 
   static singleton: MailboxProvider
@@ -28,11 +34,11 @@ class MailboxProvider extends AbstractCrudRestProvider<IMailbox, IMailboxBase, I
     return MailboxProvider.singleton
   }
 
-  async syncInboundEmails(): Promise<InboundEmailSyncResult> {
-    return await this.httpClient.post('/api/inbound-email-mailbox/sync',{}, {timeout: 600000}) as InboundEmailSyncResult
+  async syncInboundEmails(options: InboundEmailSyncOptions = {}): Promise<InboundEmailSyncResult> {
+    return await this.httpClient.post('/api/inbound-email-mailbox/sync', options, {timeout: 600000}) as InboundEmailSyncResult
   }
 
 }
 
 export default MailboxProvider
-export type { InboundEmailSyncResult }
+export type { InboundEmailSyncOptions, InboundEmailSyncResult }

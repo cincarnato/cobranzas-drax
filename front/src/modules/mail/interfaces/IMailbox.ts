@@ -19,6 +19,7 @@ interface IMailboxBase {
     autoProcessEnabled?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
+    retentionDays?: number | null
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean
@@ -58,6 +59,7 @@ interface IMailbox {
     autoProcessEnabled?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
+    retentionDays?: number | null
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean

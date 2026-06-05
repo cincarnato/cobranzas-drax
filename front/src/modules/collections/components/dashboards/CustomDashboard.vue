@@ -2,6 +2,7 @@
 import {computed, ref, watch} from "vue";
 import type {IDraxFieldFilter} from "@drax/crud-share";
 import {useAuth} from "@drax/identity-vue";
+import {useTheme} from "vuetify";
 import CovenantProvider from "../../providers/CovenantProvider";
 import CallAttemptProvider from "../../../caller/providers/CallAttemptProvider";
 import WhatsappMessageProvider from "../../../caller/providers/WhatsappMessageProvider";
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 }>();
 
 const {hasPermission} = useAuth();
+const theme = useTheme();
 
 const zoneRows = ref<SummaryRow[]>([]);
 const userRows = ref<SummaryRow[]>([]);
@@ -70,6 +72,7 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
 const canViewCovenants = computed(() => hasPermission("covenant:view"));
 const canViewCallAttempts = computed(() => hasPermission("callattempt:view"));
 const canViewWhatsappMessages = computed(() => hasPermission("whatsappmessage:view"));
+const isDarkTheme = computed(() => theme.current.value.dark);
 
 const cards = computed<SummaryConfig[]>(() => [
   ...(canViewCovenants.value ? [
@@ -368,7 +371,10 @@ defineExpose({
       >
         <v-card
           class="custom-dashboard__card"
-          :class="`custom-dashboard__card--${card.accent}`"
+          :class="[
+            `custom-dashboard__card--${card.accent}`,
+            {'custom-dashboard__card--dark': isDarkTheme},
+          ]"
           variant="outlined"
         >
           <div class="custom-dashboard__header">
@@ -525,6 +531,13 @@ defineExpose({
   --dashboard-accent: #00897b;
   --dashboard-accent-soft: #e0f2f1;
   --dashboard-accent-text: #00695c;
+  --dashboard-accent-readable: var(--dashboard-accent-text);
+  --dashboard-chip-bg: rgba(255, 255, 255, .78);
+  --dashboard-header-sheen: rgba(255, 255, 255, .8);
+  --dashboard-header-surface: rgba(255, 255, 255, .96);
+  --dashboard-hover-bg: color-mix(in srgb, var(--dashboard-accent-soft) 42%, white);
+  --dashboard-title-color: rgba(var(--v-theme-on-surface), .92);
+  --dashboard-total-bg: color-mix(in srgb, var(--dashboard-accent-soft) 56%, white);
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -571,11 +584,24 @@ defineExpose({
   --dashboard-accent-text: #4527a0;
 }
 
+.custom-dashboard__card--dark {
+  --dashboard-accent-readable: color-mix(in srgb, var(--dashboard-accent) 48%, #ffffff);
+  --dashboard-accent-soft: color-mix(in srgb, var(--dashboard-accent) 18%, rgb(var(--v-theme-surface)));
+  --dashboard-chip-bg: color-mix(in srgb, var(--dashboard-accent) 24%, rgba(0, 0, 0, .82));
+  --dashboard-header-sheen: color-mix(in srgb, var(--dashboard-accent) 12%, transparent);
+  --dashboard-header-surface: color-mix(in srgb, var(--dashboard-accent) 7%, rgb(var(--v-theme-surface)));
+  --dashboard-hover-bg: color-mix(in srgb, var(--dashboard-accent) 14%, rgb(var(--v-theme-surface)));
+  --dashboard-title-color: rgba(var(--v-theme-on-surface), .96);
+  --dashboard-total-bg: color-mix(in srgb, var(--dashboard-accent) 18%, rgb(var(--v-theme-surface)));
+  border-color: rgba(var(--v-border-color), .5);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .28);
+}
+
 .custom-dashboard__header {
   align-items: flex-start;
   background:
-    linear-gradient(135deg, var(--dashboard-accent-soft), rgba(255, 255, 255, .96) 52%),
-    linear-gradient(90deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0));
+    linear-gradient(135deg, var(--dashboard-accent-soft), var(--dashboard-header-surface) 52%),
+    linear-gradient(90deg, var(--dashboard-header-sheen), rgba(255, 255, 255, 0));
   border-bottom: 1px solid rgba(var(--v-border-color), .24);
   display: flex;
   gap: 12px;
@@ -604,6 +630,7 @@ defineExpose({
 }
 
 .custom-dashboard__title {
+  color: var(--dashboard-title-color);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
@@ -625,8 +652,8 @@ defineExpose({
 }
 
 .custom-dashboard__metric {
-  background: rgba(255, 255, 255, .78);
-  color: var(--dashboard-accent-text);
+  background: var(--dashboard-chip-bg);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
@@ -665,7 +692,7 @@ defineExpose({
 }
 
 .custom-dashboard__table :deep(tbody tr:hover) {
-  background: color-mix(in srgb, var(--dashboard-accent-soft) 42%, white);
+  background: var(--dashboard-hover-bg);
 }
 
 .custom-dashboard__table :deep(tfoot td) {
@@ -698,7 +725,7 @@ defineExpose({
 }
 
 .custom-dashboard__amount {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
@@ -708,17 +735,17 @@ defineExpose({
 }
 
 .custom-dashboard__percentage {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
 .custom-dashboard__total {
-  background: color-mix(in srgb, var(--dashboard-accent-soft) 56%, white);
+  background: var(--dashboard-total-bg);
   font-weight: 700;
 }
 
 .custom-dashboard__total-label {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
 }
 
 @media (max-width: 640px) {

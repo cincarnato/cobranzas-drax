@@ -66,6 +66,19 @@ type SyncAllResult = {
     errors: Array<{ mailboxId: string; error: string }>;
 };
 
+type InboundEmailSyncOptions = {
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+};
+
+type ImapSearchQuery = {
+    since?: Date;
+    before?: Date;
+    sentSince?: Date;
+    sentBefore?: Date;
+};
+
 type AttachmentProcessingResult = {
     storedAttachments: NonNullable<IInboundEmailBase["attachments"]>;
     ocrText?: string;
@@ -164,7 +177,7 @@ class InboundEmailMailboxProvider {
         }
     }
 
-    async syncAllEnabledMailboxes(): Promise<SyncAllResult> {
+    async syncAllEnabledMailboxes(options: InboundEmailSyncOptions = {}): Promise<SyncAllResult> {
         if (this.syncInProgress) {
             return {
                 processedMailboxes: 0,
@@ -198,6 +211,11 @@ class InboundEmailMailboxProvider {
 
             for (const mailbox of mailboxes) {
                 if (!this.shouldRunMailbox(mailbox)) {
+                    console.log("[InboundEmailSync] Skipping mailbox by run interval", {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                    });
                     continue;
                 }
 
@@ -206,7 +224,7 @@ class InboundEmailMailboxProvider {
                 this.mailboxRunState.set(mailbox._id, mailboxState);
 
                 try {
-                    const syncResult = await this.syncMailbox(mailbox);
+                    const syncResult = await this.syncMailbox(mailbox, options);
                     result.processedMailboxes += 1;
                     result.createdEmails += syncResult.created;
                     result.fetchedEmails += syncResult.fetched;
@@ -239,7 +257,7 @@ class InboundEmailMailboxProvider {
         }
     }
 
-    async syncMailbox(mailbox: IMailbox): Promise<SyncMailboxResult> {
+    async syncMailbox(mailbox: IMailbox, options: InboundEmailSyncOptions = {}): Promise<SyncMailboxResult> {
         const result: SyncMailboxResult = {
             mailboxId: mailbox._id,
             fetched: 0,
@@ -265,11 +283,41 @@ class InboundEmailMailboxProvider {
 
         try {
             await client.connect();
-            await client.mailboxOpen("INBOX");
+            const openedMailbox = await client.mailboxOpen("INBOX");
+            console.log("[InboundEmailSync] IMAP mailbox capabilities", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                flags: this.formatSetForLog(openedMailbox.flags),
+                permanentFlags: this.formatSetForLog(openedMailbox.permanentFlags),
+                acceptsAnyPermanentFlag: openedMailbox.permanentFlags?.has("\\*") || false,
+                readOnly: openedMailbox.readOnly || false,
+            });
 
-            const searchQuery = await this.buildSearchQuery(mailbox._id);
+            const searchQuery = await this.buildSearchQuery(mailbox._id, options);
+            console.log("[InboundEmailSync] IMAP search query", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                options: this.formatSyncOptionsForLog(options),
+                searchQuery: this.formatImapSearchQueryForLog(searchQuery),
+            });
+
             const allUids = await client.search(searchQuery, {uid: true});
-            const uids = (allUids || []).slice(-this.fetchLimit);
+            const fetchLimit = options.limit || this.fetchLimit;
+            const matchedUids = Array.isArray(allUids) ? allUids : [];
+            const uids = matchedUids.slice(-fetchLimit);
+            console.log("[InboundEmailSync] IMAP search result", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                matchedUids: matchedUids.length,
+                fetchLimit,
+                selectedUids: uids,
+            });
+            if (!matchedUids.length && (options.dateFrom || options.dateTo)) {
+                await this.logMailboxDateDiagnostics(client, mailbox);
+            }
 
             for (const uid of uids) {
                 result.fetched += 1;
@@ -304,6 +352,7 @@ class InboundEmailMailboxProvider {
 
                     const inboundEmail = await this.buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId);
                     await this.inboundEmailService.create(inboundEmail);
+                    await this.applyAiCategoryFlag(client, fetchMessage.uid, inboundEmail.category, mailbox);
                     result.created += 1;
                 } catch (error: any) {
                     this.logError("Error processing inbound email", error, {
@@ -322,6 +371,124 @@ class InboundEmailMailboxProvider {
         return result;
     }
 
+    private formatSyncOptionsForLog(options: InboundEmailSyncOptions): Record<string, unknown> {
+        return {
+            dateFrom: options.dateFrom?.toISOString(),
+            dateTo: options.dateTo?.toISOString(),
+            limit: options.limit,
+        };
+    }
+
+    private formatSetForLog(value?: Set<string>): string[] {
+        return value ? Array.from(value.values()) : [];
+    }
+
+    private formatImapSearchQueryForLog(query: ImapSearchQuery): Record<string, unknown> {
+        return {
+            since: query.since?.toISOString(),
+            before: query.before?.toISOString(),
+            sentSince: query.sentSince?.toISOString(),
+            sentBefore: query.sentBefore?.toISOString(),
+        };
+    }
+
+    private async logMailboxDateDiagnostics(client: ImapFlow, mailbox: IMailbox): Promise<void> {
+        try {
+            const allUidsResult = await client.search({all: true}, {uid: true});
+            const allUids = Array.isArray(allUidsResult) ? allUidsResult : [];
+            const sampleUids = allUids.slice(-10);
+            const sample = sampleUids.length
+                ? await client.fetchAll(
+                    sampleUids,
+                    {uid: true, internalDate: true, envelope: true},
+                    {uid: true}
+                )
+                : [];
+
+            console.log("[InboundEmailSync] IMAP date diagnostics", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                totalUids: allUids.length,
+                sample: sample.map((message) => ({
+                    uid: message.uid,
+                    internalDate: this.formatDateForLog(message.internalDate),
+                    headerDate: this.formatDateForLog(message.envelope?.date),
+                    subject: message.envelope?.subject,
+                })),
+            });
+        } catch (error: any) {
+            this.logError("Error collecting IMAP date diagnostics", error, {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+            });
+        }
+    }
+
+    private formatDateForLog(value?: Date | string): string | undefined {
+        if (!value) {
+            return undefined;
+        }
+
+        return value instanceof Date ? value.toISOString() : value;
+    }
+
+    private async applyAiCategoryFlag(
+        client: ImapFlow,
+        uid: number,
+        category: string | undefined,
+        mailbox: IMailbox
+    ): Promise<void> {
+        const flag = this.buildAiCategoryFlag(category);
+        if (!flag) {
+            return;
+        }
+
+        try {
+            const applied = await client.messageFlagsAdd(uid, [flag], {uid: true});
+            const fetched = await client.fetchOne(uid, {uid: true, flags: true}, {uid: true});
+            const flags = fetched ? this.formatSetForLog(fetched.flags) : [];
+            console.log("[InboundEmailSync] AI category IMAP flag result", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                uid,
+                flag,
+                category,
+                applied,
+                flags,
+                flagPresent: flags.includes(flag),
+            });
+        } catch (error: any) {
+            this.logError("Error applying AI category IMAP flag", error, {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                uid,
+                flag,
+                category,
+            });
+        }
+    }
+
+    private buildAiCategoryFlag(category?: string): string | undefined {
+        const normalizedCategory = this.normalizeString(category);
+        if (!normalizedCategory) {
+            return undefined;
+        }
+
+        const suffix = normalizedCategory
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 80);
+
+        return suffix ? `ia_${suffix}` : undefined;
+    }
+
     private shouldRunMailbox(mailbox: IMailbox): boolean {
         const state = this.mailboxRunState.get(mailbox._id);
         if (state?.running) {
@@ -336,17 +503,23 @@ class InboundEmailMailboxProvider {
         return Date.now() - state.lastRunAt >= intervalMinutes * 60_000;
     }
 
-    private async buildSearchQuery(mailboxId: string): Promise<{ since: Date }> {
-        const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
-        if (!latestEmail?.receivedAt) {
-            return {
-                since: new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000),
-            };
+    private async buildSearchQuery(mailboxId: string, options: InboundEmailSyncOptions): Promise<ImapSearchQuery> {
+        const query: ImapSearchQuery = {};
+
+        if (options.dateFrom) {
+            query.sentSince = options.dateFrom;
+        } else {
+            const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
+            query.since = latestEmail?.receivedAt
+                ? new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000)
+                : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
         }
 
-        return {
-            since: new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000),
-        };
+        if (options.dateTo) {
+            query.sentBefore = new Date(options.dateTo.getTime() + 1);
+        }
+
+        return query;
     }
 
     private async findLatestInboundByMailbox(mailboxId: string): Promise<IInboundEmail | null> {
@@ -1031,3 +1204,4 @@ class InboundEmailMailboxProvider {
 
 export default InboundEmailMailboxProvider;
 export {InboundEmailMailboxProvider};
+export type {InboundEmailSyncOptions};

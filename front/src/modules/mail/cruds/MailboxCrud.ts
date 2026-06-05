@@ -54,6 +54,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       {title: 'autoProcessEnabled', key: 'autoProcessEnabled', align: 'start'},
       {title: 'attachmentStorageEnabled', key: 'attachmentStorageEnabled', align: 'start'},
       {title: 'attachmentOcrEnabled', key: 'attachmentOcrEnabled', align: 'start'},
+      {title: 'retentionDays', key: 'retentionDays', align: 'start'},
       {title: 'processingProtocol', key: 'processingProtocol', align: 'start'},
       {title: 'processingIntervalMinutes', key: 'processingIntervalMinutes', align: 'start'},
       {title: 'imapEnabled', key: 'imapEnabled', align: 'start'},
@@ -155,6 +156,13 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
         type: 'boolean',
         label: 'attachmentOcrEnabled',
         default: false,
+        groupTab: 'Procesamiento'
+      },
+      {
+        name: 'retentionDays',
+        type: 'number',
+        label: 'retentionDays',
+        default: null,
         groupTab: 'Procesamiento'
       },
       {

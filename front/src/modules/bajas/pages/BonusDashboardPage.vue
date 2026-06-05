@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from "vue";
 import type {IDraxFieldFilter} from "@drax/crud-share";
+import {useTheme} from "vuetify";
 import BonusProvider from "../providers/BonusProvider";
 
 type BonusGroupByRow = {
@@ -36,6 +37,7 @@ const emit = defineEmits<{
   (event: "loading-change", value: boolean): void
 }>();
 
+const theme = useTheme();
 const monthRows = ref<SummaryRow[]>([]);
 const planRows = ref<SummaryRow[]>([]);
 const createdByRows = ref<SummaryRow[]>([]);
@@ -43,6 +45,7 @@ const periodRows = ref<SummaryRow[]>([]);
 const loading = ref(false);
 const error = ref("");
 let requestId = 0;
+const isDarkTheme = computed(() => theme.current.value.dark);
 
 const numberFormatter = new Intl.NumberFormat("es-AR", {
   minimumFractionDigits: 0,
@@ -245,7 +248,10 @@ defineExpose({
       >
         <v-card
           class="bonus-dashboard__card"
-          :class="`bonus-dashboard__card--${card.accent}`"
+          :class="[
+            `bonus-dashboard__card--${card.accent}`,
+            {'bonus-dashboard__card--dark': isDarkTheme},
+          ]"
           variant="outlined"
         >
           <div class="bonus-dashboard__header">
@@ -376,6 +382,13 @@ defineExpose({
   --dashboard-accent: #00897b;
   --dashboard-accent-soft: #e0f2f1;
   --dashboard-accent-text: #00695c;
+  --dashboard-accent-readable: var(--dashboard-accent-text);
+  --dashboard-chip-bg: rgba(255, 255, 255, .78);
+  --dashboard-header-sheen: rgba(255, 255, 255, .8);
+  --dashboard-header-surface: rgba(255, 255, 255, .96);
+  --dashboard-hover-bg: color-mix(in srgb, var(--dashboard-accent-soft) 42%, white);
+  --dashboard-title-color: rgba(var(--v-theme-on-surface), .92);
+  --dashboard-total-bg: color-mix(in srgb, var(--dashboard-accent-soft) 56%, white);
   border-color: rgba(var(--v-border-color), .42);
   border-radius: 8px;
   box-shadow: 0 10px 28px rgba(30, 42, 55, .08);
@@ -410,11 +423,24 @@ defineExpose({
   --dashboard-accent-text: #4e342e;
 }
 
+.bonus-dashboard__card--dark {
+  --dashboard-accent-readable: color-mix(in srgb, var(--dashboard-accent) 48%, #ffffff);
+  --dashboard-accent-soft: color-mix(in srgb, var(--dashboard-accent) 18%, rgb(var(--v-theme-surface)));
+  --dashboard-chip-bg: color-mix(in srgb, var(--dashboard-accent) 24%, rgba(0, 0, 0, .82));
+  --dashboard-header-sheen: color-mix(in srgb, var(--dashboard-accent) 12%, transparent);
+  --dashboard-header-surface: color-mix(in srgb, var(--dashboard-accent) 7%, rgb(var(--v-theme-surface)));
+  --dashboard-hover-bg: color-mix(in srgb, var(--dashboard-accent) 14%, rgb(var(--v-theme-surface)));
+  --dashboard-title-color: rgba(var(--v-theme-on-surface), .96);
+  --dashboard-total-bg: color-mix(in srgb, var(--dashboard-accent) 18%, rgb(var(--v-theme-surface)));
+  border-color: rgba(var(--v-border-color), .5);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .28);
+}
+
 .bonus-dashboard__header {
   align-items: flex-start;
   background:
-    linear-gradient(135deg, var(--dashboard-accent-soft), rgba(255, 255, 255, .96) 52%),
-    linear-gradient(90deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0));
+    linear-gradient(135deg, var(--dashboard-accent-soft), var(--dashboard-header-surface) 52%),
+    linear-gradient(90deg, var(--dashboard-header-sheen), rgba(255, 255, 255, 0));
   border-bottom: 1px solid rgba(var(--v-border-color), .24);
   display: flex;
   gap: 12px;
@@ -443,6 +469,7 @@ defineExpose({
 }
 
 .bonus-dashboard__title {
+  color: var(--dashboard-title-color);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
@@ -464,8 +491,8 @@ defineExpose({
 }
 
 .bonus-dashboard__metric {
-  background: rgba(255, 255, 255, .78);
-  color: var(--dashboard-accent-text);
+  background: var(--dashboard-chip-bg);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
@@ -504,7 +531,7 @@ defineExpose({
 }
 
 .bonus-dashboard__table :deep(tbody tr:hover) {
-  background: color-mix(in srgb, var(--dashboard-accent-soft) 42%, white);
+  background: var(--dashboard-hover-bg);
 }
 
 .bonus-dashboard__table :deep(tfoot td) {
@@ -537,22 +564,22 @@ defineExpose({
 }
 
 .bonus-dashboard__amount {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
 .bonus-dashboard__percentage {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
   font-weight: 700;
 }
 
 .bonus-dashboard__total {
-  background: color-mix(in srgb, var(--dashboard-accent-soft) 56%, white);
+  background: var(--dashboard-total-bg);
   font-weight: 700;
 }
 
 .bonus-dashboard__total-label {
-  color: var(--dashboard-accent-text);
+  color: var(--dashboard-accent-readable);
 }
 
 @media (max-width: 640px) {

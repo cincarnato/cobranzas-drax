@@ -21,6 +21,7 @@ const MailboxBaseSchema = z.object({
     autoProcessEnabled: z.boolean().optional(),
     attachmentStorageEnabled: z.boolean().optional().default(true),
     attachmentOcrEnabled: z.boolean().optional().default(false),
+    retentionDays: z.number().nullable().optional().default(null),
     processingProtocol: z.enum(['IMAP', 'POP']).optional().default('IMAP'),
     processingIntervalMinutes: z.number().nullable().optional().default(5),
     imapEnabled: z.boolean().optional(),
