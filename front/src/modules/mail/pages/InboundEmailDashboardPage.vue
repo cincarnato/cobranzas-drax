@@ -5,8 +5,9 @@ import {VDateInput} from "vuetify/labs/VDateInput";
 import {useTheme} from "vuetify";
 import InboundEmailProvider from "../providers/InboundEmailProvider";
 
-type InboundDimension = "category" | "sentiment" | "isDuplicate" | "hasAttachments"
-type Accent = "category" | "sentiment" | "duplicate" | "attachments"
+type InboundDimension = "total" | "category" | "sentiment" | "isDuplicate" | "hasAttachments"
+type Accent = "total" | "category" | "sentiment" | "duplicate" | "attachments"
+type DateGroupFormat = "day" | "month" | "year"
 
 type InboundGroupByRow = {
   receivedAt?: unknown
@@ -39,6 +40,8 @@ const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
 const fromDate = ref<Date | null>(monthStart);
 const toDate = ref<Date | null>(today);
+const dateGroupFormat = ref<DateGroupFormat>("day");
+const totalRows = ref<SummaryRow[]>([]);
 const categoryRows = ref<SummaryRow[]>([]);
 const sentimentRows = ref<SummaryRow[]>([]);
 const duplicateRows = ref<SummaryRow[]>([]);
@@ -54,9 +57,34 @@ const numberFormatter = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 0,
 });
 
+const dateGroupOptions = [
+  {title: "Día", value: "day"},
+  {title: "Mes", value: "month"},
+  {title: "Año", value: "year"},
+];
+
+const dateGroupLabel = computed(() => {
+  if (dateGroupFormat.value === "year") return "año";
+  if (dateGroupFormat.value === "month") return "mes";
+  return "día";
+});
+const dateGroupHeader = computed(() => {
+  if (dateGroupFormat.value === "year") return "Año";
+  if (dateGroupFormat.value === "month") return "Mes";
+  return "Día";
+});
+
 const cards = computed<CardConfig[]>(() => [
   {
-    title: "Correos por día y categoría",
+    title: `Total de correos por ${dateGroupLabel.value}`,
+    label: "Total",
+    dimension: "total",
+    icon: "mdi-email-multiple-outline",
+    accent: "total",
+    rows: totalRows.value,
+  },
+  {
+    title: `Correos por ${dateGroupLabel.value} y categoría`,
     label: "Categoría",
     dimension: "category",
     icon: "mdi-shape-outline",
@@ -64,7 +92,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: categoryRows.value,
   },
   {
-    title: "Correos por día y sentimiento",
+    title: `Correos por ${dateGroupLabel.value} y sentimiento`,
     label: "Sentimiento",
     dimension: "sentiment",
     icon: "mdi-emoticon-outline",
@@ -72,7 +100,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: sentimentRows.value,
   },
   {
-    title: "Correos duplicados por día",
+    title: `Correos duplicados por ${dateGroupLabel.value}`,
     label: "Duplicado",
     dimension: "isDuplicate",
     icon: "mdi-content-duplicate",
@@ -80,7 +108,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: duplicateRows.value,
   },
   {
-    title: "Correos con adjuntos por día",
+    title: `Correos con adjuntos por ${dateGroupLabel.value}`,
     label: "Adjuntos",
     dimension: "hasAttachments",
     icon: "mdi-paperclip",
@@ -126,11 +154,24 @@ function formatPercentage(value: number): string {
   })}%`;
 }
 
-function formatDay(value: unknown): string {
+function formatDateGroup(value: unknown): string {
   if (!value) return "Sin fecha";
 
   const date = new Date(value as string | number | Date);
   if (Number.isNaN(date.getTime())) return String(value);
+
+  if (dateGroupFormat.value === "year") {
+    return date.toLocaleDateString("es-AR", {
+      year: "numeric",
+    });
+  }
+
+  if (dateGroupFormat.value === "month") {
+    return date.toLocaleDateString("es-AR", {
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
 
   return date.toLocaleDateString("es-AR", {
     day: "2-digit",
@@ -160,8 +201,8 @@ function toSummaryRows(rows: InboundGroupByRow[], dimension: InboundDimension): 
     const count = Number(row.count ?? 0);
 
     return {
-      day: formatDay(row.receivedAt),
-      label: getDisplayValue(row[dimension]),
+      day: formatDateGroup(row.receivedAt),
+      label: dimension === "total" ? "Total" : getDisplayValue(row[dimension]),
       count,
       percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
     };
@@ -177,6 +218,7 @@ function getRowKey(row: SummaryRow): string {
 }
 
 function clearDashboardRows() {
+  totalRows.value = [];
   categoryRows.value = [];
   sentimentRows.value = [];
   duplicateRows.value = [];
@@ -190,15 +232,18 @@ async function fetchDashboardData() {
 
   try {
     const filters = buildFilters();
-    const [categoryData, sentimentData, duplicateData, attachmentsData] = await Promise.all([
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "category"], filters, dateFormat: "day"}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "sentiment"], filters, dateFormat: "day"}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "isDuplicate"], filters, dateFormat: "day"}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "hasAttachments"], filters, dateFormat: "day"}),
+    const dateFormat = dateGroupFormat.value;
+    const [totalData, categoryData, sentimentData, duplicateData, attachmentsData] = await Promise.all([
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt"], filters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "category"], filters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "sentiment"], filters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "isDuplicate"], filters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "hasAttachments"], filters, dateFormat}),
     ]);
 
     if (currentRequestId !== requestId) return;
 
+    totalRows.value = toSummaryRows(totalData as InboundGroupByRow[], "total");
     categoryRows.value = toSummaryRows(categoryData as InboundGroupByRow[], "category");
     sentimentRows.value = toSummaryRows(sentimentData as InboundGroupByRow[], "sentiment");
     duplicateRows.value = toSummaryRows(duplicateData as InboundGroupByRow[], "isDuplicate");
@@ -219,9 +264,10 @@ async function fetchDashboardData() {
 function resetFilters() {
   fromDate.value = monthStart;
   toDate.value = today;
+  dateGroupFormat.value = "day";
 }
 
-watch([fromDate, toDate], () => {
+watch([fromDate, toDate, dateGroupFormat], () => {
   fetchDashboardData();
 }, {immediate: true});
 </script>
@@ -233,7 +279,7 @@ watch([fromDate, toDate], () => {
         <v-card-item>
           <v-card-title>Dashboard de correos entrantes</v-card-title>
           <v-card-subtitle>
-            Filtrá por fecha de recepción y revisá las distribuciones diarias.
+            Filtrá por fecha de recepción y elegí si agrupar por día, mes o año.
           </v-card-subtitle>
         </v-card-item>
 
@@ -255,6 +301,15 @@ watch([fromDate, toDate], () => {
                 variant="outlined"
                 hide-details="auto"
                 clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4" lg="3">
+              <v-select
+                v-model="dateGroupFormat"
+                :items="dateGroupOptions"
+                label="Agrupar por"
+                variant="outlined"
+                hide-details="auto"
               />
             </v-col>
             <v-col cols="12" md="auto" class="email-dashboard__actions">
@@ -343,7 +398,7 @@ watch([fromDate, toDate], () => {
             <v-table class="email-dashboard__table" density="compact" fixed-header>
               <thead>
                 <tr>
-                  <th class="text-left">Día</th>
+                  <th class="text-left">{{ dateGroupHeader }}</th>
                   <th class="text-left">{{ card.label }}</th>
                   <th class="text-right">Cantidad</th>
                   <th class="text-right">%</th>
@@ -432,6 +487,12 @@ watch([fromDate, toDate], () => {
   flex-direction: column;
   min-height: 420px;
   overflow: hidden;
+}
+
+.email-dashboard__card--total {
+  --dashboard-accent: #455a64;
+  --dashboard-accent-soft: #eceff1;
+  --dashboard-accent-text: #263238;
 }
 
 .email-dashboard__card--category {

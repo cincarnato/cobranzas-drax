@@ -5,8 +5,9 @@ import {VDateInput} from "vuetify/labs/VDateInput";
 import {useTheme} from "vuetify";
 import TransferEmailProvider from "../providers/TransferEmailProvider";
 
-type TransferDimension = "amount" | "month" | "needsHumanReview" | "destinationCbu"
-type Accent = "amount" | "month" | "review" | "cbu"
+type TransferDimension = "total" | "amount" | "month" | "needsHumanReview" | "destinationCbu"
+type Accent = "total" | "amount" | "month" | "review" | "cbu"
+type DateGroupFormat = "day" | "month" | "year"
 
 type TransferGroupByRow = {
   transferDate?: unknown
@@ -41,6 +42,8 @@ const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
 const fromDate = ref<Date | null>(monthStart);
 const toDate = ref<Date | null>(today);
+const dateGroupFormat = ref<DateGroupFormat>("day");
+const totalRows = ref<SummaryRow[]>([]);
 const amountRows = ref<SummaryRow[]>([]);
 const monthRows = ref<SummaryRow[]>([]);
 const reviewRows = ref<SummaryRow[]>([]);
@@ -63,9 +66,35 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 2,
 });
 
+const dateGroupOptions = [
+  {title: "Día", value: "day"},
+  {title: "Mes", value: "month"},
+  {title: "Año", value: "year"},
+];
+
+const dateGroupLabel = computed(() => {
+  if (dateGroupFormat.value === "year") return "año";
+  if (dateGroupFormat.value === "month") return "mes";
+  return "día";
+});
+const dateGroupHeader = computed(() => {
+  if (dateGroupFormat.value === "year") return "Año";
+  if (dateGroupFormat.value === "month") return "Mes";
+  return "Día";
+});
+
 const cards = computed<CardConfig[]>(() => [
   {
-    title: "Transferencias por día y monto",
+    title: `Total de transferencias por ${dateGroupLabel.value}`,
+    label: "Total",
+    dimension: "total",
+    icon: "mdi-bank-transfer-in",
+    accent: "total",
+    showAmount: false,
+    rows: totalRows.value,
+  },
+  {
+    title: `Transferencias por ${dateGroupLabel.value} y monto`,
     label: "Monto",
     dimension: "amount",
     icon: "mdi-cash-multiple",
@@ -74,7 +103,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: amountRows.value,
   },
   {
-    title: "Transferencias por día y mes",
+    title: `Transferencias por ${dateGroupLabel.value} y mes`,
     label: "Mes",
     dimension: "month",
     icon: "mdi-calendar-month-outline",
@@ -83,7 +112,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: monthRows.value,
   },
   {
-    title: "Transferencias por día y revisión",
+    title: `Transferencias por ${dateGroupLabel.value} y revisión`,
     label: "Revisión humana",
     dimension: "needsHumanReview",
     icon: "mdi-account-alert-outline",
@@ -92,7 +121,7 @@ const cards = computed<CardConfig[]>(() => [
     rows: reviewRows.value,
   },
   {
-    title: "Transferencias por día y CBU destino",
+    title: `Transferencias por ${dateGroupLabel.value} y CBU destino`,
     label: "CBU destino",
     dimension: "destinationCbu",
     icon: "mdi-bank-outline",
@@ -154,11 +183,24 @@ function formatPercentage(value: number): string {
   })}%`;
 }
 
-function formatDay(value: unknown): string {
+function formatDateGroup(value: unknown): string {
   if (!value) return "Sin fecha";
 
   const date = new Date(value as string | number | Date);
   if (Number.isNaN(date.getTime())) return String(value);
+
+  if (dateGroupFormat.value === "year") {
+    return date.toLocaleDateString("es-AR", {
+      year: "numeric",
+    });
+  }
+
+  if (dateGroupFormat.value === "month") {
+    return date.toLocaleDateString("es-AR", {
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
 
   return date.toLocaleDateString("es-AR", {
     day: "2-digit",
@@ -189,8 +231,8 @@ function toSummaryRows(rows: TransferGroupByRow[], dimension: TransferDimension)
     const amount = parseAmount(row.amount);
 
     return {
-      day: formatDay(row.transferDate),
-      label: dimension === "amount" ? formatCurrency(amount) : getDisplayValue(row[dimension]),
+      day: formatDateGroup(row.transferDate),
+      label: dimension === "total" ? "Total" : dimension === "amount" ? formatCurrency(amount) : getDisplayValue(row[dimension]),
       amount,
       count,
       percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
@@ -211,6 +253,7 @@ function getRowKey(row: SummaryRow): string {
 }
 
 function clearDashboardRows() {
+  totalRows.value = [];
   amountRows.value = [];
   monthRows.value = [];
   reviewRows.value = [];
@@ -224,15 +267,18 @@ async function fetchDashboardData() {
 
   try {
     const filters = buildFilters();
-    const [amountData, monthData, reviewData, cbuData] = await Promise.all([
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "amount"], filters, dateFormat: "day"}),
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "month"], filters, dateFormat: "day"}),
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "needsHumanReview"], filters, dateFormat: "day"}),
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "destinationCbu"], filters, dateFormat: "day"}),
+    const dateFormat = dateGroupFormat.value;
+    const [totalData, amountData, monthData, reviewData, cbuData] = await Promise.all([
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "amount"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "month"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "needsHumanReview"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "destinationCbu"], filters, dateFormat}),
     ]);
 
     if (currentRequestId !== requestId) return;
 
+    totalRows.value = toSummaryRows(totalData as TransferGroupByRow[], "total");
     amountRows.value = toSummaryRows(amountData as TransferGroupByRow[], "amount");
     monthRows.value = toSummaryRows(monthData as TransferGroupByRow[], "month");
     reviewRows.value = toSummaryRows(reviewData as TransferGroupByRow[], "needsHumanReview");
@@ -253,9 +299,10 @@ async function fetchDashboardData() {
 function resetFilters() {
   fromDate.value = monthStart;
   toDate.value = today;
+  dateGroupFormat.value = "day";
 }
 
-watch([fromDate, toDate], () => {
+watch([fromDate, toDate, dateGroupFormat], () => {
   fetchDashboardData();
 }, {immediate: true});
 </script>
@@ -267,7 +314,7 @@ watch([fromDate, toDate], () => {
         <v-card-item>
           <v-card-title>Dashboard de transferencias</v-card-title>
           <v-card-subtitle>
-            Filtrá por fecha de transferencia y revisá las distribuciones diarias.
+            Filtrá por fecha de transferencia y elegí si agrupar por día, mes o año.
           </v-card-subtitle>
         </v-card-item>
 
@@ -289,6 +336,15 @@ watch([fromDate, toDate], () => {
                 variant="outlined"
                 hide-details="auto"
                 clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4" lg="3">
+              <v-select
+                v-model="dateGroupFormat"
+                :items="dateGroupOptions"
+                label="Agrupar por"
+                variant="outlined"
+                hide-details="auto"
               />
             </v-col>
             <v-col cols="12" md="auto" class="transfer-dashboard__actions">
@@ -385,7 +441,7 @@ watch([fromDate, toDate], () => {
             <v-table class="transfer-dashboard__table" density="compact" fixed-header>
               <thead>
                 <tr>
-                  <th class="text-left">Día</th>
+                  <th class="text-left">{{ dateGroupHeader }}</th>
                   <th class="text-left">{{ card.label }}</th>
                   <th v-if="card.showAmount" class="text-right">Monto</th>
                   <th class="text-right">Cantidad</th>
@@ -484,6 +540,12 @@ watch([fromDate, toDate], () => {
   flex-direction: column;
   min-height: 420px;
   overflow: hidden;
+}
+
+.transfer-dashboard__card--total {
+  --dashboard-accent: #455a64;
+  --dashboard-accent-soft: #eceff1;
+  --dashboard-accent-text: #263238;
 }
 
 .transfer-dashboard__card--amount {
