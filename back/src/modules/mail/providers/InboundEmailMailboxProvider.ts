@@ -687,7 +687,7 @@ class InboundEmailMailboxProvider {
             .replace(/^_+|_+$/g, "")
             .slice(0, 80);
 
-        return suffix ? `ia_${suffix}` : undefined;
+        return suffix ? `${suffix}` : undefined;
     }
 
     private shouldRunMailbox(mailbox: IMailbox): boolean {
