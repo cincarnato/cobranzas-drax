@@ -126,6 +126,15 @@ type AnalysisResult = {
 
 type ErrorContext = Record<string, unknown>;
 
+type ImapFlowError = Error & {
+    cause?: unknown;
+    code?: string;
+    responseStatus?: string;
+    responseText?: string;
+    executedCommand?: string;
+    response?: unknown;
+};
+
 const inboundEmailAiSchema = z.object({
     category: z.string().nullable(),
     sentiment: z.string().nullable(),
@@ -1385,7 +1394,7 @@ class InboundEmailMailboxProvider {
 
     private formatError(error: unknown): string {
         if (error instanceof Error) {
-            return error.stack || error.message;
+            return JSON.stringify(this.serializeError(error), null, 2);
         }
 
         if (typeof error === "string") {
@@ -1410,12 +1419,17 @@ class InboundEmailMailboxProvider {
         }
 
         if (error instanceof Error) {
-            const errorWithCause = error as Error & { cause?: unknown };
+            const errorWithImap = error as ImapFlowError;
             return {
                 name: error.name,
                 message: error.message,
+                code: errorWithImap.code,
+                responseStatus: errorWithImap.responseStatus,
+                responseText: errorWithImap.responseText,
+                executedCommand: this.sanitizeImapCommandForLog(errorWithImap.executedCommand),
+                response: this.serializeImapResponse(errorWithImap.response),
                 stack: error.stack,
-                cause: this.serializeError(errorWithCause.cause),
+                cause: this.serializeError(errorWithImap.cause),
             };
         }
 
@@ -1431,6 +1445,26 @@ class InboundEmailMailboxProvider {
             return JSON.parse(JSON.stringify(error));
         } catch {
             return String(error);
+        }
+    }
+
+    private sanitizeImapCommandForLog(command?: string): string | undefined {
+        if (!command) {
+            return undefined;
+        }
+
+        return command.replace(/(LOGIN\s+\S+\s+)(?:"[^"]*"|\S+)/i, "$1[REDACTED]");
+    }
+
+    private serializeImapResponse(response: unknown): unknown {
+        if (!response || typeof response !== "object") {
+            return response;
+        }
+
+        try {
+            return JSON.parse(JSON.stringify(response));
+        } catch {
+            return String(response);
         }
     }
 
