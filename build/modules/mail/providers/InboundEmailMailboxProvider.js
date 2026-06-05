@@ -1040,7 +1040,7 @@ class InboundEmailMailboxProvider {
     }
     formatError(error) {
         if (error instanceof Error) {
-            return error.stack || error.message;
+            return JSON.stringify(this.serializeError(error), null, 2);
         }
         if (typeof error === "string") {
             return error;
@@ -1062,12 +1062,17 @@ class InboundEmailMailboxProvider {
             };
         }
         if (error instanceof Error) {
-            const errorWithCause = error;
+            const errorWithImap = error;
             return {
                 name: error.name,
                 message: error.message,
+                code: errorWithImap.code,
+                responseStatus: errorWithImap.responseStatus,
+                responseText: errorWithImap.responseText,
+                executedCommand: this.sanitizeImapCommandForLog(errorWithImap.executedCommand),
+                response: this.serializeImapResponse(errorWithImap.response),
                 stack: error.stack,
-                cause: this.serializeError(errorWithCause.cause),
+                cause: this.serializeError(errorWithImap.cause),
             };
         }
         if (typeof error === "string") {
@@ -1081,6 +1086,23 @@ class InboundEmailMailboxProvider {
         }
         catch {
             return String(error);
+        }
+    }
+    sanitizeImapCommandForLog(command) {
+        if (!command) {
+            return undefined;
+        }
+        return command.replace(/(LOGIN\s+\S+\s+)(?:"[^"]*"|\S+)/i, "$1[REDACTED]");
+    }
+    serializeImapResponse(response) {
+        if (!response || typeof response !== "object") {
+            return response;
+        }
+        try {
+            return JSON.parse(JSON.stringify(response));
+        }
+        catch {
+            return String(response);
         }
     }
     resolveAiModelName() {
