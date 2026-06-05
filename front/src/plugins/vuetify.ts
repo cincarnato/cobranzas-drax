@@ -33,21 +33,14 @@ export default createVuetify({
   defaults: {
     global: {
       density: 'comfortable',
-      rounded: 'lg',
     },
-    VAppBar: {
-      color: 'toolbar',
-      elevation: 0,
-    },
+
     VBtn: {
       color: 'primary',
       variant: 'flat',
       class: 'text-none font-weight-medium',
     },
-    VCard: {
-      elevation: 1,
-      rounded: 'xl',
-    },
+
     VTextField: {
       variant: 'outlined',
       density: 'compact',
