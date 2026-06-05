@@ -160,24 +160,19 @@ function formatDateGroup(value: unknown): string {
   const date = new Date(value as string | number | Date);
   if (Number.isNaN(date.getTime())) return String(value);
 
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
   if (dateGroupFormat.value === "year") {
-    return date.toLocaleDateString("es-AR", {
-      year: "numeric",
-    });
+    return String(year);
   }
 
   if (dateGroupFormat.value === "month") {
-    return date.toLocaleDateString("es-AR", {
-      month: "2-digit",
-      year: "numeric",
-    });
+    return `${month}/${year}`;
   }
 
-  return date.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return `${day}/${month}/${year}`;
 }
 
 function getDisplayValue(value: unknown): string {
