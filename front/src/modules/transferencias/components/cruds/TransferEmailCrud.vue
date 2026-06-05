@@ -3,7 +3,7 @@
 import {computed} from 'vue'
 import TransferEmailCrud from '../../cruds/TransferEmailCrud'
 import {Crud, useCrudStore} from "@drax/crud-vue";
-import {formatDate} from "@drax/common-front"
+import {formatDateTime} from "@drax/common-front"
 import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
 import TransferEmailProvider from "../../providers/TransferEmailProvider";
 import type {IDraxFieldFilter} from "@drax/crud-share";
@@ -162,7 +162,21 @@ async function exportExcel() {
     <template v-slot:item.transferDate="{value}">
       <div class="field-cell date-cell">
         <v-icon icon="mdi-calendar" size="16" color="primary" />
-        <span>{{ formatDate(value) }}</span>
+        <span>{{ formatDateTime(value) }}</span>
+      </div>
+    </template>
+
+    <template v-slot:item.emailDate="{value}">
+      <div class="field-cell date-cell">
+        <v-icon icon="mdi-email-clock-outline" size="16" color="primary" />
+        <span>{{ formatDateTime(value) }}</span>
+      </div>
+    </template>
+
+    <template v-slot:item.processDate="{value}">
+      <div class="field-cell date-cell">
+        <v-icon icon="mdi-cog-clockwise" size="16" color="primary" />
+        <span>{{ formatDateTime(value) }}</span>
       </div>
     </template>
 
@@ -198,11 +212,11 @@ async function exportExcel() {
     </template>
 
     <template v-slot:item.createdAt="{value}">
-      {{ formatDate(value) }}
+      {{ formatDateTime(value) }}
     </template>
 
     <template v-slot:item.updatedAt="{value}">
-      {{ formatDate(value) }}
+      {{ formatDateTime(value) }}
     </template>
 
     <template v-slot:form="{form, operation}">

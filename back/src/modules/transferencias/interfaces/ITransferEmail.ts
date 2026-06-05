@@ -5,6 +5,8 @@ interface ITransferEmailBase {
     amount?: number
     currency?: string
     transferDate?: Date
+    emailDate?: Date
+    processDate?: Date
     operationNumber?: string
     concept?: string
     originAccount?: string
@@ -32,6 +34,8 @@ interface ITransferEmail {
     amount?: number
     currency?: string
     transferDate?: Date
+    emailDate?: Date
+    processDate?: Date
     operationNumber?: string
     concept?: string
     originAccount?: string

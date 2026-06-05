@@ -11,6 +11,8 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
             amount: {type: Number,   required: false, index: false, unique: false },
             currency: {type: String,  enum: ['ARS', 'USD', 'EUR', 'OTHER'], required: false, index: false, unique: false },
             transferDate: {type: Date,   required: false, index: false, unique: false },
+            emailDate: {type: Date,   required: false, index: true, unique: false },
+            processDate: {type: Date,   required: false, index: true, unique: false },
             operationNumber: {type: String,   required: false, index: true, unique: false },
             concept: {type: String,   required: false, index: false, unique: false },
             originAccount: {type: String,   required: false, index: true, unique: false },

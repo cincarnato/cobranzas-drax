@@ -228,6 +228,8 @@ const valueOrDash = (value?: string | number | null) => {
           <div class="summary-block">
             <p><span class="summary-label">Monto Transferido:</span> {{ formatCurrency(email.amount, email.currency) }}</p>
             <p><span class="summary-label">Fecha de Transferencia:</span> {{ formatDate(email.transferDate) }}</p>
+            <p><span class="summary-label">Fecha de Recepción del Mail:</span> {{ formatDate(email.emailDate) }}</p>
+            <p><span class="summary-label">Fecha de Procesamiento:</span> {{ formatDate(email.processDate) }}</p>
             <p><span class="summary-label">Número de Operación:</span> {{ valueOrDash(email.operationNumber) }}</p>
             <p><span class="summary-label">Concepto:</span> {{ valueOrDash(email.concept) }}</p>
           </div>

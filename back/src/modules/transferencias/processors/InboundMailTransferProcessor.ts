@@ -175,6 +175,7 @@ class InboundMailTransferProcessor {
             : undefined;
 
         return inboundReceivedAt
+            || latestTransferEmail.emailDate
             || latestTransferEmail.transferDate
             || latestTransferEmail.createdAt
             || null;
@@ -241,7 +242,7 @@ class InboundMailTransferProcessor {
             ? extraction.amount
             : undefined;
         const currency = extraction.currency || undefined;
-        const transferDate = this.parseTransferDate(extraction.transferDate) || inboundEmail.receivedAt;
+        const transferDate = this.parseTransferDate(extraction.transferDate);
 
         const payload: ITransferEmailBase = {
             inboundEmail: inboundEmail._id,
@@ -249,6 +250,8 @@ class InboundMailTransferProcessor {
             amount,
             currency,
             transferDate,
+            emailDate: inboundEmail.receivedAt,
+            processDate: new Date(),
             operationNumber: this.normalizeString(extraction.operationNumber),
             concept: this.normalizeString(extraction.concept),
             originAccount: this.normalizeString(extraction.originAccount),
@@ -262,7 +265,7 @@ class InboundMailTransferProcessor {
             affiliateName: this.normalizeString(extraction.affiliateName) || inboundEmail.customer?.name || inboundEmail.fromName,
             affiliateEmail,
             affiliateDocumentNumber,
-            needsHumanReview: extraction.needsHumanReview ?? (!amount || !affiliateDocumentNumber),
+            needsHumanReview: extraction.needsHumanReview ?? (!amount || !affiliateDocumentNumber || !transferDate),
         };
 
         return this.removeUndefinedFields(payload);

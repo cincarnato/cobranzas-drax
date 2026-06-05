@@ -50,6 +50,8 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'amount', key: 'amount', align: 'end'},
       {title: 'currency', key: 'currency', align: 'start'},
       {title: 'transferDate', key: 'transferDate', align: 'start'},
+      {title: 'emailDate', key: 'emailDate', align: 'start'},
+      {title: 'processDate', key: 'processDate', align: 'start'},
       {title: 'operationNumber', key: 'operationNumber', align: 'start'},
       {title: 'concept', key: 'concept', align: 'start'},
       {title: 'originAccount', key: 'originAccount', align: 'start'},
@@ -111,6 +113,8 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'amount',type:'number',label:'amount',default:null},
 {name:'currency',type:'enum',label:'currency',default:null,enum: ['ARS', 'USD', 'EUR', 'OTHER']},
 {name:'transferDate',type:'date',label:'transferDate',default:null},
+{name:'emailDate',type:'date',label:'emailDate',default:null},
+{name:'processDate',type:'date',label:'processDate',default:null},
 {name:'operationNumber',type:'string',label:'operationNumber',default:''},
 {name:'concept',type:'string',label:'concept',default:''},
 {name:'originAccount',type:'string',label:'originAccount',default:''},
@@ -147,6 +151,10 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
     return [
       {name: 'transferDate', type: 'date', label: 'Fecha mayor a', default: '', operator: 'gte' },
       {name: 'transferDate', type: 'date', label: 'Fecha menor a', default: '', operator: 'lte' },
+      {name: 'emailDate', type: 'date', label: 'Fecha email mayor a', default: '', operator: 'gte' },
+      {name: 'emailDate', type: 'date', label: 'Fecha email menor a', default: '', operator: 'lte' },
+      {name: 'processDate', type: 'date', label: 'Fecha proceso mayor a', default: '', operator: 'gte' },
+      {name: 'processDate', type: 'date', label: 'Fecha proceso menor a', default: '', operator: 'lte' },
       {name: 'affiliateName', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
       {name: 'affiliateDocumentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'eq' },
     ]
@@ -177,7 +185,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','affiliateName','affiliateDocumentNumber', 'amount','currency', 'transferDate', 'month', 'observations']
+    return ['_id','affiliateName','affiliateDocumentNumber', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'month', 'observations']
   }
 
   get isImportable(){

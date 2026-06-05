@@ -34,6 +34,8 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             {header: 'DNI Afiliado', key: 'affiliateDocumentNumber', width: 16},
             {header: 'Nombre Afiliado', key: 'affiliateName', width: 32},
             {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
+            {header: 'Fecha Email', key: 'emailDate', width: 20},
+            {header: 'Fecha Proceso', key: 'processDate', width: 20},
             {header: 'Monto', key: 'amount', width: 14},
             {header: 'Mes', key: 'month', width: 14},
             {header: 'Numero Operacion', key: 'operationNumber', width: 22},
@@ -49,6 +51,8 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                 affiliateDocumentNumber: row.affiliateDocumentNumber ?? '',
                 affiliateName: row.affiliateName ?? '',
                 transferDate: row.transferDate ? new Date(row.transferDate) : '',
+                emailDate: row.emailDate ? new Date(row.emailDate) : '',
+                processDate: row.processDate ? new Date(row.processDate) : '',
                 amount: row.amount ?? null,
                 month: row.month ?? '',
                 operationNumber: row.operationNumber ?? '',
@@ -63,6 +67,8 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         worksheet.getRow(1).font = {bold: true}
         worksheet.views = [{state: 'frozen', ySplit: 1}]
         worksheet.getColumn('transferDate').numFmt = 'dd/mm/yyyy'
+        worksheet.getColumn('emailDate').numFmt = 'dd/mm/yyyy hh:mm'
+        worksheet.getColumn('processDate').numFmt = 'dd/mm/yyyy hh:mm'
         worksheet.getColumn('amount').numFmt = '$ #,##0.00'
 
         return {

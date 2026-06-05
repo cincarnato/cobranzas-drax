@@ -8,6 +8,8 @@ const TransferEmailBaseSchema = z.object({
     amount: z.number().nullable().optional(),
     currency: z.enum(['ARS', 'USD', 'EUR', 'OTHER']).optional(),
     transferDate: z.coerce.date().nullable().optional(),
+    emailDate: z.coerce.date().nullable().optional(),
+    processDate: z.coerce.date().nullable().optional(),
     operationNumber: z.string().optional(),
     concept: z.string().optional(),
     originAccount: z.string().optional(),
