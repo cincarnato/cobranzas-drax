@@ -142,6 +142,13 @@ const menu: MenuItem[] = [
         permission: 'transferemail:manage'
       },
       {
+        icon: 'mdi-view-dashboard-variant-outline',
+        text: 'Dashboard Transferencias',
+        link: { name: "TransferEmailDashboardPage" },
+        gallery: true,
+        permission: 'transferemail:view'
+      },
+      {
         icon: 'mdi-play-circle-outline',
         text: 'Procesar correos de transferencias',
         link: { name: "TransferEmailProcessPage" },
@@ -172,6 +179,13 @@ const menu: MenuItem[] = [
         link: { name: "InboundEmailCrudPage" },
         gallery: true,
         permission: 'inboundemail:manage'
+      },
+      {
+        icon: 'mdi-view-dashboard-variant-outline',
+        text: 'Dashboard Correos Entrantes',
+        link: { name: "InboundEmailDashboardPage" },
+        gallery: true,
+        permission: 'inboundemail:view'
       },
       {
         icon: 'mdi-sync',
