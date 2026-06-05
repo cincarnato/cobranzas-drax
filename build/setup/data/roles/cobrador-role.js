@@ -7,6 +7,8 @@ import CallLogPermissions from "../../../modules/caller/permissions/CallLogPermi
 import CallFailedTypePermissions from "../../../modules/caller/permissions/CallFailedTypePermissions.js";
 import MultichannelPermissions from "../../../modules/caller/permissions/MultichannelPermissions.js";
 import CallSuccessTypePermissions from "../../../modules/caller/permissions/CallSuccessTypePermissions.js";
+import TransferEmailPermissions from "../../../modules/transferencias/permissions/TransferEmailPermissions.js";
+import InboundEmailPermissions from "../../../modules/mail/permissions/InboundEmailPermissions.js";
 const role = {
     name: "Cobrador",
     permissions: [
@@ -29,6 +31,11 @@ const role = {
         MultichannelPermissions.SendWhatsappTemplate,
         CallFailedTypePermissions.View,
         CallSuccessTypePermissions.View,
+        TransferEmailPermissions.View,
+        TransferEmailPermissions.Manage,
+        TransferEmailPermissions.Update,
+        InboundEmailPermissions.View,
+        InboundEmailPermissions.Manage,
     ],
     childRoles: [],
     readonly: true

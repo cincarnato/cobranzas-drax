@@ -21,6 +21,7 @@ const MailboxSchema = new mongoose.Schema({
     autoProcessEnabled: { type: Boolean, required: false, index: false, unique: false },
     attachmentStorageEnabled: { type: Boolean, required: false, index: false, unique: false, default: true },
     attachmentOcrEnabled: { type: Boolean, required: false, index: false, unique: false, default: false },
+    retentionDays: { type: Number, required: false, index: false, unique: false, default: null },
     processingProtocol: { type: String, enum: ['IMAP', 'POP'], required: false, index: false, unique: false },
     processingIntervalMinutes: { type: Number, required: false, index: false, unique: false },
     imapEnabled: { type: Boolean, required: false, index: false, unique: false },

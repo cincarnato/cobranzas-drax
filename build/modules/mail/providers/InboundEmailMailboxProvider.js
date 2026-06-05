@@ -6,9 +6,11 @@ import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js"
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import AffiliateServiceFactory from "../../premedic/factory/services/AffiliateServiceFactory.js";
 import { MediaService } from "@drax/media-back";
+import { SettingServiceFactory } from "@drax/settings-back";
 import { ImapFlow } from "imapflow";
 import { extractTextWithTesseract } from "../tools/TesseractOCR.js";
 import { extractTextFromPdf } from "../tools/PdfTextExtractor.js";
+import { InboundEmailModel } from "../models/InboundEmailModel.js";
 const inboundEmailAiSchema = z.object({
     category: z.string().nullable(),
     sentiment: z.string().nullable(),
@@ -31,12 +33,16 @@ const inboundEmailAiSchema = z.object({
     needsHumanReview: z.boolean().nullable(),
 });
 const DEFAULT_POLL_INTERVAL_MS = 60000;
+const DEFAULT_PURGE_INTERVAL_MS = 60 * 60000;
 const DEFAULT_FETCH_LIMIT = 25;
 const DEFAULT_LOOKBACK_DAYS = 10;
 const DEFAULT_AI_PROVIDER = "OllamaAi";
+const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
+const MAILBOX_AUTO_PURGE_SETTING_KEY = "MailboxAutoPurge";
 class InboundEmailMailboxProvider {
     constructor() {
         this.syncInProgress = false;
+        this.purgeInProgress = false;
         this.mailboxRunState = new Map();
         this.mailboxService = MailboxServiceFactory.instance;
         this.inboundEmailService = InboundEmailServiceFactory.instance;
@@ -44,6 +50,7 @@ class InboundEmailMailboxProvider {
         this.mediaService = new MediaService();
         this.aiProvider = AiProviderFactory.instance(this.resolveAiProviderName());
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
+        this.purgeIntervalMs = this.readNumberEnv("INBOUND_EMAIL_PURGE_INTERVAL_MS", DEFAULT_PURGE_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
     }
     static get instance() {
@@ -53,21 +60,148 @@ class InboundEmailMailboxProvider {
         return InboundEmailMailboxProvider.singleton;
     }
     start() {
+        this.startMailboxAutoSyncInterval();
+        this.startRetentionPurgeInterval();
+    }
+    stop() {
+        this.stopMailboxAutoSyncInterval();
+        this.stopRetentionPurgeInterval();
+    }
+    startMailboxAutoSyncInterval(intervalMs = this.pollIntervalMs) {
         if (this.pollTimer) {
             return;
         }
-        void this.syncAllEnabledMailboxes();
+        void this.runMailboxAutoSync();
         this.pollTimer = setInterval(() => {
-            void this.syncAllEnabledMailboxes();
-        }, this.pollIntervalMs);
+            void this.runMailboxAutoSync();
+        }, intervalMs);
     }
-    stop() {
+    stopMailboxAutoSyncInterval() {
         if (this.pollTimer) {
             clearInterval(this.pollTimer);
             this.pollTimer = undefined;
         }
     }
-    async syncAllEnabledMailboxes() {
+    startRetentionPurgeInterval(intervalMs = this.purgeIntervalMs) {
+        if (this.purgeTimer) {
+            return;
+        }
+        void this.runMailboxAutoPurge();
+        this.purgeTimer = setInterval(() => {
+            void this.runMailboxAutoPurge();
+        }, intervalMs);
+    }
+    stopRetentionPurgeInterval() {
+        if (this.purgeTimer) {
+            clearInterval(this.purgeTimer);
+            this.purgeTimer = undefined;
+        }
+    }
+    async purgeInboundEmailsByRetention() {
+        if (this.purgeInProgress) {
+            return {
+                processedMailboxes: 0,
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                skippedMailboxes: 0,
+                attachmentErrors: 0,
+                errors: [],
+            };
+        }
+        this.purgeInProgress = true;
+        try {
+            const mailboxes = await this.mailboxService.find({
+                limit: 0,
+                filters: [],
+            });
+            const result = {
+                processedMailboxes: 0,
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                skippedMailboxes: 0,
+                attachmentErrors: 0,
+                errors: [],
+            };
+            for (const mailbox of mailboxes) {
+                if (!this.hasRetentionEnabled(mailbox)) {
+                    result.skippedMailboxes += 1;
+                    continue;
+                }
+                try {
+                    const purgeResult = await this.purgeMailboxInboundEmailsByRetention(mailbox);
+                    result.processedMailboxes += 1;
+                    result.deletedEmails += purgeResult.deletedEmails;
+                    result.deletedAttachments += purgeResult.deletedAttachments;
+                    result.attachmentErrors += purgeResult.attachmentErrors;
+                }
+                catch (error) {
+                    this.logError("Error purging inbound emails by retention", error, {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                        retentionDays: mailbox.retentionDays,
+                    });
+                    result.errors.push({
+                        mailboxId: mailbox._id,
+                        error: this.formatError(error),
+                    });
+                }
+            }
+            return result;
+        }
+        finally {
+            this.purgeInProgress = false;
+        }
+    }
+    async purgeMailboxInboundEmailsByRetention(mailbox) {
+        const retentionDays = this.resolveRetentionDays(mailbox);
+        if (!retentionDays) {
+            return {
+                mailboxId: mailbox._id,
+                retentionDays: 0,
+                cutoffDate: new Date(),
+                deletedEmails: 0,
+                deletedAttachments: 0,
+                attachmentErrors: 0,
+            };
+        }
+        const cutoffDate = this.buildRetentionCutoffDate(retentionDays);
+        const purgeFilter = {
+            mailbox: mailbox._id,
+            receivedAt: { $lt: cutoffDate },
+        };
+        const expiredEmails = await InboundEmailModel.find(purgeFilter)
+            .select("_id attachments")
+            .lean()
+            .exec();
+        const attachmentPurgeResult = await this.purgeInboundEmailAttachments(expiredEmails, mailbox);
+        const expiredEmailIds = expiredEmails.map((email) => email._id);
+        const deleteResult = expiredEmailIds.length
+            ? await InboundEmailModel.deleteMany({ _id: { $in: expiredEmailIds } })
+            : { deletedCount: 0 };
+        const deletedEmails = deleteResult.deletedCount || 0;
+        if (deletedEmails > 0 || attachmentPurgeResult.deletedAttachments > 0 || attachmentPurgeResult.attachmentErrors > 0) {
+            console.log("[InboundEmailRetention] Purged inbound emails", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                retentionDays,
+                cutoffDate: cutoffDate.toISOString(),
+                deletedEmails,
+                deletedAttachments: attachmentPurgeResult.deletedAttachments,
+                attachmentErrors: attachmentPurgeResult.attachmentErrors,
+            });
+        }
+        return {
+            mailboxId: mailbox._id,
+            retentionDays,
+            cutoffDate,
+            deletedEmails,
+            deletedAttachments: attachmentPurgeResult.deletedAttachments,
+            attachmentErrors: attachmentPurgeResult.attachmentErrors,
+        };
+    }
+    async syncAllEnabledMailboxes(options = {}) {
         if (this.syncInProgress) {
             return {
                 processedMailboxes: 0,
@@ -97,13 +231,18 @@ class InboundEmailMailboxProvider {
             };
             for (const mailbox of mailboxes) {
                 if (!this.shouldRunMailbox(mailbox)) {
+                    console.log("[InboundEmailSync] Skipping mailbox by run interval", {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                    });
                     continue;
                 }
                 const mailboxState = this.mailboxRunState.get(mailbox._id) || { running: false };
                 mailboxState.running = true;
                 this.mailboxRunState.set(mailbox._id, mailboxState);
                 try {
-                    const syncResult = await this.syncMailbox(mailbox);
+                    const syncResult = await this.syncMailbox(mailbox, options);
                     result.processedMailboxes += 1;
                     result.createdEmails += syncResult.created;
                     result.fetchedEmails += syncResult.fetched;
@@ -136,7 +275,29 @@ class InboundEmailMailboxProvider {
             this.syncInProgress = false;
         }
     }
-    async syncMailbox(mailbox) {
+    async runMailboxAutoSync() {
+        if (!await this.isSettingEnabled(MAILBOX_AUTO_SYNC_SETTING_KEY)) {
+            return;
+        }
+        await this.syncAllEnabledMailboxes();
+    }
+    async runMailboxAutoPurge() {
+        if (!await this.isSettingEnabled(MAILBOX_AUTO_PURGE_SETTING_KEY)) {
+            return;
+        }
+        await this.purgeInboundEmailsByRetention();
+    }
+    async isSettingEnabled(key) {
+        try {
+            const setting = await SettingServiceFactory().findByKey(key);
+            return setting?.value === true || setting?.value === "true";
+        }
+        catch (error) {
+            this.logError("Error reading mailbox automation setting", error, { settingKey: key });
+            return false;
+        }
+    }
+    async syncMailbox(mailbox, options = {}) {
         const result = {
             mailboxId: mailbox._id,
             fetched: 0,
@@ -160,10 +321,39 @@ class InboundEmailMailboxProvider {
         });
         try {
             await client.connect();
-            await client.mailboxOpen("INBOX");
-            const searchQuery = await this.buildSearchQuery(mailbox._id);
+            const openedMailbox = await client.mailboxOpen("INBOX");
+            console.log("[InboundEmailSync] IMAP mailbox capabilities", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                flags: this.formatSetForLog(openedMailbox.flags),
+                permanentFlags: this.formatSetForLog(openedMailbox.permanentFlags),
+                acceptsAnyPermanentFlag: openedMailbox.permanentFlags?.has("\\*") || false,
+                readOnly: openedMailbox.readOnly || false,
+            });
+            const searchQuery = await this.buildSearchQuery(mailbox._id, options);
+            console.log("[InboundEmailSync] IMAP search query", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                options: this.formatSyncOptionsForLog(options),
+                searchQuery: this.formatImapSearchQueryForLog(searchQuery),
+            });
             const allUids = await client.search(searchQuery, { uid: true });
-            const uids = (allUids || []).slice(-this.fetchLimit);
+            const fetchLimit = options.limit || this.fetchLimit;
+            const matchedUids = Array.isArray(allUids) ? allUids : [];
+            const uids = matchedUids.slice(-fetchLimit);
+            console.log("[InboundEmailSync] IMAP search result", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                matchedUids: matchedUids.length,
+                fetchLimit,
+                selectedUids: uids,
+            });
+            if (!matchedUids.length && (options.dateFrom || options.dateTo)) {
+                await this.logMailboxDateDiagnostics(client, mailbox);
+            }
             for (const uid of uids) {
                 result.fetched += 1;
                 try {
@@ -188,6 +378,7 @@ class InboundEmailMailboxProvider {
                     }
                     const inboundEmail = await this.buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId);
                     await this.inboundEmailService.create(inboundEmail);
+                    await this.applyAiCategoryFlag(client, fetchMessage.uid, inboundEmail.category, mailbox);
                     result.created += 1;
                 }
                 catch (error) {
@@ -206,6 +397,105 @@ class InboundEmailMailboxProvider {
         }
         return result;
     }
+    formatSyncOptionsForLog(options) {
+        return {
+            dateFrom: options.dateFrom?.toISOString(),
+            dateTo: options.dateTo?.toISOString(),
+            limit: options.limit,
+        };
+    }
+    formatSetForLog(value) {
+        return value ? Array.from(value.values()) : [];
+    }
+    formatImapSearchQueryForLog(query) {
+        return {
+            since: query.since?.toISOString(),
+            before: query.before?.toISOString(),
+            sentSince: query.sentSince?.toISOString(),
+            sentBefore: query.sentBefore?.toISOString(),
+        };
+    }
+    async logMailboxDateDiagnostics(client, mailbox) {
+        try {
+            const allUidsResult = await client.search({ all: true }, { uid: true });
+            const allUids = Array.isArray(allUidsResult) ? allUidsResult : [];
+            const sampleUids = allUids.slice(-10);
+            const sample = sampleUids.length
+                ? await client.fetchAll(sampleUids, { uid: true, internalDate: true, envelope: true }, { uid: true })
+                : [];
+            console.log("[InboundEmailSync] IMAP date diagnostics", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                totalUids: allUids.length,
+                sample: sample.map((message) => ({
+                    uid: message.uid,
+                    internalDate: this.formatDateForLog(message.internalDate),
+                    headerDate: this.formatDateForLog(message.envelope?.date),
+                    subject: message.envelope?.subject,
+                })),
+            });
+        }
+        catch (error) {
+            this.logError("Error collecting IMAP date diagnostics", error, {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+            });
+        }
+    }
+    formatDateForLog(value) {
+        if (!value) {
+            return undefined;
+        }
+        return value instanceof Date ? value.toISOString() : value;
+    }
+    async applyAiCategoryFlag(client, uid, category, mailbox) {
+        const flag = this.buildAiCategoryFlag(category);
+        if (!flag) {
+            return;
+        }
+        try {
+            const applied = await client.messageFlagsAdd(uid, [flag], { uid: true });
+            const fetched = await client.fetchOne(uid, { uid: true, flags: true }, { uid: true });
+            const flags = fetched ? this.formatSetForLog(fetched.flags) : [];
+            console.log("[InboundEmailSync] AI category IMAP flag result", {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                uid,
+                flag,
+                category,
+                applied,
+                flags,
+                flagPresent: flags.includes(flag),
+            });
+        }
+        catch (error) {
+            this.logError("Error applying AI category IMAP flag", error, {
+                mailboxId: mailbox._id,
+                mailboxName: mailbox.name,
+                mailboxEmail: mailbox.email,
+                uid,
+                flag,
+                category,
+            });
+        }
+    }
+    buildAiCategoryFlag(category) {
+        const normalizedCategory = this.normalizeString(category);
+        if (!normalizedCategory) {
+            return undefined;
+        }
+        const suffix = normalizedCategory
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 80);
+        return suffix ? `${suffix}` : undefined;
+    }
     shouldRunMailbox(mailbox) {
         const state = this.mailboxRunState.get(mailbox._id);
         if (state?.running) {
@@ -217,16 +507,62 @@ class InboundEmailMailboxProvider {
         }
         return Date.now() - state.lastRunAt >= intervalMinutes * 60000;
     }
-    async buildSearchQuery(mailboxId) {
-        const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
-        if (!latestEmail?.receivedAt) {
-            return {
-                since: new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000),
-            };
-        }
-        return {
-            since: new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000),
+    async purgeInboundEmailAttachments(emails, mailbox) {
+        const result = {
+            deletedAttachments: 0,
+            attachmentErrors: 0,
         };
+        for (const email of emails) {
+            for (const attachment of email.attachments || []) {
+                if (!attachment.filepath) {
+                    continue;
+                }
+                try {
+                    await this.mediaService.deleteFileByRelativePath({
+                        relativePath: attachment.filepath,
+                    });
+                    result.deletedAttachments += 1;
+                }
+                catch (error) {
+                    result.attachmentErrors += 1;
+                    this.logError("Error deleting inbound email attachment by retention", error, {
+                        mailboxId: mailbox._id,
+                        mailboxName: mailbox.name,
+                        mailboxEmail: mailbox.email,
+                        inboundEmailId: email._id,
+                        attachmentFilename: attachment.filename,
+                        attachmentFilepath: attachment.filepath,
+                    });
+                }
+            }
+        }
+        return result;
+    }
+    hasRetentionEnabled(mailbox) {
+        return Boolean(this.resolveRetentionDays(mailbox));
+    }
+    resolveRetentionDays(mailbox) {
+        const retentionDays = Number(mailbox.retentionDays);
+        return Number.isFinite(retentionDays) && retentionDays > 0 ? retentionDays : undefined;
+    }
+    buildRetentionCutoffDate(retentionDays) {
+        return new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    }
+    async buildSearchQuery(mailboxId, options) {
+        const query = {};
+        if (options.dateFrom) {
+            query.sentSince = options.dateFrom;
+        }
+        else {
+            const latestEmail = await this.findLatestInboundByMailbox(mailboxId);
+            query.since = latestEmail?.receivedAt
+                ? new Date(new Date(latestEmail.receivedAt).getTime() - 24 * 60 * 60 * 1000)
+                : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+        }
+        if (options.dateTo) {
+            query.sentBefore = new Date(options.dateTo.getTime() + 1);
+        }
+        return query;
     }
     async findLatestInboundByMailbox(mailboxId) {
         const latest = await this.inboundEmailService.paginate({

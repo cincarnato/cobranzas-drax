@@ -23,6 +23,7 @@ class MailboxSqliteRepository extends AbstractSqliteRepository {
             { name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false },
             { name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false },
             { name: "attachmentOcrEnabled", type: "TEXT", unique: undefined, primary: false },
+            { name: "retentionDays", type: "REAL", unique: undefined, primary: false },
             { name: "processingProtocol", type: "TEXT", unique: undefined, primary: false },
             { name: "processingIntervalMinutes", type: "REAL", unique: undefined, primary: false },
             { name: "processingIntervalMinutes", type: "TEXT", unique: undefined, primary: false },

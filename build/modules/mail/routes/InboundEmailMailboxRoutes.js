@@ -5,6 +5,15 @@ async function InboundEmailMailboxRoutes(fastify, options) {
         schema: {
             tags: ["mail"],
             summary: "Run inbound email mailbox sync manually",
+            body: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                    dateFrom: { type: "string", format: "date" },
+                    dateTo: { type: "string", format: "date" },
+                    limit: { type: "number", minimum: 1, maximum: 1000 },
+                },
+            },
             response: {
                 200: {
                     type: "object",
