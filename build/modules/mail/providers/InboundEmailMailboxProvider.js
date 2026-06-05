@@ -34,7 +34,7 @@ const inboundEmailAiSchema = z.object({
 });
 const DEFAULT_POLL_INTERVAL_MS = 60000;
 const DEFAULT_PURGE_INTERVAL_MS = 60 * 60000;
-const DEFAULT_FETCH_LIMIT = 25;
+const DEFAULT_FETCH_LIMIT = 10;
 const DEFAULT_LOOKBACK_DAYS = 10;
 const DEFAULT_AI_PROVIDER = "OllamaAi";
 const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
@@ -342,7 +342,9 @@ class InboundEmailMailboxProvider {
             const allUids = await client.search(searchQuery, { uid: true });
             const fetchLimit = options.limit || this.fetchLimit;
             const matchedUids = Array.isArray(allUids) ? allUids : [];
-            const uids = matchedUids.slice(-fetchLimit);
+            const uids = [...matchedUids]
+                .sort((a, b) => a - b)
+                .slice(0, fetchLimit);
             console.log("[InboundEmailSync] IMAP search result", {
                 mailboxId: mailbox._id,
                 mailboxName: mailbox.name,
