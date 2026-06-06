@@ -1,8 +1,11 @@
 import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmailServiceFactory.js";
 import { AiProviderFactory } from "@drax/ai-back";
+import { SettingServiceFactory } from "@drax/settings-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import { z } from "zod";
 const DEFAULT_PROCESS_LIMIT = 10;
+const DEFAULT_PROCESS_INTERVAL_MS = 60000;
+const INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY = "InboundMailTransferAutoProcess";
 const transferEmailAiItemSchema = z.object({
     amount: z.number().nullable(),
     currency: z.enum(["ARS", "USD", "EUR", "OTHER"]).nullable(),
@@ -35,18 +38,71 @@ function resolveAiProviderName() {
 }
 class InboundMailTransferProcessor {
     constructor(inboundMailService = InboundEmailServiceFactory.instance, transferEmailService = TransferEmailServiceFactory.instance, openAiProvider = AiProviderFactory.instance(resolveAiProviderName())) {
+        this.processInProgress = false;
         this.inboundMailService = inboundMailService;
         this.transferEmailService = transferEmailService;
         this.aiProvider = openAiProvider;
+        this.processIntervalMs = this.readNumberEnv("INBOUND_MAIL_TRANSFER_PROCESS_INTERVAL_MS", DEFAULT_PROCESS_INTERVAL_MS);
+    }
+    static get instance() {
+        if (!InboundMailTransferProcessor.singleton) {
+            InboundMailTransferProcessor.singleton = new InboundMailTransferProcessor();
+        }
+        return InboundMailTransferProcessor.singleton;
+    }
+    start() {
+        this.startTransferAutoProcessInterval();
+    }
+    stop() {
+        this.stopTransferAutoProcessInterval();
+    }
+    startTransferAutoProcessInterval(intervalMs = this.processIntervalMs) {
+        if (this.processTimer) {
+            return;
+        }
+        void this.runTransferAutoProcess();
+        this.processTimer = setInterval(() => {
+            void this.runTransferAutoProcess();
+        }, intervalMs);
+    }
+    stopTransferAutoProcessInterval() {
+        if (this.processTimer) {
+            clearInterval(this.processTimer);
+            this.processTimer = undefined;
+        }
     }
     async process(options = {}) {
-        const since = this.resolveSinceOption(options.since) ?? await this.getProcessingStartDate();
         const limit = this.resolveLimitOption(options.limit);
-        const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
-        if (inboundEmails.length === 0) {
+        const requestedSince = this.resolveSinceOption(options.since);
+        if (this.processInProgress) {
+            return {
+                since: requestedSince,
+                limit,
+                scanned: 0,
+                created: 0,
+                skipped: 0,
+            };
+        }
+        this.processInProgress = true;
+        try {
+            const since = requestedSince ?? await this.getProcessingStartDate();
+            const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
             return {
                 since,
                 limit,
+                ...await this.processInboundEmailBatch(inboundEmails),
+            };
+        }
+        finally {
+            this.processInProgress = false;
+        }
+    }
+    async processInboundEmails(options = {}) {
+        return this.process(options);
+    }
+    async processInboundEmailBatch(inboundEmails) {
+        if (inboundEmails.length === 0) {
+            return {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
@@ -71,15 +127,21 @@ class InboundMailTransferProcessor {
             }
         }
         return {
-            since,
-            limit,
             scanned: inboundEmails.length,
             created,
             skipped,
         };
     }
-    async processInboundEmails(options = {}) {
-        return this.process(options);
+    async runTransferAutoProcess() {
+        if (!await this.isSettingEnabled(INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY)) {
+            return;
+        }
+        try {
+            await this.process();
+        }
+        catch (error) {
+            this.logError("Error processing inbound transfer emails", error);
+        }
     }
     resolveSinceOption(since) {
         if (!since) {
@@ -305,6 +367,56 @@ class InboundMailTransferProcessor {
     }
     removeUndefinedFields(payload) {
         return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
+    }
+    async isSettingEnabled(key) {
+        try {
+            const setting = await SettingServiceFactory().findByKey(key);
+            return setting?.value === true || setting?.value === "true";
+        }
+        catch (error) {
+            this.logError("Error reading inbound transfer automation setting", error, { settingKey: key });
+            return false;
+        }
+    }
+    readNumberEnv(key, fallback) {
+        const value = process.env[key];
+        if (!value) {
+            return fallback;
+        }
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+    logError(message, error, context) {
+        console.error(`[InboundMailTransferProcessor] ${message}`, {
+            context,
+            error: this.serializeError(error),
+        });
+    }
+    serializeError(error) {
+        if (error instanceof z.ZodError) {
+            return {
+                name: error.name,
+                message: error.message,
+                issues: error.issues,
+                stack: error.stack,
+            };
+        }
+        if (error instanceof Error) {
+            return {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+            };
+        }
+        if (typeof error === "string" || error === undefined || error === null) {
+            return error;
+        }
+        try {
+            return JSON.parse(JSON.stringify(error));
+        }
+        catch {
+            return String(error);
+        }
     }
 }
 export default InboundMailTransferProcessor;

@@ -19,7 +19,7 @@
     "@drax/settings-vue": "^3.50.0",
     "@drax/dashboard-vue": "^3.50.0",
     "@drax/audit-vue": "^3.50.0",
-    "@drax/ai-vue": "^3.50.0",
+    "@drax/ai-vue": "^3.52.0",
     "@mdi/font": "7.4.47",
     "core-js": "^3.34.0",
     "deepmerge": "^4.3.1",

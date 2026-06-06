@@ -1,10 +1,17 @@
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { dirname, join, sep } from 'node:path'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
+
+const require = createRequire(import.meta.url)
+const pdfjsPackageDir = dirname(require.resolve('pdfjs-dist/package.json'))
+const standardFontDataUrl = `${join(pdfjsPackageDir, 'standard_fonts')}${sep}`
 
 export async function extractTextFromPdf(input: string | Buffer): Promise<string> {
     const buffer = typeof input === 'string' ? await readFile(input) : input
     const loadingTask = getDocument({
         data: new Uint8Array(buffer),
+        standardFontDataUrl,
         useWorkerFetch: false,
         isEvalSupported: false,
         disableFontFace: true,

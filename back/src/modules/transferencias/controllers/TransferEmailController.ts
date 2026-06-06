@@ -24,7 +24,7 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
         this.userSetter = false;
         this.userAssert = false;
 
-        this.inboundMailTransferProcessor = new InboundMailTransferProcessor();
+        this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance;
     }
 
     async processInboundEmails(request: CustomRequest, reply: FastifyReply) {

@@ -30,6 +30,15 @@ async function InitializeSettings() {
         prefix: '',
         suffix: ''
     });
+    await settingService.createOrUpdate({
+        category: 'Correo',
+        key: 'InboundMailTransferAutoProcess',
+        value: 'false',
+        label: 'Habilitar procesamiento automático de transferencias',
+        type: 'boolean',
+        prefix: '',
+        suffix: ''
+    });
     // await settingService.createOrUpdate({
     //     category: 'Grupo 1',
     //     key: 'STRING',

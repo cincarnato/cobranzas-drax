@@ -3,6 +3,7 @@ import type {IInboundEmail} from "../../mail/interfaces/IInboundEmail.js";
 import InboundEmailService from "../../mail/services/InboundEmailService.js";
 import type {IAIProvider} from "@drax/ai-back";
 import {AiProviderFactory} from "@drax/ai-back";
+import {SettingServiceFactory} from "@drax/settings-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import type {ITransferEmail, ITransferEmailBase} from "../interfaces/ITransferEmail.js";
 import TransferEmailService from "../services/TransferEmailService.js";
@@ -22,6 +23,8 @@ type ProcessTransfersOptions = {
 };
 
 const DEFAULT_PROCESS_LIMIT = 10;
+const DEFAULT_PROCESS_INTERVAL_MS = 60_000;
+const INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY = "InboundMailTransferAutoProcess";
 
 const transferEmailAiItemSchema = z.object({
     amount: z.number().nullable(),
@@ -60,9 +63,13 @@ function resolveAiProviderName(): string {
 }
 
 class InboundMailTransferProcessor {
+    private static singleton: InboundMailTransferProcessor;
     private inboundMailService: InboundEmailService;
     private transferEmailService: TransferEmailService;
     private aiProvider: IAIProvider;
+    private processTimer?: NodeJS.Timeout;
+    private processInProgress = false;
+    private readonly processIntervalMs: number;
 
     constructor(
         inboundMailService: InboundEmailService = InboundEmailServiceFactory.instance,
@@ -72,17 +79,80 @@ class InboundMailTransferProcessor {
         this.inboundMailService = inboundMailService;
         this.transferEmailService = transferEmailService;
         this.aiProvider = openAiProvider;
+        this.processIntervalMs = this.readNumberEnv("INBOUND_MAIL_TRANSFER_PROCESS_INTERVAL_MS", DEFAULT_PROCESS_INTERVAL_MS);
+    }
+
+    static get instance(): InboundMailTransferProcessor {
+        if (!InboundMailTransferProcessor.singleton) {
+            InboundMailTransferProcessor.singleton = new InboundMailTransferProcessor();
+        }
+
+        return InboundMailTransferProcessor.singleton;
+    }
+
+    start(): void {
+        this.startTransferAutoProcessInterval();
+    }
+
+    stop(): void {
+        this.stopTransferAutoProcessInterval();
+    }
+
+    startTransferAutoProcessInterval(intervalMs = this.processIntervalMs): void {
+        if (this.processTimer) {
+            return;
+        }
+
+        void this.runTransferAutoProcess();
+        this.processTimer = setInterval(() => {
+            void this.runTransferAutoProcess();
+        }, intervalMs);
+    }
+
+    stopTransferAutoProcessInterval(): void {
+        if (this.processTimer) {
+            clearInterval(this.processTimer);
+            this.processTimer = undefined;
+        }
     }
 
     async process(options: ProcessTransfersOptions = {}): Promise<ProcessTransfersResult> {
-        const since = this.resolveSinceOption(options.since) ?? await this.getProcessingStartDate();
         const limit = this.resolveLimitOption(options.limit);
-        const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
+        const requestedSince = this.resolveSinceOption(options.since);
 
-        if (inboundEmails.length === 0) {
+        if (this.processInProgress) {
+            return {
+                since: requestedSince,
+                limit,
+                scanned: 0,
+                created: 0,
+                skipped: 0,
+            };
+        }
+
+        this.processInProgress = true;
+
+        try {
+            const since = requestedSince ?? await this.getProcessingStartDate();
+            const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
+
             return {
                 since,
                 limit,
+                ...await this.processInboundEmailBatch(inboundEmails),
+            };
+        } finally {
+            this.processInProgress = false;
+        }
+    }
+
+    async processInboundEmails(options: ProcessTransfersOptions = {}): Promise<ProcessTransfersResult> {
+        return this.process(options);
+    }
+
+    private async processInboundEmailBatch(inboundEmails: IInboundEmail[]): Promise<Pick<ProcessTransfersResult, "scanned" | "created" | "skipped">> {
+        if (inboundEmails.length === 0) {
+            return {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
@@ -113,16 +183,22 @@ class InboundMailTransferProcessor {
         }
 
         return {
-            since,
-            limit,
             scanned: inboundEmails.length,
             created,
             skipped,
         };
     }
 
-    async processInboundEmails(options: ProcessTransfersOptions = {}): Promise<ProcessTransfersResult> {
-        return this.process(options);
+    private async runTransferAutoProcess(): Promise<void> {
+        if (!await this.isSettingEnabled(INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY)) {
+            return;
+        }
+
+        try {
+            await this.process();
+        } catch (error) {
+            this.logError("Error processing inbound transfer emails", error);
+        }
     }
 
     private resolveSinceOption(since?: Date | string | null): Date | null {
@@ -289,6 +365,7 @@ class InboundMailTransferProcessor {
 
     private async extractTransferDataWithAi(inboundEmail: IInboundEmail): Promise<TransferEmailAiResult> {
         const response = await this.aiProvider.prompt({
+            operationTitle: "Extraccion de comprobantes de transferencia",
             systemPrompt: [
                 "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
                 "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
@@ -399,6 +476,62 @@ class InboundMailTransferProcessor {
         return Object.fromEntries(
             Object.entries(payload).filter(([, value]) => value !== undefined)
         ) as ITransferEmailBase;
+    }
+
+    private async isSettingEnabled(key: string): Promise<boolean> {
+        try {
+            const setting = await SettingServiceFactory().findByKey(key);
+            return setting?.value === true || setting?.value === "true";
+        } catch (error) {
+            this.logError("Error reading inbound transfer automation setting", error, {settingKey: key});
+            return false;
+        }
+    }
+
+    private readNumberEnv(key: string, fallback: number): number {
+        const value = process.env[key];
+        if (!value) {
+            return fallback;
+        }
+
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    private logError(message: string, error: unknown, context?: Record<string, unknown>): void {
+        console.error(`[InboundMailTransferProcessor] ${message}`, {
+            context,
+            error: this.serializeError(error),
+        });
+    }
+
+    private serializeError(error: unknown): unknown {
+        if (error instanceof z.ZodError) {
+            return {
+                name: error.name,
+                message: error.message,
+                issues: error.issues,
+                stack: error.stack,
+            };
+        }
+
+        if (error instanceof Error) {
+            return {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+            };
+        }
+
+        if (typeof error === "string" || error === undefined || error === null) {
+            return error;
+        }
+
+        try {
+            return JSON.parse(JSON.stringify(error));
+        } catch {
+            return String(error);
+        }
     }
 }
 
