@@ -903,6 +903,7 @@ class InboundEmailMailboxProvider {
             description: entity.description,
         }));
         const response = await this.aiProvider.prompt({
+            operationTitle: "Correo entrante",
             systemPrompt: [
                 "Sos un analista de correos entrantes para un sistema de cobranzas y salud.",
                 "Todo el analisis debe basarse exclusivamente en la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",

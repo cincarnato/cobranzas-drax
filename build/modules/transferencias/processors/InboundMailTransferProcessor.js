@@ -273,6 +273,7 @@ class InboundMailTransferProcessor {
     }
     async extractTransferDataWithAi(inboundEmail) {
         const response = await this.aiProvider.prompt({
+            operationTitle: "Transferencia",
             systemPrompt: [
                 "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
                 "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
