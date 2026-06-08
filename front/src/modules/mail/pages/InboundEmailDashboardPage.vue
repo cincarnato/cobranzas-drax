@@ -189,19 +189,28 @@ function getDisplayValue(value: unknown): string {
   return String(value);
 }
 
+function getDateGroupSortTime(value: unknown): number {
+  if (!value) return Number.MAX_SAFE_INTEGER;
+
+  const date = new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime();
+}
+
 function toSummaryRows(rows: InboundGroupByRow[], dimension: InboundDimension): SummaryRow[] {
   const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
 
-  return rows.map(row => {
-    const count = Number(row.count ?? 0);
+  return [...rows]
+    .sort((a, b) => getDateGroupSortTime(a.receivedAt) - getDateGroupSortTime(b.receivedAt))
+    .map(row => {
+      const count = Number(row.count ?? 0);
 
-    return {
-      day: formatDateGroup(row.receivedAt),
-      label: dimension === "total" ? "Total" : getDisplayValue(row[dimension]),
-      count,
-      percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
-    };
-  });
+      return {
+        day: formatDateGroup(row.receivedAt),
+        label: dimension === "total" ? "Total" : getDisplayValue(row[dimension]),
+        count,
+        percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
+      };
+    });
 }
 
 function getTotalCount(rows: SummaryRow[]): number {

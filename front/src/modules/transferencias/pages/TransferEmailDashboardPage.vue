@@ -218,21 +218,30 @@ function getDisplayValue(value: unknown): string {
   return String(value);
 }
 
+function getDateGroupSortTime(value: unknown): number {
+  if (!value) return Number.MAX_SAFE_INTEGER;
+
+  const date = new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime();
+}
+
 function toSummaryRows(rows: TransferGroupByRow[], dimension: TransferDimension): SummaryRow[] {
   const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
 
-  return rows.map(row => {
-    const count = Number(row.count ?? 0);
-    const amount = parseAmount(row.amount);
+  return [...rows]
+    .sort((a, b) => getDateGroupSortTime(a.transferDate) - getDateGroupSortTime(b.transferDate))
+    .map(row => {
+      const count = Number(row.count ?? 0);
+      const amount = parseAmount(row.amount);
 
-    return {
-      day: formatDateGroup(row.transferDate),
-      label: dimension === "total" ? "Total" : dimension === "amount" ? formatCurrency(amount) : getDisplayValue(row[dimension]),
-      amount,
-      count,
-      percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
-    };
-  });
+      return {
+        day: formatDateGroup(row.transferDate),
+        label: dimension === "total" ? "Total" : dimension === "amount" ? formatCurrency(amount) : getDisplayValue(row[dimension]),
+        amount,
+        count,
+        percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
+      };
+    });
 }
 
 function getTotalAmount(rows: SummaryRow[]): number {
