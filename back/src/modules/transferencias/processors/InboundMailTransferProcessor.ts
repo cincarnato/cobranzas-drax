@@ -24,6 +24,7 @@ type ProcessTransfersOptions = {
 
 const DEFAULT_PROCESS_LIMIT = 10;
 const DEFAULT_PROCESS_INTERVAL_MS = 60_000;
+const DEFAULT_AI_TOOL_MAX_ITERATIONS = 10;
 const INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY = "InboundMailTransferAutoProcess";
 
 const transferEmailAiItemSchema = z.object({
@@ -70,6 +71,7 @@ class InboundMailTransferProcessor {
     private processTimer?: NodeJS.Timeout;
     private processInProgress = false;
     private readonly processIntervalMs: number;
+    private readonly aiToolMaxIterations: number;
 
     constructor(
         inboundMailService: InboundEmailService = InboundEmailServiceFactory.instance,
@@ -80,6 +82,7 @@ class InboundMailTransferProcessor {
         this.transferEmailService = transferEmailService;
         this.aiProvider = openAiProvider;
         this.processIntervalMs = this.readNumberEnv("INBOUND_MAIL_TRANSFER_PROCESS_INTERVAL_MS", DEFAULT_PROCESS_INTERVAL_MS);
+        this.aiToolMaxIterations = this.readNumberEnv("INBOUND_MAIL_TRANSFER_AI_TOOL_MAX_ITERATIONS", DEFAULT_AI_TOOL_MAX_ITERATIONS);
     }
 
     static get instance(): InboundMailTransferProcessor {
@@ -364,26 +367,39 @@ class InboundMailTransferProcessor {
     }
 
     private async extractTransferDataWithAi(inboundEmail: IInboundEmail): Promise<TransferEmailAiResult> {
-        const response = await this.aiProvider.prompt({
-            operationTitle: "Transferencia",
-            systemPrompt: [
-                "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
-                "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
-                "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
-                "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
-                "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
-                "No inventes ni completes campos por inferencia débil.",
-                "Si un dato no está claro o no aparece, devuélvelo como null.",
-                "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
-                "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
-                "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
-                "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
-            ].join("\n"),
-            userInput: this.buildAiUserInput(inboundEmail),
-            zodSchema: transferEmailAiSchema,
-        });
+        try {
+            const response = await this.aiProvider.prompt({
+                operationTitle: "Transferencia",
+                operationGroup: "inbound-mail-transfer",
+                systemPrompt: [
+                    "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
+                    "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
+                    "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
+                    "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
+                    "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
+                    "No inventes ni completes campos por inferencia débil.",
+                    "Si un dato no está claro o no aparece, devuélvelo como null.",
+                    "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
+                    "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
+                    "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
+                    "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
+                ].join("\n"),
+                userInput: this.buildAiUserInput(inboundEmail),
+                zodSchema: transferEmailAiSchema,
+                toolMaxIterations: this.aiToolMaxIterations,
+            });
 
-        return this.parseAiOutput(response.output);
+            return this.parseAiOutput(response.output);
+        } catch (error) {
+            this.logError("Error extracting transfer data with AI", error, {
+                inboundEmailId: inboundEmail._id,
+                messageId: inboundEmail.messageId,
+                subject: inboundEmail.subject,
+                aiProvider: resolveAiProviderName(),
+                toolMaxIterations: this.aiToolMaxIterations,
+            });
+            throw error;
+        }
     }
 
     private buildAiUserInput(inboundEmail: IInboundEmail): string {
