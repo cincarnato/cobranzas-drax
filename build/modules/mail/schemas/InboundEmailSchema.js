@@ -32,15 +32,19 @@ const InboundEmailBaseSchema = z.object({
     summary: z.string().optional(),
     tags: z.array(z.string()).optional(),
     aiModel: z.string().optional(),
-    customer: z.object({ name: z.string().optional(),
+    customer: z.object({
+        name: z.string().optional(),
         documentNumber: z.string().optional(),
         cuil: z.string().optional(),
         email: z.string().optional(),
-        phone: z.string().optional() }),
-    extractedEntities: z.array(z.object({ label: z.string().min(1, 'validation.required'),
+        phone: z.string().optional()
+    }),
+    extractedEntities: z.array(z.object({
+        label: z.string().min(1, 'validation.required'),
         value: z.string().optional(),
         source: z.enum(['SUBJECT', 'BODY', 'ATTACHMENT', 'MANUAL']).optional(),
-        confidence: z.number().nullable().optional() })).optional(),
+        confidence: z.number().nullable().optional()
+    })).optional(),
     processingStatus: z.enum(['PENDING', 'PROCESSING', 'PROCESSED', 'REVIEW_REQUIRED', 'REJECTED', 'ERROR']).default('PENDING'),
     reviewStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CORRECTED']).optional().default('PENDING'),
     processMarks: z.array(z.object({
