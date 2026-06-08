@@ -31,6 +31,7 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
                 url: {type: String, required: false, index: false, unique: false},
             }],
             attachmentsOcrText: {type: String,   required: false, index: false, unique: false },
+            attachmentsOcrError: {type: String,   required: false, index: false, unique: false },
 
             category: {type: String,   required: false, index: true, unique: false },
             sentiment: {type: String, required: false, index: false, unique: false },

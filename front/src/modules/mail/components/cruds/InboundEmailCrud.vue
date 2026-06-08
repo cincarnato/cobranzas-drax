@@ -14,6 +14,10 @@ import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
     <template v-slot:item.tags="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.processedAt="{value}">{{formatDateTime(value)}}</template>
     <template v-slot:item.hasAttachment="{value}">{{value ? 'si' : 'no'}}</template>
+    <template v-slot:item.summary="{value}">
+      <v-card variant="tonal" class="my-1 pa-1"> {{value}}</v-card>
+
+    </template>
 
 
     <template v-slot:form="{form, operation}">

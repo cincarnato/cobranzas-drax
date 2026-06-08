@@ -48,6 +48,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'category', key: 'category', align: 'start'},
       {title: 'sentiment', key: 'sentiment', align: 'start'},
       {title: 'priority', key: 'priority', align: 'start'},
+      {title: 'summary', key: 'summary', align: 'start'},
       {title: 'name', key: 'customer.name', align: 'start'},
       {title: 'documentNumber', key: 'customer.documentNumber', align: 'start'},
       {title: 'cuil', key: 'customer.cuil', align: 'start'},
@@ -126,6 +127,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'attachmentCount', type: 'number', label: 'attachmentCount', default: 0, groupTab: 'Contenido'},
       {name: 'attachments', type: 'array.fullFile', label: 'attachments', default: null, groupTab: 'Adjuntos'},
       {name: 'attachmentsOcrText', type: 'longString', label: 'attachmentsOcrText', default: null, groupTab: 'Adjuntos'},
+      {name: 'attachmentsOcrError', type: 'longString', label: 'attachmentsOcrError', default: null, groupTab: 'Adjuntos'},
       {name: 'category', type: 'string', label: 'category', default: '', groupTab: 'Analisis IA'},
       {
         name: 'sentiment',

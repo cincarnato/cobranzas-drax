@@ -105,11 +105,11 @@ function extractAmountLikeLines(text: string): string {
         .join('\n')
 }
 
-async function runTesseractProfile(filePath: string, profile: TesseractProfile): Promise<string> {
+async function runTesseractProfile(filePath: string, profile: TesseractProfile, timeoutMs?: number): Promise<string> {
     const { stdout, stderr } = await execFileAsync(
         'tesseract',
         [filePath, 'stdout', ...profile.args],
-        { maxBuffer: OCR_MAX_BUFFER }
+        { maxBuffer: OCR_MAX_BUFFER, timeout: timeoutMs }
     )
 
     if (stderr) {
@@ -119,7 +119,7 @@ async function runTesseractProfile(filePath: string, profile: TesseractProfile):
     return stdout.trim()
 }
 
-export async function extractTextWithTesseract(input: string | Buffer, extension?: string): Promise<string> {
+export async function extractTextWithTesseract(input: string | Buffer, extension?: string, timeoutMs?: number): Promise<string> {
     let filePath = typeof input === 'string' ? input : ''
     let tempDir = ''
 
@@ -131,7 +131,7 @@ export async function extractTextWithTesseract(input: string | Buffer, extension
         }
 
         const outputs = await Promise.all(
-            TESSERACT_PROFILES.map((profile) => runTesseractProfile(filePath, profile))
+            TESSERACT_PROFILES.map((profile) => runTesseractProfile(filePath, profile, timeoutMs))
         )
         const amountHints = extractAmountLikeLines(outputs[2] ?? '')
 

@@ -110,6 +110,12 @@ type ImapSearchQuery = {
 type AttachmentProcessingResult = {
     storedAttachments: NonNullable<IInboundEmailBase["attachments"]>;
     ocrText?: string;
+    ocrError?: string;
+};
+
+type AttachmentTextExtractionResult = {
+    text?: string;
+    error?: string;
 };
 
 type AnalysisResult = {
@@ -165,6 +171,8 @@ const DEFAULT_PURGE_INTERVAL_MS = 60 * 60_000;
 const DEFAULT_FETCH_LIMIT = 10;
 const DEFAULT_LOOKBACK_DAYS = 10;
 const DEFAULT_AI_PROVIDER = "OllamaAi";
+const DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS = 2;
+const DEFAULT_ATTACHMENT_OCR_TIMEOUT_MS = 120_000;
 const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
 const MAILBOX_AUTO_PURGE_SETTING_KEY = "MailboxAutoPurge";
 
@@ -183,6 +191,8 @@ class InboundEmailMailboxProvider {
     private readonly pollIntervalMs: number;
     private readonly purgeIntervalMs: number;
     private readonly fetchLimit: number;
+    private readonly attachmentOcrMaxAttempts: number;
+    private readonly attachmentOcrTimeoutMs: number;
 
     constructor() {
         this.mailboxService = MailboxServiceFactory.instance;
@@ -193,6 +203,11 @@ class InboundEmailMailboxProvider {
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
         this.purgeIntervalMs = this.readNumberEnv("INBOUND_EMAIL_PURGE_INTERVAL_MS", DEFAULT_PURGE_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
+        this.attachmentOcrMaxAttempts = Math.max(
+            DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS,
+            Math.floor(this.readNumberEnv("INBOUND_EMAIL_ATTACHMENT_OCR_MAX_ATTEMPTS", DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS))
+        );
+        this.attachmentOcrTimeoutMs = this.readNumberEnv("INBOUND_EMAIL_ATTACHMENT_OCR_TIMEOUT_MS", DEFAULT_ATTACHMENT_OCR_TIMEOUT_MS);
     }
 
     static get instance(): InboundEmailMailboxProvider {
@@ -894,6 +909,7 @@ class InboundEmailMailboxProvider {
             attachmentCount: parsedAttachments.length,
             attachments: attachmentResult.storedAttachments,
             attachmentsOcrText: attachmentResult.ocrText,
+            attachmentsOcrError: attachmentResult.ocrError,
             category: analysis.category,
             sentiment: analysis.sentiment,
             priority: analysis.priority,
@@ -1039,7 +1055,9 @@ class InboundEmailMailboxProvider {
         }
 
         if (mailbox.attachmentOcrEnabled) {
-            result.ocrText = await this.extractAttachmentsOcrText(attachments);
+            const extractionResult = await this.extractAttachmentsOcrText(mailbox, messageId, attachments);
+            result.ocrText = extractionResult.text;
+            result.ocrError = extractionResult.error;
         }
 
         return result;
@@ -1086,29 +1104,86 @@ class InboundEmailMailboxProvider {
         return storedAttachments;
     }
 
-    private async extractAttachmentsOcrText(attachments: ParsedAttachment[]): Promise<string | undefined> {
+    private async extractAttachmentsOcrText(
+        mailbox: IMailbox,
+        messageId: string,
+        attachments: ParsedAttachment[]
+    ): Promise<AttachmentTextExtractionResult> {
         const chunks: string[] = [];
+        const errors: string[] = [];
 
-        for (const attachment of attachments) {
+        for (const [index, attachment] of attachments.entries()) {
             if (!attachment.content?.length) {
                 continue;
             }
 
-            try {
-                const text = await this.extractTextFromAttachment(attachment);
-                if (!text) {
-                    continue;
-                }
+            const result = await this.extractTextFromAttachmentWithRetry(mailbox, messageId, attachment, index);
 
+            if (result.text) {
                 const filename = attachment.filename || `attachment-${chunks.length + 1}`;
-                chunks.push(`Archivo: ${filename}\n${text}`);
-            } catch {
-                continue;
+                chunks.push(`Archivo: ${filename}\n${result.text}`);
+            }
+
+            if (result.error) {
+                errors.push(result.error);
             }
         }
 
-        const result = this.normalizeText(chunks.join("\n\n"));
-        return result || undefined;
+        return {
+            text: this.normalizeText(chunks.join("\n\n")) || undefined,
+            error: this.normalizeText(errors.join("\n\n")) || undefined,
+        };
+    }
+
+    private async extractTextFromAttachmentWithRetry(
+        mailbox: IMailbox,
+        messageId: string,
+        attachment: ParsedAttachment,
+        index: number
+    ): Promise<AttachmentTextExtractionResult> {
+        const parser = this.resolveAttachmentTextParser(attachment);
+        if (!parser) {
+            return {};
+        }
+
+        const filename = attachment.filename || `attachment-${index + 1}`;
+        let lastError: unknown;
+
+        for (let attempt = 1; attempt <= this.attachmentOcrMaxAttempts; attempt += 1) {
+            try {
+                const text = await this.withTimeout(
+                    this.extractTextFromAttachment(attachment),
+                    this.attachmentOcrTimeoutMs,
+                    `Timeout extracting ${parser} text from attachment after ${this.attachmentOcrTimeoutMs}ms`
+                );
+
+                return {text};
+            } catch (error) {
+                lastError = error;
+                this.logError("Error extracting inbound email attachment text", error, {
+                    mailboxId: mailbox._id,
+                    mailboxName: mailbox.name,
+                    mailboxEmail: mailbox.email,
+                    messageId,
+                    attachmentFilename: filename,
+                    attachmentContentType: attachment.contentType,
+                    attachmentSize: attachment.size || attachment.content?.length,
+                    parser,
+                    attempt,
+                    maxAttempts: this.attachmentOcrMaxAttempts,
+                });
+            }
+        }
+
+        const serializedError = this.formatError(lastError);
+        return {
+            error: [
+                `Archivo: ${filename}`,
+                `Parser: ${parser}`,
+                `Intentos: ${this.attachmentOcrMaxAttempts}`,
+                `Error: ${serializedError}`,
+            ].join("\n"),
+        };
     }
 
     private async extractTextFromAttachment(attachment: ParsedAttachment): Promise<string> {
@@ -1121,10 +1196,47 @@ class InboundEmailMailboxProvider {
         }
 
         if (this.isImageAttachment(mimetype, extension)) {
-            return this.normalizeText(await extractTextWithTesseract(attachment.content || Buffer.alloc(0), extension));
+            return this.normalizeText(await extractTextWithTesseract(
+                attachment.content || Buffer.alloc(0),
+                extension,
+                this.attachmentOcrTimeoutMs
+            ));
         }
 
         return "";
+    }
+
+    private resolveAttachmentTextParser(attachment: ParsedAttachment): "PDF" | "OCR" | undefined {
+        const filename = attachment.filename || "";
+        const extension = extname(filename).toLowerCase();
+        const mimetype = (attachment.contentType || "").toLowerCase();
+
+        if (this.isPdfAttachment(mimetype, extension)) {
+            return "PDF";
+        }
+
+        if (this.isImageAttachment(mimetype, extension)) {
+            return "OCR";
+        }
+
+        return undefined;
+    }
+
+    private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+        let timeout: NodeJS.Timeout | undefined;
+
+        try {
+            return await Promise.race([
+                promise,
+                new Promise<never>((_, reject) => {
+                    timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+                }),
+            ]);
+        } finally {
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+        }
     }
 
     private isPdfAttachment(mimetype: string, extension: string): boolean {

@@ -28,6 +28,7 @@ const InboundEmailBaseSchema = z.object({
                 url: z.string().optional()
                 })).optional(),
     attachmentsOcrText: z.string().optional(),
+    attachmentsOcrError: z.string().optional(),
     category: z.string().optional(),
     sentiment: z.string().optional(),
     priority: z.string().optional(),

@@ -90,6 +90,10 @@ const hasCustomerData = computed(() =>
 const hasAiAnalysis = computed(() =>
   inboundEmail.summary || inboundEmail.category || inboundEmail.sentiment || inboundEmail.priority || inboundEmail.tags?.length
 );
+
+const hasAttachmentSection = computed(() =>
+  inboundEmail.attachments?.length || inboundEmail.attachmentsOcrText || inboundEmail.attachmentsOcrError
+);
 </script>
 
 <template>
@@ -141,6 +145,25 @@ const hasAiAnalysis = computed(() =>
 
 
 
+    <!-- ── AI SUMMARY (quick access) ── -->
+    <v-card v-if="inboundEmail.summary" variant="flat" class="iev-ai-summary" rounded="lg">
+      <div class="iev-ai-summary__header">
+        <div class="iev-ai-summary__title">
+          <v-icon icon="mdi-robot-outline" size="18" class="mr-2" />
+          Resumen IA
+        </div>
+        <div class="iev-ai-summary__chips">
+          <v-chip v-if="inboundEmail.category" size="x-small" variant="tonal" color="primary">
+            {{ inboundEmail.category }}
+          </v-chip>
+          <v-chip v-if="inboundEmail.priority" :color="priorityColor" size="x-small" variant="tonal">
+            {{ inboundEmail.priority }}
+          </v-chip>
+        </div>
+      </div>
+      <p class="iev-ai-summary__text">{{ inboundEmail.summary }}</p>
+    </v-card>
+
     <!-- ── EMAIL BODY (collapsible, HTML first) ── -->
     <v-expansion-panels v-if="hasBodyContent" variant="accordion" class="iev-collapsed-section">
       <v-expansion-panel v-if="inboundEmail.bodyHtml" rounded="lg">
@@ -164,7 +187,7 @@ const hasAiAnalysis = computed(() =>
     </v-expansion-panels>
 
     <!-- ── ATTACHMENTS + OCR (grouped) ── -->
-    <div v-if="inboundEmail.attachments?.length || inboundEmail.attachmentsOcrText" class="iev-section">
+    <div v-if="hasAttachmentSection" class="iev-section">
       <div class="iev-section__title">
         <v-icon icon="mdi-paperclip" size="18" class="mr-1" />
         Adjuntos
@@ -205,6 +228,17 @@ const hasAiAnalysis = computed(() =>
           </v-expansion-panel-text>
         </v-expansion-panel>
       </v-expansion-panels>
+
+      <v-alert
+        v-if="inboundEmail.attachmentsOcrError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mt-3"
+      >
+        <div class="font-weight-medium mb-1">Error al extraer texto de adjuntos</div>
+        <div class="iev-body-scroll iev-body-scroll--pre">{{ inboundEmail.attachmentsOcrError }}</div>
+      </v-alert>
     </div>
 
     <!-- ── AI ANALYSIS ── -->
@@ -481,6 +515,46 @@ const hasAiAnalysis = computed(() =>
 
 
 /* ─── AI Analysis ─── */
+.iev-ai-summary {
+  border: 1px solid rgba(var(--v-theme-primary), 0.16);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--v-theme-primary), 0.09),
+    rgba(var(--v-theme-surface-variant), 0.18)
+  );
+}
+
+.iev-ai-summary__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 6px;
+}
+
+.iev-ai-summary__title,
+.iev-ai-summary__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.iev-ai-summary__title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: rgba(var(--v-theme-on-surface), 0.78);
+}
+
+.iev-ai-summary__text {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(var(--v-theme-on-surface), 0.86);
+  white-space: pre-wrap;
+}
+
 .iev-ai-section {
   display: flex;
   flex-direction: column;
@@ -687,6 +761,10 @@ const hasAiAnalysis = computed(() =>
   }
   .iev-kv__value {
     text-align: left;
+  }
+  .iev-ai-summary__header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>
