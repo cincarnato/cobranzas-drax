@@ -40,6 +40,15 @@ const priorityColor = computed(() => {
   return 'default';
 });
 
+const processMarkColor = (status?: string) => {
+  const val = status?.toUpperCase();
+  if (val === 'SUCCESS') return 'success';
+  if (val === 'FAILED') return 'error';
+  if (val === 'PROCESSING') return 'info';
+  if (val === 'SKIPPED') return 'warning';
+  return 'default';
+};
+
 const formatDateTime = (value?: Date | string | null) => {
   if (!value) return emptyValue;
   const date = new Date(value);
@@ -58,6 +67,11 @@ const formatBoolean = (value?: boolean | null, pos = "Sí", neg = "No") => {
 const dv = (value?: string | number | null) => {
   if (value === null || value === undefined || value === "") return emptyValue;
   return String(value);
+};
+
+const formatMetadata = (metadata?: Record<string, unknown> | null) => {
+  if (!metadata || !Object.keys(metadata).length) return emptyValue;
+  return JSON.stringify(metadata, null, 2);
 };
 
 const formatFileSize = (size?: number) => {
@@ -89,6 +103,10 @@ const hasCustomerData = computed(() =>
 
 const hasAiAnalysis = computed(() =>
   inboundEmail.summary || inboundEmail.category || inboundEmail.sentiment || inboundEmail.priority || inboundEmail.tags?.length
+);
+
+const hasProcessMarks = computed(() =>
+  inboundEmail.processMarks?.length
 );
 
 const hasAttachmentSection = computed(() =>
@@ -423,6 +441,58 @@ const hasAttachmentSection = computed(() =>
       </v-expansion-panel>
     </v-expansion-panels>
 
+    <!-- ── PROCESS MARKS (collapsed) ── -->
+    <v-expansion-panels v-if="hasProcessMarks" variant="accordion" class="iev-collapsed-section">
+      <v-expansion-panel rounded="lg">
+        <v-expansion-panel-title class="text-body-2">
+          <v-icon icon="mdi-timeline-check-outline" size="18" class="mr-2" />
+          Marcas de procesamiento
+          <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
+            {{ inboundEmail.processMarks?.length }}
+          </v-chip>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div class="iev-table-wrap">
+            <v-table density="compact" class="iev-table">
+              <thead>
+                <tr>
+                  <th>Clave</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th>Intentos</th>
+                  <th>Error</th>
+                  <th>Metadata</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="mark in inboundEmail.processMarks" :key="`${mark.key}-${mark.markedAt}`">
+                  <td class="font-weight-medium">{{ mark.key }}</td>
+                  <td>
+                    <v-chip :color="processMarkColor(mark.status)" size="x-small" variant="tonal">
+                      {{ mark.status }}
+                    </v-chip>
+                  </td>
+                  <td>{{ formatDateTime(mark.markedAt) }}</td>
+                  <td>{{ dv(mark.attempts) }}</td>
+                  <td>
+                    <span
+                      :class="mark.lastError ? 'text-error' : 'text-medium-emphasis'"
+                      class="iev-process-mark__error"
+                    >
+                      {{ dv(mark.lastError) }}
+                    </span>
+                  </td>
+                  <td>
+                    <pre class="iev-process-mark__metadata">{{ formatMetadata(mark.metadata) }}</pre>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
   </div>
 </template>
 
@@ -723,8 +793,31 @@ const hasAttachmentSection = computed(() =>
 }
 
 /* ─── Table ─── */
+.iev-table-wrap {
+  overflow-x: auto;
+}
+
 .iev-table {
   background: transparent !important;
+}
+
+.iev-process-mark__error {
+  display: inline-block;
+  max-width: 220px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.iev-process-mark__metadata {
+  max-width: 260px;
+  max-height: 120px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(var(--v-theme-on-surface), 0.68);
 }
 
 /* ─── Collapsed sections ─── */

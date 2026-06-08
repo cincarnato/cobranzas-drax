@@ -56,6 +56,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'phone', key: 'customer.phone', align: 'start'},
       {title: 'processingStatus', key: 'processingStatus', align: 'start'},
       {title: 'reviewStatus', key: 'reviewStatus', align: 'start'},
+      {title: 'processMarks', key: 'processMarks', align: 'start'},
       {title: 'isDuplicate', key: 'isDuplicate', align: 'start'},
       {title: 'messageId', key: 'messageId', align: 'start'},
       {title: 'threadId', key: 'threadId', align: 'start'},
@@ -68,7 +69,8 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
     return [
       'receivedAt', 'subject', 'fromEmail', 'hasAttachments',
       'category', 'sentiment', 'priority',
-      'customer.name', 'customer.cuil', 'customer.documentNumber'
+      'customer.name', 'customer.cuil', 'customer.documentNumber',
+      'processMarks'
     ]
   }
 
@@ -96,6 +98,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       receivedAt: [(v: any) => !!v || 'validation.required'],
       customer: [],
       extractedEntities: [],
+      processMarks: [],
       processingStatus: [(v: any) => !!v || 'validation.required']
     }
   }
@@ -126,8 +129,20 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'hasAttachments', type: 'boolean', label: 'hasAttachments', default: false, groupTab: 'Contenido'},
       {name: 'attachmentCount', type: 'number', label: 'attachmentCount', default: 0, groupTab: 'Contenido'},
       {name: 'attachments', type: 'array.fullFile', label: 'attachments', default: null, groupTab: 'Adjuntos'},
-      {name: 'attachmentsOcrText', type: 'longString', label: 'attachmentsOcrText', default: null, groupTab: 'Adjuntos'},
-      {name: 'attachmentsOcrError', type: 'longString', label: 'attachmentsOcrError', default: null, groupTab: 'Adjuntos'},
+      {
+        name: 'attachmentsOcrText',
+        type: 'longString',
+        label: 'attachmentsOcrText',
+        default: null,
+        groupTab: 'Adjuntos'
+      },
+      {
+        name: 'attachmentsOcrError',
+        type: 'longString',
+        label: 'attachmentsOcrError',
+        default: null,
+        groupTab: 'Adjuntos'
+      },
       {name: 'category', type: 'string', label: 'category', default: '', groupTab: 'Analisis IA'},
       {
         name: 'sentiment',
@@ -197,6 +212,28 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
         groupTab: 'Procesamiento',
         enum: ['PENDING', 'APPROVED', 'REJECTED', 'CORRECTED']
       },
+      {
+        name: 'processMarks',
+        type: 'array.object',
+        label: 'processMarks',
+        default: [],
+        groupTab: 'Procesamiento',
+        readonly: true,
+        objectFields: [
+          {name: 'key', type: 'string', label: 'key', default: ''},
+          {
+            name: 'status',
+            type: 'enum',
+            label: 'status',
+            default: null,
+            enum: ['PROCESSING', 'SUCCESS', 'FAILED', 'SKIPPED']
+          },
+          {name: 'markedAt', type: 'date', label: 'markedAt', default: null},
+          {name: 'attempts', type: 'number', label: 'attempts', default: null},
+          {name: 'lastError', type: 'longString', label: 'lastError', default: ''},
+          {name: 'metadata', type: 'record', label: 'metadata', default: null}
+        ]
+      },
       {name: 'isDuplicate', type: 'boolean', label: 'isDuplicate', default: false, groupTab: 'Procesamiento'},
       {
         name: 'duplicateOfMessageId',
@@ -211,7 +248,13 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
 
   get filters(): IEntityCrudFilter[] {
     return [
-      //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
+      {name: 'messageId', type: 'string', label: 'messageId', default: '', operator: 'eq' },
+      {name: 'fromEmail', type: 'string', label: 'fromEmail', default: '', operator: 'like' },
+      {name: 'subject', type: 'string', label: 'subject', default: '', operator: 'like' },
+      {name: 'category', type: 'string', label: 'category', default: '', operator: 'like' },
+      {name: 'customer.documentNumber', type: 'string', label: 'documentNumber', default: '', operator: 'eq' },
+      {name: 'customer.name', type: 'string', label: 'name', default: '', operator: 'like' },
+      {name: 'processMarks.key', type: 'string', label: 'MarkKey', default: '', operator: 'eq' },
     ]
   }
 
@@ -285,6 +328,9 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
     return true
   }
 
+  get containerFluid(){
+    return true
+  }
 
 }
 
