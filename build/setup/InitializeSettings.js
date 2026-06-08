@@ -39,6 +39,16 @@ async function InitializeSettings() {
         prefix: '',
         suffix: ''
     });
+    await settingService.createOrUpdate({
+        category: 'Correo',
+        key: 'InboundMailTransferCategory',
+        value: 'Transferencias',
+        label: 'Categoría de correos para procesar transferencias',
+        description: 'Categoría de InboundEmail usada para filtrar los correos que serán analizados como transferencias. Dejar vacío para no filtrar por categoría.',
+        type: 'string',
+        prefix: '',
+        suffix: ''
+    });
     // await settingService.createOrUpdate({
     //     category: 'Grupo 1',
     //     key: 'STRING',

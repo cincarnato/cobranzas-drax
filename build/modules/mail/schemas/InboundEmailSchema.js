@@ -25,6 +25,7 @@ const InboundEmailBaseSchema = z.object({
         url: z.string().optional()
     })).optional(),
     attachmentsOcrText: z.string().optional(),
+    attachmentsOcrError: z.string().optional(),
     category: z.string().optional(),
     sentiment: z.string().optional(),
     priority: z.string().optional(),
@@ -42,6 +43,14 @@ const InboundEmailBaseSchema = z.object({
         confidence: z.number().nullable().optional() })).optional(),
     processingStatus: z.enum(['PENDING', 'PROCESSING', 'PROCESSED', 'REVIEW_REQUIRED', 'REJECTED', 'ERROR']).default('PENDING'),
     reviewStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CORRECTED']).optional().default('PENDING'),
+    processMarks: z.array(z.object({
+        key: z.string().min(1, 'validation.required'),
+        status: z.enum(['PROCESSING', 'SUCCESS', 'FAILED', 'SKIPPED']),
+        markedAt: z.coerce.date({ error: "validation.date" }),
+        attempts: z.number().optional(),
+        lastError: z.string().optional(),
+        metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+    })).optional(),
     isDuplicate: z.boolean().optional(),
     duplicateOfMessageId: z.string().optional(),
     processedAt: z.coerce.date().nullable().optional()

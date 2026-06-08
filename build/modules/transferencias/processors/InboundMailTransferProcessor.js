@@ -5,7 +5,11 @@ import TransferEmailServiceFactory from "../factory/services/TransferEmailServic
 import { z } from "zod";
 const DEFAULT_PROCESS_LIMIT = 10;
 const DEFAULT_PROCESS_INTERVAL_MS = 60000;
+const DEFAULT_AI_TOOL_MAX_ITERATIONS = 10;
 const INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY = "InboundMailTransferAutoProcess";
+const INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY = "InboundMailTransferCategory";
+const TRANSFER_EMAIL_PROCESS_MARK_KEY = "transfer-email";
+const TRANSFER_EMAIL_MAX_PROCESS_ATTEMPTS = 2;
 const transferEmailAiItemSchema = z.object({
     amount: z.number().nullable(),
     currency: z.enum(["ARS", "USD", "EUR", "OTHER"]).nullable(),
@@ -43,6 +47,7 @@ class InboundMailTransferProcessor {
         this.transferEmailService = transferEmailService;
         this.aiProvider = openAiProvider;
         this.processIntervalMs = this.readNumberEnv("INBOUND_MAIL_TRANSFER_PROCESS_INTERVAL_MS", DEFAULT_PROCESS_INTERVAL_MS);
+        this.aiToolMaxIterations = this.readNumberEnv("INBOUND_MAIL_TRANSFER_AI_TOOL_MAX_ITERATIONS", DEFAULT_AI_TOOL_MAX_ITERATIONS);
     }
     static get instance() {
         if (!InboundMailTransferProcessor.singleton) {
@@ -81,11 +86,12 @@ class InboundMailTransferProcessor {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
+                failed: 0,
             };
         }
         this.processInProgress = true;
         try {
-            const since = requestedSince ?? await this.getProcessingStartDate();
+            const since = requestedSince;
             const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
             return {
                 since,
@@ -106,30 +112,66 @@ class InboundMailTransferProcessor {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
+                failed: 0,
             };
         }
-        const existingInboundIds = await this.findExistingTransferInboundIds(inboundEmails.map((email) => email._id));
         let created = 0;
         let skipped = 0;
+        let failed = 0;
         for (const inboundEmail of inboundEmails) {
-            if (existingInboundIds.has(inboundEmail._id)) {
-                skipped++;
-                continue;
+            const attempts = this.resolveNextTransferEmailAttempt(inboundEmail);
+            try {
+                const existingTransferEmails = await this.findExistingTransferEmails(inboundEmail);
+                if (existingTransferEmails.length > 0) {
+                    await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                        attempts: this.resolveCurrentTransferEmailAttempts(inboundEmail),
+                        metadata: {
+                            reason: "existing-transfer-email",
+                            transferEmailIds: existingTransferEmails.map((transferEmail) => transferEmail._id),
+                        },
+                    });
+                    skipped++;
+                    continue;
+                }
+                await this.markInboundEmailProcess(inboundEmail, "PROCESSING", { attempts });
+                const transferEmails = await this.buildTransferEmailPayloads(inboundEmail);
+                if (transferEmails.length === 0) {
+                    await this.markInboundEmailProcess(inboundEmail, "SKIPPED", {
+                        attempts,
+                        metadata: { reason: "not-transfer-proof" },
+                    });
+                    skipped++;
+                    continue;
+                }
+                const createdTransferEmailIds = [];
+                for (const transferEmail of transferEmails) {
+                    const createdTransferEmail = await this.transferEmailService.create(transferEmail);
+                    createdTransferEmailIds.push(createdTransferEmail._id);
+                    created++;
+                }
+                await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                    attempts,
+                    metadata: { transferEmailIds: createdTransferEmailIds },
+                });
             }
-            const transferEmails = await this.buildTransferEmailPayloads(inboundEmail);
-            if (transferEmails.length === 0) {
-                skipped++;
-                continue;
-            }
-            for (const transferEmail of transferEmails) {
-                await this.transferEmailService.create(transferEmail);
-                created++;
+            catch (error) {
+                await this.markInboundEmailProcess(inboundEmail, "FAILED", {
+                    attempts,
+                    lastError: this.serializeErrorMessage(error),
+                });
+                failed++;
+                this.logError("Error processing inbound transfer email", error, {
+                    inboundEmailId: inboundEmail._id,
+                    messageId: inboundEmail.messageId,
+                    attempts,
+                });
             }
         }
         return {
             scanned: inboundEmails.length,
             created,
             skipped,
+            failed,
         };
     }
     async runTransferAutoProcess() {
@@ -171,59 +213,60 @@ class InboundMailTransferProcessor {
         }
         return parsedLimit;
     }
-    async getProcessingStartDate() {
-        const latestTransferEmails = await this.transferEmailService.paginate({
-            page: 1,
-            limit: 1,
-            orderBy: "createdAt",
-            order: "desc",
-        });
-        const latestTransferEmail = latestTransferEmails.items[0];
-        if (!latestTransferEmail) {
-            return null;
-        }
-        const inboundReceivedAt = typeof latestTransferEmail.inboundEmail === "object"
-            ? latestTransferEmail.inboundEmail?.receivedAt
-            : undefined;
-        return inboundReceivedAt
-            || latestTransferEmail.emailDate
-            || latestTransferEmail.transferDate
-            || latestTransferEmail.createdAt
-            || null;
-    }
     async findInboundEmailsToProcess(since, limit) {
-        const filters = [
-            { field: "processingStatus", operator: "eq", value: "PROCESSED" },
-        ];
-        if (since) {
-            filters.push({ field: "receivedAt", operator: "gte", value: since });
-        }
-        return await this.inboundMailService.find({
+        const category = await this.getTransferEmailCategoryFilter();
+        return await this.inboundMailService.findByProcessMarkStatus({
+            processMarkKey: TRANSFER_EMAIL_PROCESS_MARK_KEY,
+            processingStatus: "PROCESSED",
+            category,
+            retryStatus: "FAILED",
+            maxAttempts: TRANSFER_EMAIL_MAX_PROCESS_ATTEMPTS,
+            since,
+            limit,
             orderBy: "receivedAt",
             order: "asc",
-            filters,
-            limit,
         });
     }
-    async findExistingTransferInboundIds(inboundEmailIds) {
-        if (inboundEmailIds.length === 0) {
-            return new Set();
-        }
-        const existing = await this.transferEmailService.find({
-            filters: [{ field: "inboundEmail", operator: "in", value: inboundEmailIds }],
-            limit: Math.max(inboundEmailIds.length * 20, inboundEmailIds.length),
+    findTransferEmailProcessMark(inboundEmail) {
+        return inboundEmail.processMarks?.find((mark) => mark.key === TRANSFER_EMAIL_PROCESS_MARK_KEY);
+    }
+    resolveCurrentTransferEmailAttempts(inboundEmail) {
+        return this.findTransferEmailProcessMark(inboundEmail)?.attempts || 0;
+    }
+    resolveNextTransferEmailAttempt(inboundEmail) {
+        return this.resolveCurrentTransferEmailAttempts(inboundEmail) + 1;
+    }
+    async findExistingTransferEmails(inboundEmail) {
+        const byMessageId = await this.transferEmailService.find({
+            filters: [{ field: "emailMessageId", operator: "eq", value: inboundEmail.messageId }],
+            limit: 20,
         });
-        return new Set(existing
-            .map((item) => {
-            if (!item.inboundEmail) {
-                return undefined;
-            }
-            if (typeof item.inboundEmail === "string") {
-                return item.inboundEmail;
-            }
-            return item.inboundEmail._id;
-        })
-            .filter((value) => Boolean(value)));
+        const byInboundEmail = await this.transferEmailService.find({
+            filters: [{ field: "inboundEmail", operator: "eq", value: inboundEmail._id }],
+            limit: 20,
+        });
+        const transferEmails = new Map();
+        for (const transferEmail of [...byMessageId, ...byInboundEmail]) {
+            transferEmails.set(transferEmail._id, transferEmail);
+        }
+        return [...transferEmails.values()];
+    }
+    async markInboundEmailProcess(inboundEmail, status, options = {}) {
+        const currentMarks = inboundEmail.processMarks || [];
+        const nextMark = this.removeUndefinedFields({
+            key: TRANSFER_EMAIL_PROCESS_MARK_KEY,
+            status,
+            markedAt: new Date(),
+            attempts: options.attempts,
+            lastError: options.lastError,
+            metadata: options.metadata,
+        });
+        const processMarks = [
+            ...currentMarks.filter((mark) => mark.key !== TRANSFER_EMAIL_PROCESS_MARK_KEY),
+            nextMark,
+        ];
+        inboundEmail.processMarks = processMarks;
+        await this.inboundMailService.updatePartial(inboundEmail._id, { processMarks });
     }
     async buildTransferEmailPayloads(inboundEmail) {
         const extractionResult = await this.extractTransferDataWithAi(inboundEmail);
@@ -272,25 +315,40 @@ class InboundMailTransferProcessor {
         });
     }
     async extractTransferDataWithAi(inboundEmail) {
-        const response = await this.aiProvider.prompt({
-            operationTitle: "Transferencia",
-            systemPrompt: [
-                "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
-                "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
-                "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
-                "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
-                "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
-                "No inventes ni completes campos por inferencia débil.",
-                "Si un dato no está claro o no aparece, devuélvelo como null.",
-                "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
-                "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
-                "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
-                "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
-            ].join("\n"),
-            userInput: this.buildAiUserInput(inboundEmail),
-            zodSchema: transferEmailAiSchema,
-        });
-        return this.parseAiOutput(response.output);
+        try {
+            const response = await this.aiProvider.prompt({
+                operationTitle: "Transferencia",
+                operationGroup: "inbound-mail-transfer",
+                systemPrompt: [
+                    "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
+                    "Los mails y comprobantes analizados tienen localización Argentina: los miles se separan con punto (.) y los decimales con coma (,).",
+                    "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
+                    "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
+                    "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
+                    "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
+                    "No inventes ni completes campos por inferencia débil.",
+                    "Si un dato no está claro o no aparece, devuélvelo como null.",
+                    "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
+                    "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
+                    "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
+                    "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
+                ].join("\n"),
+                userInput: this.buildAiUserInput(inboundEmail),
+                zodSchema: transferEmailAiSchema,
+                toolMaxIterations: this.aiToolMaxIterations,
+            });
+            return this.parseAiOutput(response.output);
+        }
+        catch (error) {
+            this.logError("Error extracting transfer data with AI", error, {
+                inboundEmailId: inboundEmail._id,
+                messageId: inboundEmail.messageId,
+                subject: inboundEmail.subject,
+                aiProvider: resolveAiProviderName(),
+                toolMaxIterations: this.aiToolMaxIterations,
+            });
+            throw error;
+        }
     }
     buildAiUserInput(inboundEmail) {
         const sections = [
@@ -379,6 +437,19 @@ class InboundMailTransferProcessor {
             return false;
         }
     }
+    async getTransferEmailCategoryFilter() {
+        try {
+            const setting = await SettingServiceFactory().findByKey(INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY);
+            const category = typeof setting?.value === "string" ? setting.value.trim() : "";
+            return category || null;
+        }
+        catch (error) {
+            this.logError("Error reading inbound transfer category setting", error, {
+                settingKey: INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY,
+            });
+            return null;
+        }
+    }
     readNumberEnv(key, fallback) {
         const value = process.env[key];
         if (!value) {
@@ -392,6 +463,23 @@ class InboundMailTransferProcessor {
             context,
             error: this.serializeError(error),
         });
+    }
+    serializeErrorMessage(error) {
+        if (error instanceof z.ZodError) {
+            return error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+        }
+        if (error instanceof Error) {
+            return error.message;
+        }
+        if (typeof error === "string") {
+            return error;
+        }
+        try {
+            return JSON.stringify(error);
+        }
+        catch {
+            return "Unknown error";
+        }
     }
     serializeError(error) {
         if (error instanceof z.ZodError) {

@@ -37,6 +37,8 @@ const DEFAULT_PURGE_INTERVAL_MS = 60 * 60000;
 const DEFAULT_FETCH_LIMIT = 10;
 const DEFAULT_LOOKBACK_DAYS = 10;
 const DEFAULT_AI_PROVIDER = "OllamaAi";
+const DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS = 2;
+const DEFAULT_ATTACHMENT_OCR_TIMEOUT_MS = 120000;
 const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
 const MAILBOX_AUTO_PURGE_SETTING_KEY = "MailboxAutoPurge";
 class InboundEmailMailboxProvider {
@@ -52,6 +54,8 @@ class InboundEmailMailboxProvider {
         this.pollIntervalMs = this.readNumberEnv("INBOUND_EMAIL_POLL_INTERVAL_MS", DEFAULT_POLL_INTERVAL_MS);
         this.purgeIntervalMs = this.readNumberEnv("INBOUND_EMAIL_PURGE_INTERVAL_MS", DEFAULT_PURGE_INTERVAL_MS);
         this.fetchLimit = this.readNumberEnv("INBOUND_EMAIL_FETCH_LIMIT", DEFAULT_FETCH_LIMIT);
+        this.attachmentOcrMaxAttempts = Math.max(DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS, Math.floor(this.readNumberEnv("INBOUND_EMAIL_ATTACHMENT_OCR_MAX_ATTEMPTS", DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS)));
+        this.attachmentOcrTimeoutMs = this.readNumberEnv("INBOUND_EMAIL_ATTACHMENT_OCR_TIMEOUT_MS", DEFAULT_ATTACHMENT_OCR_TIMEOUT_MS);
     }
     static get instance() {
         if (!InboundEmailMailboxProvider.singleton) {
@@ -663,6 +667,7 @@ class InboundEmailMailboxProvider {
             attachmentCount: parsedAttachments.length,
             attachments: attachmentResult.storedAttachments,
             attachmentsOcrText: attachmentResult.ocrText,
+            attachmentsOcrError: attachmentResult.ocrError,
             category: analysis.category,
             sentiment: analysis.sentiment,
             priority: analysis.priority,
@@ -782,7 +787,9 @@ class InboundEmailMailboxProvider {
             result.storedAttachments = await this.saveAttachments(mailbox, messageId, attachments);
         }
         if (mailbox.attachmentOcrEnabled) {
-            result.ocrText = await this.extractAttachmentsOcrText(attachments);
+            const extractionResult = await this.extractAttachmentsOcrText(mailbox, messageId, attachments);
+            result.ocrText = extractionResult.text;
+            result.ocrError = extractionResult.error;
         }
         return result;
     }
@@ -821,26 +828,64 @@ class InboundEmailMailboxProvider {
         }
         return storedAttachments;
     }
-    async extractAttachmentsOcrText(attachments) {
+    async extractAttachmentsOcrText(mailbox, messageId, attachments) {
         const chunks = [];
-        for (const attachment of attachments) {
+        const errors = [];
+        for (const [index, attachment] of attachments.entries()) {
             if (!attachment.content?.length) {
                 continue;
             }
-            try {
-                const text = await this.extractTextFromAttachment(attachment);
-                if (!text) {
-                    continue;
-                }
+            const result = await this.extractTextFromAttachmentWithRetry(mailbox, messageId, attachment, index);
+            if (result.text) {
                 const filename = attachment.filename || `attachment-${chunks.length + 1}`;
-                chunks.push(`Archivo: ${filename}\n${text}`);
+                chunks.push(`Archivo: ${filename}\n${result.text}`);
             }
-            catch {
-                continue;
+            if (result.error) {
+                errors.push(result.error);
             }
         }
-        const result = this.normalizeText(chunks.join("\n\n"));
-        return result || undefined;
+        return {
+            text: this.normalizeText(chunks.join("\n\n")) || undefined,
+            error: this.normalizeText(errors.join("\n\n")) || undefined,
+        };
+    }
+    async extractTextFromAttachmentWithRetry(mailbox, messageId, attachment, index) {
+        const parser = this.resolveAttachmentTextParser(attachment);
+        if (!parser) {
+            return {};
+        }
+        const filename = attachment.filename || `attachment-${index + 1}`;
+        let lastError;
+        for (let attempt = 1; attempt <= this.attachmentOcrMaxAttempts; attempt += 1) {
+            try {
+                const text = await this.withTimeout(this.extractTextFromAttachment(attachment), this.attachmentOcrTimeoutMs, `Timeout extracting ${parser} text from attachment after ${this.attachmentOcrTimeoutMs}ms`);
+                return { text };
+            }
+            catch (error) {
+                lastError = error;
+                this.logError("Error extracting inbound email attachment text", error, {
+                    mailboxId: mailbox._id,
+                    mailboxName: mailbox.name,
+                    mailboxEmail: mailbox.email,
+                    messageId,
+                    attachmentFilename: filename,
+                    attachmentContentType: attachment.contentType,
+                    attachmentSize: attachment.size || attachment.content?.length,
+                    parser,
+                    attempt,
+                    maxAttempts: this.attachmentOcrMaxAttempts,
+                });
+            }
+        }
+        const serializedError = this.formatError(lastError);
+        return {
+            error: [
+                `Archivo: ${filename}`,
+                `Parser: ${parser}`,
+                `Intentos: ${this.attachmentOcrMaxAttempts}`,
+                `Error: ${serializedError}`,
+            ].join("\n"),
+        };
     }
     async extractTextFromAttachment(attachment) {
         const filename = attachment.filename || "";
@@ -850,9 +895,37 @@ class InboundEmailMailboxProvider {
             return this.normalizeText(await extractTextFromPdf(attachment.content || Buffer.alloc(0)));
         }
         if (this.isImageAttachment(mimetype, extension)) {
-            return this.normalizeText(await extractTextWithTesseract(attachment.content || Buffer.alloc(0), extension));
+            return this.normalizeText(await extractTextWithTesseract(attachment.content || Buffer.alloc(0), extension, this.attachmentOcrTimeoutMs));
         }
         return "";
+    }
+    resolveAttachmentTextParser(attachment) {
+        const filename = attachment.filename || "";
+        const extension = extname(filename).toLowerCase();
+        const mimetype = (attachment.contentType || "").toLowerCase();
+        if (this.isPdfAttachment(mimetype, extension)) {
+            return "PDF";
+        }
+        if (this.isImageAttachment(mimetype, extension)) {
+            return "OCR";
+        }
+        return undefined;
+    }
+    async withTimeout(promise, timeoutMs, message) {
+        let timeout;
+        try {
+            return await Promise.race([
+                promise,
+                new Promise((_, reject) => {
+                    timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+                }),
+            ]);
+        }
+        finally {
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+        }
     }
     isPdfAttachment(mimetype, extension) {
         return mimetype === "application/pdf" || extension === ".pdf";

@@ -85,14 +85,14 @@ function extractAmountLikeLines(text) {
     })
         .join('\n');
 }
-async function runTesseractProfile(filePath, profile) {
-    const { stdout, stderr } = await execFileAsync('tesseract', [filePath, 'stdout', ...profile.args], { maxBuffer: OCR_MAX_BUFFER });
+async function runTesseractProfile(filePath, profile, timeoutMs) {
+    const { stdout, stderr } = await execFileAsync('tesseract', [filePath, 'stdout', ...profile.args], { maxBuffer: OCR_MAX_BUFFER, timeout: timeoutMs });
     if (stderr) {
         void stderr;
     }
     return stdout.trim();
 }
-export async function extractTextWithTesseract(input, extension) {
+export async function extractTextWithTesseract(input, extension, timeoutMs) {
     let filePath = typeof input === 'string' ? input : '';
     let tempDir = '';
     try {
@@ -101,7 +101,7 @@ export async function extractTextWithTesseract(input, extension) {
             filePath = join(tempDir, `attachment${normalizeExtension(extension)}`);
             await writeFile(filePath, input);
         }
-        const outputs = await Promise.all(TESSERACT_PROFILES.map((profile) => runTesseractProfile(filePath, profile)));
+        const outputs = await Promise.all(TESSERACT_PROFILES.map((profile) => runTesseractProfile(filePath, profile, timeoutMs)));
         const amountHints = extractAmountLikeLines(outputs[2] ?? '');
         return collectUniqueLines(outputs[0] ?? '', outputs[1] ?? '', amountHints);
     }
