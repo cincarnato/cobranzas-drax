@@ -423,6 +423,7 @@ class InboundMailTransferProcessor {
                 operationGroup: "inbound-mail-transfer",
                 systemPrompt: [
                     "Sos un extractor de comprobantes de transferencias bancarias en Argentina.",
+                    "Los mails y comprobantes analizados tienen localización Argentina: los miles se separan con punto (.) y los decimales con coma (,).",
                     "Debes decidir si el email corresponde a uno o mas comprobantes o avisos de transferencia bancaria y extraer todos los datos posibles.",
                     "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
                     "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
