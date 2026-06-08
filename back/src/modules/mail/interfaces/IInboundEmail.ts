@@ -1,3 +1,14 @@
+type InboundEmailProcessMarkStatus = 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'SKIPPED'
+
+interface IInboundEmailProcessMark {
+    key: string
+    status: InboundEmailProcessMarkStatus
+    markedAt: Date
+    attempts?: number
+    lastError?: string
+    metadata?: Record<string, any>
+}
+
 interface IInboundEmailBase {
     messageId: string
     threadId?: string
@@ -45,6 +56,7 @@ interface IInboundEmailBase {
     }>
     processingStatus: string
     reviewStatus?: string
+    processMarks?: Array<IInboundEmailProcessMark>
     isDuplicate?: boolean
     duplicateOfMessageId?: string
     processedAt?: Date
@@ -100,6 +112,7 @@ interface IInboundEmail {
     }>
     processingStatus: string
     reviewStatus?: string
+    processMarks?: Array<IInboundEmailProcessMark>
     isDuplicate?: boolean
     duplicateOfMessageId?: string
     processedAt?: Date
@@ -109,5 +122,7 @@ interface IInboundEmail {
 
 export type {
     IInboundEmailBase,
-    IInboundEmail
+    IInboundEmail,
+    IInboundEmailProcessMark,
+    InboundEmailProcessMarkStatus
 }

@@ -1,5 +1,9 @@
 import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmailServiceFactory.js";
-import type {IInboundEmail} from "../../mail/interfaces/IInboundEmail.js";
+import type {
+    IInboundEmail,
+    IInboundEmailProcessMark,
+    InboundEmailProcessMarkStatus
+} from "../../mail/interfaces/IInboundEmail.js";
 import InboundEmailService from "../../mail/services/InboundEmailService.js";
 import type {IAIProvider} from "@drax/ai-back";
 import {AiProviderFactory} from "@drax/ai-back";
@@ -15,6 +19,7 @@ type ProcessTransfersResult = {
     scanned: number;
     created: number;
     skipped: number;
+    failed: number;
 };
 
 type ProcessTransfersOptions = {
@@ -26,6 +31,9 @@ const DEFAULT_PROCESS_LIMIT = 10;
 const DEFAULT_PROCESS_INTERVAL_MS = 60_000;
 const DEFAULT_AI_TOOL_MAX_ITERATIONS = 10;
 const INBOUND_MAIL_TRANSFER_AUTO_PROCESS_SETTING_KEY = "InboundMailTransferAutoProcess";
+const INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY = "InboundMailTransferCategory";
+const TRANSFER_EMAIL_PROCESS_MARK_KEY = "transfer-email";
+const TRANSFER_EMAIL_MAX_PROCESS_ATTEMPTS = 2;
 
 const transferEmailAiItemSchema = z.object({
     amount: z.number().nullable(),
@@ -130,13 +138,14 @@ class InboundMailTransferProcessor {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
+                failed: 0,
             };
         }
 
         this.processInProgress = true;
 
         try {
-            const since = requestedSince ?? await this.getProcessingStartDate();
+            const since = requestedSince;
             const inboundEmails = await this.findInboundEmailsToProcess(since, limit);
 
             return {
@@ -153,35 +162,71 @@ class InboundMailTransferProcessor {
         return this.process(options);
     }
 
-    private async processInboundEmailBatch(inboundEmails: IInboundEmail[]): Promise<Pick<ProcessTransfersResult, "scanned" | "created" | "skipped">> {
+    private async processInboundEmailBatch(inboundEmails: IInboundEmail[]): Promise<Pick<ProcessTransfersResult, "scanned" | "created" | "skipped" | "failed">> {
         if (inboundEmails.length === 0) {
             return {
                 scanned: 0,
                 created: 0,
                 skipped: 0,
+                failed: 0,
             };
         }
 
-        const existingInboundIds = await this.findExistingTransferInboundIds(inboundEmails.map((email) => email._id));
-
         let created = 0;
         let skipped = 0;
+        let failed = 0;
 
         for (const inboundEmail of inboundEmails) {
-            if (existingInboundIds.has(inboundEmail._id)) {
-                skipped++;
-                continue;
-            }
+            const attempts = this.resolveNextTransferEmailAttempt(inboundEmail);
 
-            const transferEmails = await this.buildTransferEmailPayloads(inboundEmail);
-            if (transferEmails.length === 0) {
-                skipped++;
-                continue;
-            }
+            try {
+                const existingTransferEmails = await this.findExistingTransferEmails(inboundEmail);
+                if (existingTransferEmails.length > 0) {
+                    await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                        attempts: this.resolveCurrentTransferEmailAttempts(inboundEmail),
+                        metadata: {
+                            reason: "existing-transfer-email",
+                            transferEmailIds: existingTransferEmails.map((transferEmail) => transferEmail._id),
+                        },
+                    });
+                    skipped++;
+                    continue;
+                }
 
-            for (const transferEmail of transferEmails) {
-                await this.transferEmailService.create(transferEmail);
-                created++;
+                await this.markInboundEmailProcess(inboundEmail, "PROCESSING", {attempts});
+
+                const transferEmails = await this.buildTransferEmailPayloads(inboundEmail);
+                if (transferEmails.length === 0) {
+                    await this.markInboundEmailProcess(inboundEmail, "SKIPPED", {
+                        attempts,
+                        metadata: {reason: "not-transfer-proof"},
+                    });
+                    skipped++;
+                    continue;
+                }
+
+                const createdTransferEmailIds: string[] = [];
+                for (const transferEmail of transferEmails) {
+                    const createdTransferEmail = await this.transferEmailService.create(transferEmail);
+                    createdTransferEmailIds.push(createdTransferEmail._id);
+                    created++;
+                }
+
+                await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                    attempts,
+                    metadata: {transferEmailIds: createdTransferEmailIds},
+                });
+            } catch (error) {
+                await this.markInboundEmailProcess(inboundEmail, "FAILED", {
+                    attempts,
+                    lastError: this.serializeErrorMessage(error),
+                });
+                failed++;
+                this.logError("Error processing inbound transfer email", error, {
+                    inboundEmailId: inboundEmail._id,
+                    messageId: inboundEmail.messageId,
+                    attempts,
+                });
             }
         }
 
@@ -189,6 +234,7 @@ class InboundMailTransferProcessor {
             scanned: inboundEmails.length,
             created,
             skipped,
+            failed,
         };
     }
 
@@ -241,75 +287,79 @@ class InboundMailTransferProcessor {
         return parsedLimit;
     }
 
-    private async getProcessingStartDate(): Promise<Date | null> {
-        const latestTransferEmails = await this.transferEmailService.paginate({
-            page: 1,
-            limit: 1,
-            orderBy: "createdAt",
-            order: "desc",
-        });
-
-        const latestTransferEmail = latestTransferEmails.items[0] as (ITransferEmail & {
-            inboundEmail?: { receivedAt?: Date } | string | null;
-        }) | undefined;
-
-        if (!latestTransferEmail) {
-            return null;
-        }
-
-        const inboundReceivedAt = typeof latestTransferEmail.inboundEmail === "object"
-            ? latestTransferEmail.inboundEmail?.receivedAt
-            : undefined;
-
-        return inboundReceivedAt
-            || latestTransferEmail.emailDate
-            || latestTransferEmail.transferDate
-            || latestTransferEmail.createdAt
-            || null;
-    }
-
     private async findInboundEmailsToProcess(since: Date | null, limit: number): Promise<IInboundEmail[]> {
-        const filters: Array<{ field: string; operator: string; value: unknown }> = [
-            {field: "processingStatus", operator: "eq", value: "PROCESSED"},
-        ];
+        const category = await this.getTransferEmailCategoryFilter();
 
-        if (since) {
-            filters.push({field: "receivedAt", operator: "gte", value: since});
-        }
-
-        return await this.inboundMailService.find({
+        return await this.inboundMailService.findByProcessMarkStatus({
+            processMarkKey: TRANSFER_EMAIL_PROCESS_MARK_KEY,
+            processingStatus: "PROCESSED",
+            category,
+            retryStatus: "FAILED",
+            maxAttempts: TRANSFER_EMAIL_MAX_PROCESS_ATTEMPTS,
+            since,
+            limit,
             orderBy: "receivedAt",
             order: "asc",
-            filters,
-            limit,
         });
     }
 
-    private async findExistingTransferInboundIds(inboundEmailIds: string[]): Promise<Set<string>> {
-        if (inboundEmailIds.length === 0) {
-            return new Set<string>();
-        }
+    private findTransferEmailProcessMark(inboundEmail: IInboundEmail): IInboundEmailProcessMark | undefined {
+        return inboundEmail.processMarks?.find((mark) => mark.key === TRANSFER_EMAIL_PROCESS_MARK_KEY);
+    }
 
-        const existing = await this.transferEmailService.find({
-            filters: [{field: "inboundEmail", operator: "in", value: inboundEmailIds}],
-            limit: Math.max(inboundEmailIds.length * 20, inboundEmailIds.length),
+    private resolveCurrentTransferEmailAttempts(inboundEmail: IInboundEmail): number {
+        return this.findTransferEmailProcessMark(inboundEmail)?.attempts || 0;
+    }
+
+    private resolveNextTransferEmailAttempt(inboundEmail: IInboundEmail): number {
+        return this.resolveCurrentTransferEmailAttempts(inboundEmail) + 1;
+    }
+
+    private async findExistingTransferEmails(inboundEmail: IInboundEmail): Promise<ITransferEmail[]> {
+        const byMessageId = await this.transferEmailService.find({
+            filters: [{field: "emailMessageId", operator: "eq", value: inboundEmail.messageId}],
+            limit: 20,
         });
 
-        return new Set(
-            existing
-                .map((item) => {
-                    if (!item.inboundEmail) {
-                        return undefined;
-                    }
+        const byInboundEmail = await this.transferEmailService.find({
+            filters: [{field: "inboundEmail", operator: "eq", value: inboundEmail._id}],
+            limit: 20,
+        });
 
-                    if (typeof item.inboundEmail === "string") {
-                        return item.inboundEmail;
-                    }
+        const transferEmails = new Map<string, ITransferEmail>();
+        for (const transferEmail of [...byMessageId, ...byInboundEmail]) {
+            transferEmails.set(transferEmail._id, transferEmail);
+        }
 
-                    return item.inboundEmail._id;
-                })
-                .filter((value): value is string => Boolean(value))
-        );
+        return [...transferEmails.values()];
+    }
+
+    private async markInboundEmailProcess(
+        inboundEmail: IInboundEmail,
+        status: InboundEmailProcessMarkStatus,
+        options: {
+            attempts?: number;
+            lastError?: string;
+            metadata?: Record<string, unknown>;
+        } = {}
+    ): Promise<void> {
+        const currentMarks = inboundEmail.processMarks || [];
+        const nextMark = this.removeUndefinedFields({
+            key: TRANSFER_EMAIL_PROCESS_MARK_KEY,
+            status,
+            markedAt: new Date(),
+            attempts: options.attempts,
+            lastError: options.lastError,
+            metadata: options.metadata,
+        } satisfies IInboundEmailProcessMark);
+
+        const processMarks = [
+            ...currentMarks.filter((mark) => mark.key !== TRANSFER_EMAIL_PROCESS_MARK_KEY),
+            nextMark,
+        ];
+
+        inboundEmail.processMarks = processMarks;
+        await this.inboundMailService.updatePartial(inboundEmail._id, {processMarks});
     }
 
     private async buildTransferEmailPayloads(inboundEmail: IInboundEmail): Promise<ITransferEmailBase[]> {
@@ -488,10 +538,10 @@ class InboundMailTransferProcessor {
         return Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString();
     }
 
-    private removeUndefinedFields(payload: ITransferEmailBase): ITransferEmailBase {
+    private removeUndefinedFields<T extends object>(payload: T): T {
         return Object.fromEntries(
             Object.entries(payload).filter(([, value]) => value !== undefined)
-        ) as ITransferEmailBase;
+        ) as T;
     }
 
     private async isSettingEnabled(key: string): Promise<boolean> {
@@ -501,6 +551,19 @@ class InboundMailTransferProcessor {
         } catch (error) {
             this.logError("Error reading inbound transfer automation setting", error, {settingKey: key});
             return false;
+        }
+    }
+
+    private async getTransferEmailCategoryFilter(): Promise<string | null> {
+        try {
+            const setting = await SettingServiceFactory().findByKey(INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY);
+            const category = typeof setting?.value === "string" ? setting.value.trim() : "";
+            return category || null;
+        } catch (error) {
+            this.logError("Error reading inbound transfer category setting", error, {
+                settingKey: INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY,
+            });
+            return null;
         }
     }
 
@@ -519,6 +582,26 @@ class InboundMailTransferProcessor {
             context,
             error: this.serializeError(error),
         });
+    }
+
+    private serializeErrorMessage(error: unknown): string {
+        if (error instanceof z.ZodError) {
+            return error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+        }
+
+        if (error instanceof Error) {
+            return error.message;
+        }
+
+        if (typeof error === "string") {
+            return error;
+        }
+
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return "Unknown error";
+        }
     }
 
     private serializeError(error: unknown): unknown {

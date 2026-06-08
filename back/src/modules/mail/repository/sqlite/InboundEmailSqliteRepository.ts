@@ -1,5 +1,8 @@
 import {AbstractSqliteRepository} from "@drax/crud-back";
-import type {IInboundEmailRepository} from '../../interfaces/IInboundEmailRepository'
+import type {
+    FindInboundEmailsByProcessMarkOptions,
+    IInboundEmailRepository
+} from '../../interfaces/IInboundEmailRepository'
 import type {IInboundEmail, IInboundEmailBase} from "../../interfaces/IInboundEmail";
 import {SqliteTableField} from "@drax/common-back";
 
@@ -10,7 +13,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     protected dataBaseFile: string;
     protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'category', 'duplicateOfMessageId'];
     protected booleanFields: string[] = ['hasAttachments', 'isDuplicate'];
-    protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities'];
+    protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities', 'processMarks'];
     protected identifier: string = 'messageId';
     protected populateFields = []
     protected verbose: boolean = false;
@@ -44,10 +47,76 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "extractedEntities", type: "TEXT", unique: undefined, primary: false},
         {name: "processingStatus", type: "TEXT", unique: undefined, primary: false},
         {name: "reviewStatus", type: "TEXT", unique: undefined, primary: false},
+        {name: "processMarks", type: "TEXT", unique: undefined, primary: false},
         {name: "isDuplicate", type: "TEXT", unique: undefined, primary: false},
         {name: "duplicateOfMessageId", type: "TEXT", unique: undefined, primary: false},
         {name: "processedAt", type: "TEXT", unique: undefined, primary: false}
     ]
+
+    async findByProcessMarkStatus({
+                                      processMarkKey,
+                                      processingStatus = "PROCESSED",
+                                      category = null,
+                                      retryStatus = "FAILED",
+                                      maxAttempts = 2,
+                                      since = null,
+                                      limit = 10,
+                                      orderBy = "receivedAt",
+                                      order = "asc",
+                                  }: FindInboundEmailsByProcessMarkOptions): Promise<IInboundEmail[]> {
+        const safeOrderBy = this.tableFields.some((field) => field.name === orderBy) ? orderBy : "receivedAt";
+        const safeOrder = order === "desc" ? "DESC" : "ASC";
+        const where: string[] = [
+            "processingStatus = @processingStatus",
+            `(
+                processMarks IS NULL
+                OR processMarks = ''
+                OR NOT EXISTS (
+                    SELECT 1
+                    FROM json_each(COALESCE(NULLIF(processMarks, ''), '[]')) AS processMark
+                    WHERE json_extract(processMark.value, '$.key') = @processMarkKey
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM json_each(COALESCE(NULLIF(processMarks, ''), '[]')) AS processMark
+                    WHERE json_extract(processMark.value, '$.key') = @processMarkKey
+                      AND json_extract(processMark.value, '$.status') = @retryStatus
+                      AND CAST(COALESCE(json_extract(processMark.value, '$.attempts'), 0) AS INTEGER) < @maxAttempts
+                )
+            )`,
+        ];
+        const params: Record<string, unknown> = {
+            processingStatus,
+            processMarkKey,
+            retryStatus,
+            maxAttempts,
+            limit,
+        };
+
+        if (since) {
+            where.push("receivedAt >= @since");
+            params.since = since instanceof Date ? since.toISOString() : since;
+        }
+
+        if (category) {
+            where.push("category = @category");
+            params.category = category;
+        }
+
+        const items = this.db
+            .prepare(`SELECT *
+                      FROM ${this.tableName}
+                      WHERE ${where.join(" AND ")}
+                      ORDER BY ${safeOrderBy} ${safeOrder}
+                      LIMIT @limit`)
+            .all(params) as IInboundEmail[];
+
+        for (const item of items) {
+            await this.decorate(item);
+        }
+
+        return items;
+    }
 
 }
 

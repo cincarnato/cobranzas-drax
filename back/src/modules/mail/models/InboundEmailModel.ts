@@ -56,6 +56,14 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
 
             processingStatus: {type: String,  enum: ['PENDING', 'PROCESSING', 'PROCESSED', 'REVIEW_REQUIRED', 'REJECTED', 'ERROR'], required: true, index: true, unique: false },
             reviewStatus: {type: String,  enum: ['PENDING', 'APPROVED', 'REJECTED', 'CORRECTED'], required: false, index: false, unique: false },
+            processMarks: [{
+                key: {type: String, required: true, index: true, unique: false},
+                status: {type: String, enum: ['PROCESSING', 'SUCCESS', 'FAILED', 'SKIPPED'], required: true, index: true, unique: false},
+                markedAt: {type: Date, required: true, index: true, unique: false},
+                attempts: {type: Number, required: false, index: false, unique: false},
+                lastError: {type: String, required: false, index: false, unique: false},
+                metadata: {type: mongoose.Schema.Types.Mixed, required: false, index: false, unique: false},
+            }],
 
             isDuplicate: {type: Boolean,   required: false, index: false, unique: false },
             duplicateOfMessageId: {type: String,   required: false, index: true, unique: false },
