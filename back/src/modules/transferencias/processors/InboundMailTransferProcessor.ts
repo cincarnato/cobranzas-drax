@@ -383,6 +383,7 @@ class InboundMailTransferProcessor {
                 : undefined;
             const currency = extraction.currency || undefined;
             const transferDate = this.parseTransferDate(extraction.transferDate);
+            const isMissingCriticalData = !amount || !affiliateDocumentNumber || !transferDate;
 
             const payload: ITransferEmailBase = {
                 inboundEmail: inboundEmail._id,
@@ -409,7 +410,7 @@ class InboundMailTransferProcessor {
                 affiliateName: this.normalizeString(extraction.affiliateName) || inboundEmail.customer?.name || inboundEmail.fromName,
                 affiliateEmail,
                 affiliateDocumentNumber,
-                needsHumanReview: extraction.needsHumanReview ?? (!amount || !affiliateDocumentNumber || !transferDate),
+                needsHumanReview: isMissingCriticalData || Boolean(extraction.needsHumanReview),
             };
 
             return this.removeUndefinedFields(payload);
@@ -433,7 +434,8 @@ class InboundMailTransferProcessor {
                     "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
                     "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
                     "affiliateDocumentNumber debe contener solo dígitos del DNI si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
-                    "needsHumanReview debe ser true cuando falten datos clave o haya ambigüedad relevante.",
+                    "needsHumanReview debe ser true siempre que falte affiliateDocumentNumber, amount o transferDate.",
+                    "Tambien debe ser true cuando haya ambigüedad relevante, aunque esos tres datos esten presentes.",
                 ].join("\n"),
                 userInput: this.buildAiUserInput(inboundEmail),
                 zodSchema: transferEmailAiSchema,
