@@ -11,6 +11,7 @@ const messages = {
         emailSubject: 'Email Subject',
         emailFromName: 'Email Sender Name',
         emailFromEmail: 'Email Sender Address',
+        emailDocumentNumber: 'Email Document Number',
         isTransferProof: 'Is Transfer Proof',
         amount: 'Amount',
         currency: 'Currency',
@@ -30,9 +31,11 @@ const messages = {
         affiliateName: 'Affiliate Name',
         affiliateEmail: 'Affiliate Email',
         affiliateDocumentNumber: 'Affiliate Document Number',
+        additionalAffiliates: 'Additional Affiliates',
         month: 'Month',
         observations: 'Observations',
-        needsHumanReview: 'Needs Human Review'
+        needsHumanReview: 'Needs Human Review',
+        affiliateStrategy: 'Strategy',
       }
     },
     permission: {
@@ -54,6 +57,7 @@ const messages = {
         emailSubject: 'Asunto del mail',
         emailFromName: 'Nombre del remitente',
         emailFromEmail: 'Email del remitente',
+        emailDocumentNumber: 'Documento del email',
         isTransferProof: 'Es comprobante de transferencia',
         amount: 'Monto',
         currency: 'Moneda',
@@ -73,9 +77,11 @@ const messages = {
         affiliateName: 'Nombre del afiliado',
         affiliateEmail: 'Email del afiliado',
         affiliateDocumentNumber: 'Documento del afiliado',
+        additionalAffiliates: 'Afiliados adicionales',
         month: 'Mes',
         observations: 'Observaciones',
-        needsHumanReview: 'Requiere revisión humana'
+        needsHumanReview: 'Requiere revisión humana',
+        affiliateStrategy: 'Estrategia',
       }
     },
     permission: {
@@ -88,4 +94,4 @@ const messages = {
   }
 }
 
-export default messages;  
+export default messages;

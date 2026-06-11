@@ -1,6 +1,6 @@
 
 import BankMovementCrudRoute from "./BankMovementCrudRoute"
-import PayerEntityCrudRoute from "./PayerEntityCrudRoute"
+import PayerCrudRoute from "./PayerCrudRoute"
 import TransferEmailProcessRoute from "./TransferEmailProcessRoute"
 import TransferEmailCrudRoute from "./TransferEmailCrudRoute"
 import TransferEmailViewRoute from "./TransferEmailViewRoute"
@@ -8,7 +8,7 @@ import TransferEmailDashboardRoute from "./TransferEmailDashboardRoute"
 
 export const routes = [
 ...BankMovementCrudRoute,
-...PayerEntityCrudRoute,
+...PayerCrudRoute,
 ...TransferEmailProcessRoute,
 ...TransferEmailCrudRoute,
 ...TransferEmailViewRoute,

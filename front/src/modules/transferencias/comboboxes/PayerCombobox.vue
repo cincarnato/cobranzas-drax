@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import PayerEntityCrud from '../cruds/PayerEntityCrud'
+import PayerCrud from '../cruds/PayerCrud'
 import {CrudAutocomplete} from "@drax/crud-vue";
 import {IEntityCrudField} from "@drax/crud-share";
 import {defineProps} from "vue";
@@ -9,12 +9,12 @@ import type {PropType} from "vue";
 
 const valueModel = defineModel<any>({type: String})
 
-const entityName = PayerEntityCrud.instance.name
+const entityName = PayerCrud.instance.name
 
 const {name, label} = defineProps({
   name: {type: String as PropType<string>, required: false},
   label: {type: String as PropType<string>, required: false},
-  itemTitle: {type: [String], default: 'name'},
+  itemTitle: {type: [String], default: 'value'},
   itemValue: {type: [String], default: '_id'},
   prependIcon: {type: String},
   prependInnerIcon: {type: String},
@@ -52,7 +52,7 @@ const field: IEntityCrudField = {
   <crud-autocomplete
     v-model="valueModel"
     :field="field"
-    :entity="PayerEntityCrud.instance"
+    :entity="PayerCrud.instance"
     :hint="hint"
     :persistent-hint="persistentHint"
     :error-messages="errorMessages"
@@ -75,5 +75,3 @@ const field: IEntityCrudField = {
 <style scoped>
 
 </style>
-
-

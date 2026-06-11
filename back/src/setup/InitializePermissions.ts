@@ -28,7 +28,7 @@ import { GroupZonePermissions } from "../modules/collections/permissions/GroupZo
 import { InboundEmailPermissions } from "../modules/mail/permissions/InboundEmailPermissions.js";
 import { MailboxPermissions } from "../modules/mail/permissions/MailboxPermissions.js";
 import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
-import { PayerEntityPermissions } from "../modules/transferencias/permissions/PayerEntityPermissions.js";
+import { PayerPermissions } from "../modules/transferencias/permissions/PayerPermissions.js";
 import { TransferEmailPermissions } from "../modules/transferencias/permissions/TransferEmailPermissions.js";
 import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliatePermissions.js";
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
@@ -70,7 +70,7 @@ function InitializePermissions() {
         ...Object.values(AffiliatePermissions),
         ...Object.values(AffiliateTypePermissions),
         ...Object.values(BankMovementPermissions),
-        ...Object.values(PayerEntityPermissions),
+        ...Object.values(PayerPermissions),
         ...Object.values(TransferEmailPermissions),
         ...Object.values(RecoveryPermissions),
         ...Object.values(BonusPermissions),

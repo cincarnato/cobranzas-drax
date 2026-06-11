@@ -129,10 +129,10 @@ const menu: MenuItem[] = [
       },
       {
         icon: 'mdi-account-search',
-        text: 'payerentity.menu',
-        link: { name: "PayerEntityCrudPage" },
+        text: 'payer.menu',
+        link: { name: "PayerCrudPage" },
         gallery: true,
-        permission: 'payerentity:manage'
+        permission: 'payer:manage'
       },
       {
         icon: 'mdi-email-fast-outline',

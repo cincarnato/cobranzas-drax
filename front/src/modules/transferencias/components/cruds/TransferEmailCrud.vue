@@ -2,14 +2,17 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import TransferEmailCrud from '../../cruds/TransferEmailCrud'
-import {Crud, useCrudStore} from "@drax/crud-vue";
+import {Crud, useCrud, useCrudStore} from "@drax/crud-vue";
 import {formatDateTime} from "@drax/common-front"
 import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
+import TransferEmailReprocessAction from "@/modules/transferencias/components/TransferEmailReprocessAction.vue";
 import TransferEmailProvider from "../../providers/TransferEmailProvider";
 import type {IDraxFieldFilter} from "@drax/crud-share";
+import type {TransferEmailReprocessResult} from "../../providers/TransferEmailProvider";
 
 const transferEmailEntity = TransferEmailCrud.instance
 const crudStore = useCrudStore(transferEmailEntity.name)
+const {doPaginate} = useCrud(transferEmailEntity)
 const exportExcelLoading = computed({
   get() {
     return crudStore.exportLoading
@@ -63,6 +66,12 @@ function resolveFileName(response: Response) {
   const contentDisposition = response.headers.get('content-disposition') ?? ''
   const match = contentDisposition.match(/filename=\"?([^"]+)\"?/)
   return match?.[1] ?? `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
+}
+
+async function refreshAfterReprocess(result: TransferEmailReprocessResult) {
+  if (result.changed) {
+    await doPaginate()
+  }
 }
 
 async function exportExcel() {
@@ -133,6 +142,13 @@ async function exportExcel() {
       </v-tooltip>
     </template>
 
+    <template v-slot:item.actions="{item}">
+      <transfer-email-reprocess-action
+        :item="item"
+        @reprocessed="refreshAfterReprocess"
+      />
+    </template>
+
     <template v-slot:item.inboundEmail="{value}">
       <span class="muted-cell">{{ value?.messageId || '-' }}</span>
     </template>
@@ -151,6 +167,12 @@ async function exportExcel() {
 
     <template v-slot:item.emailFromEmail="{value}">
       <v-chip color="blue-grey" variant="tonal" size="small" prepend-icon="mdi-email-outline">
+        {{ value || '-' }}
+      </v-chip>
+    </template>
+
+    <template v-slot:item.emailDocumentNumber="{value}">
+      <v-chip color="cyan" variant="tonal">
         {{ value || '-' }}
       </v-chip>
     </template>
@@ -215,6 +237,21 @@ async function exportExcel() {
       <v-chip color="cyan" variant="tonal"  >
         {{ value || '-' }}
       </v-chip>
+    </template>
+
+    <template v-slot:item.additionalAffiliates="{value}">
+      <div class="additional-affiliates-cell">
+        <v-chip
+          v-for="(affiliate, index) in value || []"
+          :key="`${affiliate.documentNumber || affiliate.email || affiliate.name || 'affiliate'}-${index}`"
+          color="teal"
+          variant="tonal"
+          size="small"
+        >
+          {{ [affiliate.name, affiliate.email, affiliate.documentNumber].filter(Boolean).join(' / ') || '-' }}
+        </v-chip>
+        <span v-if="!value?.length">-</span>
+      </div>
     </template>
 
     <template v-slot:item.needsHumanReview="{value}">
@@ -292,5 +329,12 @@ async function exportExcel() {
 .status-chip {
   font-weight: 800;
   letter-spacing: 0.01em;
+}
+
+.additional-affiliates-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 160px;
 }
 </style>

@@ -16,6 +16,23 @@ type TransferInboundEmailProcessOptions = {
   limit?: number | null
 }
 
+type TransferEmailReprocessResult = {
+  transferEmail: ITransferEmail
+  previousTransferEmail: ITransferEmail
+  updatedFields: ITransferEmailBase
+  changes?: Array<{
+    field: string
+    label: string
+    before: string
+    after: string
+  }>
+  changed: boolean
+  payerFound: boolean
+  payerStrategy?: ITransferEmail['affiliateStrategy']
+  previousAffiliateStrategy?: ITransferEmail['affiliateStrategy']
+  currentAffiliateStrategy?: ITransferEmail['affiliateStrategy']
+}
+
 class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITransferEmailBase, ITransferEmailBase> {
     
   static singleton: TransferEmailProvider
@@ -37,6 +54,14 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
       options,
       {timeout: 300000}
     ) as TransferInboundEmailProcessResult
+  }
+
+  async reprocess(id: string): Promise<TransferEmailReprocessResult> {
+    return await this.httpClient.post(
+      `/api/transfer-emails/${id}/reprocess`,
+      {},
+      {timeout: 300000}
+    ) as TransferEmailReprocessResult
   }
 
   async exportExcel({orderBy = "", order = "asc", search = "", filters = []}: IDraxFindOptions): Promise<Response> {
@@ -64,4 +89,4 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
 }
 
 export default TransferEmailProvider
-export type {TransferInboundEmailProcessOptions, TransferInboundEmailProcessResult}
+export type {TransferEmailReprocessResult, TransferInboundEmailProcessOptions, TransferInboundEmailProcessResult}

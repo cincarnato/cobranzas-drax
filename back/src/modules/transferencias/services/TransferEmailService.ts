@@ -35,8 +35,10 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             {header: 'Asunto Mail', key: 'emailSubject', width: 42},
             {header: 'Remitente Nombre', key: 'emailFromName', width: 28},
             {header: 'Remitente Email', key: 'emailFromEmail', width: 32},
+            {header: 'DNI Email', key: 'emailDocumentNumber', width: 16},
             {header: 'DNI Afiliado', key: 'affiliateDocumentNumber', width: 16},
             {header: 'Nombre Afiliado', key: 'affiliateName', width: 32},
+            {header: 'Afiliados Adicionales', key: 'additionalAffiliates', width: 50},
             {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
             {header: 'Fecha Email', key: 'emailDate', width: 20},
             {header: 'Fecha Proceso', key: 'processDate', width: 20},
@@ -56,8 +58,10 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                 emailSubject: row.emailSubject ?? '',
                 emailFromName: row.emailFromName ?? '',
                 emailFromEmail: row.emailFromEmail ?? '',
+                emailDocumentNumber: row.emailDocumentNumber ?? '',
                 affiliateDocumentNumber: row.affiliateDocumentNumber ?? '',
                 affiliateName: row.affiliateName ?? '',
+                additionalAffiliates: this.formatAdditionalAffiliates(row.additionalAffiliates),
                 transferDate: row.transferDate ? new Date(row.transferDate) : '',
                 emailDate: row.emailDate ? new Date(row.emailDate) : '',
                 processDate: row.processDate ? new Date(row.processDate) : '',
@@ -83,6 +87,17 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
             fileName: `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
         }
+    }
+
+    private formatAdditionalAffiliates(additionalAffiliates?: ITransferEmail['additionalAffiliates']): string {
+        return (additionalAffiliates || [])
+            .map((affiliate) => [
+                affiliate.name,
+                affiliate.email,
+                affiliate.documentNumber,
+            ].filter(Boolean).join(' / '))
+            .filter(Boolean)
+            .join('; ')
     }
 
 }

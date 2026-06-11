@@ -13,7 +13,7 @@ import type{
 import BankMovementProvider from "../providers/BankMovementProvider";
 
 //Import EntityCrud Refs
-import PayerEntityCrud from "./PayerEntityCrud";
+import PayerCrud from "./PayerCrud";
 import AffiliateCrud from "../../premedic/cruds/AffiliateCrud";
 
 class BankMovementCrud extends EntityCrud implements IEntityCrud {
@@ -88,7 +88,7 @@ class BankMovementCrud extends EntityCrud implements IEntityCrud {
   
   get refs(): IEntityCrudRefs{
     return {
-      PayerEntity: PayerEntityCrud.instance ,
+      Payer: PayerCrud.instance ,
 Affiliate: AffiliateCrud.instance 
     }
   }
@@ -116,7 +116,7 @@ Affiliate: AffiliateCrud.instance
 {name:'cuilCuitPagador',type:'string',label:'cuilCuitPagador',default:''},
 {name:'nombrePagador',type:'string',label:'nombrePagador',default:''},
 {name:'numeroCuentaPagador',type:'string',label:'numeroCuentaPagador',default:''},
-{name:'pagadorDetectadoId',type:'ref',label:'pagadorDetectadoId',default:null,ref: 'PayerEntity',refDisplay: 'nombre'},
+{name:'pagadorDetectadoId',type:'ref',label:'pagadorDetectadoId',default:null,ref: 'Payer',refDisplay: 'valor'},
 {name:'afiliadoId',type:'ref',label:'afiliadoId',default:null,ref: 'Affiliate',refDisplay: 'nombre'},
 {name:'estado',type:'enum',label:'estado',default:'pendiente',enum: ['pendiente', 'asignado', 'manual', 'ignorado']}
     ]

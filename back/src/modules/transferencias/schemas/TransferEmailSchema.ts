@@ -1,6 +1,11 @@
 
 import { z } from 'zod';
 
+const TransferEmailAdditionalAffiliateSchema = z.object({
+    name: z.string().optional(),
+    email: z.string().optional(),
+    documentNumber: z.string().optional(),
+});
 
 const TransferEmailBaseSchema = z.object({
       inboundEmail: z.coerce.string().optional().nullable(),
@@ -8,6 +13,7 @@ const TransferEmailBaseSchema = z.object({
     emailSubject: z.string().optional(),
     emailFromName: z.string().optional(),
     emailFromEmail: z.string().optional(),
+    emailDocumentNumber: z.string().optional(),
     isTransferProof: z.boolean().optional(),
     amount: z.number().nullable().optional(),
     currency: z.enum(['ARS', 'USD', 'EUR', 'OTHER']).optional(),
@@ -27,6 +33,8 @@ const TransferEmailBaseSchema = z.object({
     affiliateName: z.string().optional(),
     affiliateEmail: z.string().optional(),
     affiliateDocumentNumber: z.string().optional(),
+    affiliateStrategy: z.enum(['EMAIL', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
+    additionalAffiliates: z.array(TransferEmailAdditionalAffiliateSchema).optional().default([]),
     month: z.string().optional(),
     observations: z.string().optional(),
     needsHumanReview: z.boolean().optional()

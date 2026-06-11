@@ -21,7 +21,7 @@ const BankMovementSchema = new mongoose.Schema<IBankMovement>({
             cuilCuitPagador: {type: String,   required: false, index: true, unique: false },
             nombrePagador: {type: String,   required: false, index: false, unique: false },
             numeroCuentaPagador: {type: String,   required: false, index: true, unique: false },
-            pagadorDetectadoId: {type: mongoose.Schema.Types.ObjectId, ref: 'PayerEntity',  required: false, index: false, unique: false },
+            pagadorDetectadoId: {type: mongoose.Schema.Types.ObjectId, ref: 'Payer',  required: false, index: false, unique: false },
             afiliadoId: {type: mongoose.Schema.Types.ObjectId, ref: 'Affiliate',  required: false, index: false, unique: false },
             estado: {type: String,  enum: ['pendiente', 'asignado', 'manual', 'ignorado'], required: false, index: true, unique: false }
 }, {timestamps: true});

@@ -1,10 +1,19 @@
 
+interface ITransferEmailAdditionalAffiliate {
+    name?: string
+    email?: string
+    documentNumber?: string
+}
+
+type TransferEmailAffiliateStrategy = 'EMAIL' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
+
 interface ITransferEmailBase {
     inboundEmail?: any
     emailMessageId?: string
     emailSubject?: string
     emailFromName?: string
     emailFromEmail?: string
+    emailDocumentNumber?: string
     isTransferProof?: boolean
     amount?: number
     currency?: string
@@ -24,6 +33,8 @@ interface ITransferEmailBase {
     affiliateName?: string
     affiliateEmail?: string
     affiliateDocumentNumber?: string
+    affiliateStrategy?: TransferEmailAffiliateStrategy
+    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
     month?: string
     observations?: string
     needsHumanReview?: boolean
@@ -38,6 +49,7 @@ interface ITransferEmail {
     emailSubject?: string
     emailFromName?: string
     emailFromEmail?: string
+    emailDocumentNumber?: string
     isTransferProof?: boolean
     amount?: number
     currency?: string
@@ -57,6 +69,8 @@ interface ITransferEmail {
     affiliateName?: string
     affiliateEmail?: string
     affiliateDocumentNumber?: string
+    affiliateStrategy?: TransferEmailAffiliateStrategy
+    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
     month?: string
     observations?: string
     needsHumanReview?: boolean
@@ -65,6 +79,8 @@ interface ITransferEmail {
 }
 
 export type {
+ITransferEmailAdditionalAffiliate,
+TransferEmailAffiliateStrategy,
 ITransferEmailBase, 
 ITransferEmail
 }

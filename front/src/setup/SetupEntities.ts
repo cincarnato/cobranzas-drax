@@ -14,7 +14,7 @@ import InboundEmailCrud from '../modules/mail/cruds/InboundEmailCrud'
 import AffiliateCrud from '../modules/premedic/cruds/AffiliateCrud'
 import AffiliateTypeCrud from '../modules/premedic/cruds/AffiliateTypeCrud'
 import BankMovementCrud from '../modules/transferencias/cruds/BankMovementCrud'
-import PayerEntityCrud from '../modules/transferencias/cruds/PayerEntityCrud'
+import PayerCrud from '../modules/transferencias/cruds/PayerCrud'
 import TransferEmailCrud from '../modules/transferencias/cruds/TransferEmailCrud'
 
 function setupEntities(){
@@ -35,7 +35,7 @@ function setupEntities(){
   entityStore.addEntity(AffiliateCrud.instance)
   entityStore.addEntity(AffiliateTypeCrud.instance)
   entityStore.addEntity(BankMovementCrud.instance)
-  entityStore.addEntity(PayerEntityCrud.instance)
+  entityStore.addEntity(PayerCrud.instance)
   entityStore.addEntity(TransferEmailCrud.instance)
   entityStore.addEntity(WhatsappMessageCrud.instance)
   //TODO Add domain entities here...

@@ -34,7 +34,7 @@ import { InboundEmailMailboxRoutes } from "../modules/mail/routes/InboundEmailMa
 import { MailToolsRoutes } from "../modules/mail/routes/MailToolsRoutes.js"
 import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js"
 import { BankMovementFastifyRoutes } from "../modules/transferencias/routes/BankMovementRoutes.js"
-import { PayerEntityFastifyRoutes } from "../modules/transferencias/routes/PayerEntityRoutes.js"
+import { PayerFastifyRoutes } from "../modules/transferencias/routes/PayerRoutes.js"
 import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/TransferEmailRoutes.js"
 import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js"
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js"
@@ -89,7 +89,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(AffiliateFastifyRoutes)
     server.fastifyRegister(AffiliateTypeFastifyRoutes)
     server.fastifyRegister(BankMovementFastifyRoutes)
-    server.fastifyRegister(PayerEntityFastifyRoutes)
+    server.fastifyRegister(PayerFastifyRoutes)
     server.fastifyRegister(TransferEmailFastifyRoutes)
     server.fastifyRegister(RecoveryFastifyRoutes)
     server.fastifyRegister(BonusFastifyRoutes)
