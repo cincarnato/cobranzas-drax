@@ -24,6 +24,9 @@ const props = withDefaults(defineProps<{
 }>(), {
   readonly: false
 })
+const emit = defineEmits<{
+  saved: [transferEmail: ITransferEmail]
+}>()
 
 type TransferEmailPartialForm = Pick<
   ITransferEmail,
@@ -196,6 +199,7 @@ async function saveMetadata() {
     email.value.month = updated.month || ''
     email.value.observations = updated.observations || ''
     syncPartialForm()
+    emit('saved', updated)
     metadataSaveSuccess.value = 'Cambios guardados.'
   } catch (error) {
     console.error('Error updating transfer email metadata:', error)

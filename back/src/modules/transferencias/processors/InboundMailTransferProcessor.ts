@@ -662,7 +662,7 @@ class InboundMailTransferProcessor {
         originAccount?: string;
     }): IPayerLookupCriteria[] {
         return [
-            this.buildPayerLookupCriterion("EMAIL", input.emailFromEmail),
+            this.buildPayerLookupCriterion("EMAIL_FROM", input.emailFromEmail),
             this.buildPayerLookupCriterion("DNI_CUIL", input.emailDocumentNumber),
             this.buildPayerLookupCriterion("CBU_CVU", input.originCbu),
             this.buildPayerLookupCriterion("NRO_CUENTA", input.originAccount),

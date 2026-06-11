@@ -1,10 +1,11 @@
 
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref} from 'vue'
 import TransferEmailCrud from '../../cruds/TransferEmailCrud'
 import {Crud, useCrud, useCrudStore} from "@drax/crud-vue";
 import {formatDateTime} from "@drax/common-front"
 import TransferEmail from "@/modules/transferencias/components/TransferEmail.vue";
+import TransferEmailHelpDialog from "@/modules/transferencias/components/TransferEmailHelpDialog.vue";
 import TransferEmailReprocessAction from "@/modules/transferencias/components/TransferEmailReprocessAction.vue";
 import TransferEmailProvider from "../../providers/TransferEmailProvider";
 import type {IDraxFieldFilter} from "@drax/crud-share";
@@ -13,6 +14,7 @@ import type {TransferEmailReprocessResult} from "../../providers/TransferEmailPr
 const transferEmailEntity = TransferEmailCrud.instance
 const crudStore = useCrudStore(transferEmailEntity.name)
 const {doPaginate} = useCrud(transferEmailEntity)
+const helpDialog = ref(false)
 const exportExcelLoading = computed({
   get() {
     return crudStore.exportLoading
@@ -74,6 +76,10 @@ async function refreshAfterReprocess(result: TransferEmailReprocessResult) {
   }
 }
 
+async function refreshAfterMetadataSave() {
+  await doPaginate()
+}
+
 async function exportExcel() {
   exportExcelLoading.value = true
   crudStore.setExportError(false)
@@ -128,7 +134,18 @@ async function exportExcel() {
 
 <template>
   <crud :entity="transferEmailEntity">
-    <template v-slot:toolbar>
+    <template v-slot:toolbar-left>
+      <v-tooltip text="Ayuda sobre el modulo de transferencias" location="top">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="mdi-help-circle-outline"
+            color="primary"
+            @click="helpDialog = true"
+          />
+        </template>
+      </v-tooltip>
+
       <v-tooltip text="Exportar Excel segun filtros actuales" location="top">
         <template #activator="{ props }">
           <v-btn
@@ -140,6 +157,8 @@ async function exportExcel() {
           />
         </template>
       </v-tooltip>
+
+      <transfer-email-help-dialog v-model="helpDialog" />
     </template>
 
     <template v-slot:item.actions="{item}">
@@ -279,6 +298,7 @@ async function exportExcel() {
         v-if="operation === 'view' || operation === 'edit'"
         :transfer-email="form"
         :readonly="operation === 'view'"
+        @saved="refreshAfterMetadataSave"
       />
     </template>
 

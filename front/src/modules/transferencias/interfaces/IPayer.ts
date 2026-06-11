@@ -6,7 +6,7 @@ interface IPayerAdditionalAffiliate {
 }
 
 interface IPayerBase {
-    strategy: 'EMAIL' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA'
+    strategy: 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA'
     value: string
     affiliateName?: string
     affiliateEmail?: string

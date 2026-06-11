@@ -1,5 +1,5 @@
 
-type PayerStrategy = 'EMAIL' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA'
+type PayerStrategy = 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA'
 
 interface IPayerLookupCriteria {
     strategy: PayerStrategy

@@ -8,7 +8,7 @@ import type {IPayer} from '../interfaces/IPayer'
 const PayerSchema = new mongoose.Schema<IPayer>({
     strategy: {
         type: String,
-        enum: ['EMAIL', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA'],
+        enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA'],
         required: true,
         index: true
     },

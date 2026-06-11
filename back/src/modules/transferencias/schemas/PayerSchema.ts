@@ -1,7 +1,7 @@
 
 import { z } from 'zod';
 
-const PayerStrategySchema = z.enum(['EMAIL', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']);
+const PayerStrategySchema = z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']);
 
 const PayerAdditionalAffiliateSchema = z.object({
     name: z.string().optional(),

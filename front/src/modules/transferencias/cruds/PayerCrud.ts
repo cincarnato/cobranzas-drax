@@ -82,7 +82,7 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
 
   get fields(): IEntityCrudField[]{
     return [
-      {name: 'strategy', type: 'enum', label: 'strategy', default: 'EMAIL', enum: ['EMAIL', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']},
+      {name: 'strategy', type: 'enum', label: 'strategy', default: 'EMAIL_FROM', enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']},
       {name: 'value', type: 'string', label: 'value', default: ''},
       {name: 'affiliateName', type: 'string', label: 'affiliateName', default: ''},
       {name: 'affiliateEmail', type: 'string', label: 'affiliateEmail', default: ''},

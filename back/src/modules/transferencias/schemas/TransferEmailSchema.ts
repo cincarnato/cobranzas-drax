@@ -33,7 +33,7 @@ const TransferEmailBaseSchema = z.object({
     affiliateName: z.string().optional(),
     affiliateEmail: z.string().optional(),
     affiliateDocumentNumber: z.string().optional(),
-    affiliateStrategy: z.enum(['EMAIL', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
+    affiliateStrategy: z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
     additionalAffiliates: z.array(TransferEmailAdditionalAffiliateSchema).optional().default([]),
     month: z.string().optional(),
     observations: z.string().optional(),

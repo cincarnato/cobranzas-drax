@@ -5,7 +5,7 @@ interface ITransferEmailAdditionalAffiliate {
     documentNumber?: string
 }
 
-type TransferEmailAffiliateStrategy = 'EMAIL' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
+type TransferEmailAffiliateStrategy = 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
 
 interface ITransferEmailBase {
     inboundEmail?: any
