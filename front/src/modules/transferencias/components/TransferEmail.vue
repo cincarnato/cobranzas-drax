@@ -198,6 +198,7 @@ async function saveMetadata() {
     email.value.additionalAffiliates = cloneAdditionalAffiliates(updated.additionalAffiliates || [])
     email.value.month = updated.month || ''
     email.value.observations = updated.observations || ''
+    email.value.needsHumanReview = Boolean(updated.needsHumanReview)
     syncPartialForm()
     emit('saved', updated)
     metadataSaveSuccess.value = 'Cambios guardados.'

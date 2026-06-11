@@ -38,6 +38,46 @@ async function TransferEmailFastifyRoutes(fastify, options) {
             },
         },
     }, (req, rep) => controller.processInboundEmails(req, rep));
+    fastify.post('/api/transfer-emails/:id/reprocess', {
+        schema: {
+            tags: ["transferencias"],
+            summary: "Reprocess transfer email affiliate resolution using current payer mappings",
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                },
+            },
+            response: {
+                200: {
+                    type: "object",
+                    properties: {
+                        transferEmail: { type: "object" },
+                        previousTransferEmail: { type: "object" },
+                        updatedFields: { type: "object" },
+                        changes: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    field: { type: "string" },
+                                    label: { type: "string" },
+                                    before: { type: "string" },
+                                    after: { type: "string" },
+                                },
+                            },
+                        },
+                        changed: { type: "boolean" },
+                        payerFound: { type: "boolean" },
+                        payerStrategy: { type: "string" },
+                        previousAffiliateStrategy: { type: "string" },
+                        currentAffiliateStrategy: { type: "string" },
+                    },
+                },
+            },
+        },
+    }, (req, rep) => controller.reprocess(req, rep));
     fastify.put('/api/transfer-emails/:id', { schema: schemas.updateSchema }, (req, rep) => controller.update(req, rep));
     fastify.patch('/api/transfer-emails/:id', { schema: schemas.updateSchema }, (req, rep) => controller.updatePartial(req, rep));
     fastify.delete('/api/transfer-emails/:id', { schema: schemas.deleteSchema }, (req, rep) => controller.delete(req, rep));

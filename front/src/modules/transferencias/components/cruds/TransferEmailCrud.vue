@@ -9,7 +9,6 @@ import TransferEmailHelpDialog from "@/modules/transferencias/components/Transfe
 import TransferEmailReprocessAction from "@/modules/transferencias/components/TransferEmailReprocessAction.vue";
 import TransferEmailProvider from "../../providers/TransferEmailProvider";
 import type {IDraxFieldFilter} from "@drax/crud-share";
-import type {TransferEmailReprocessResult} from "../../providers/TransferEmailProvider";
 
 const transferEmailEntity = TransferEmailCrud.instance
 const crudStore = useCrudStore(transferEmailEntity.name)
@@ -70,10 +69,8 @@ function resolveFileName(response: Response) {
   return match?.[1] ?? `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
 }
 
-async function refreshAfterReprocess(result: TransferEmailReprocessResult) {
-  if (result.changed) {
-    await doPaginate()
-  }
+async function refreshAfterReprocess() {
+  await doPaginate()
 }
 
 async function refreshAfterMetadataSave() {

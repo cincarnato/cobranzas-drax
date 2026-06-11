@@ -40,6 +40,24 @@ class TransferEmailController extends AbstractFastifyController {
             });
         }
     }
+    async reprocess(request, reply) {
+        try {
+            request?.rbac.assertAuthenticated();
+            request?.rbac.assertPermission(TransferEmailPermissions.Manage);
+            const { id } = request.params;
+            const result = await this.inboundMailTransferProcessor.reprocessTransferEmail(id);
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            if (error?.message === "Transfer email not found") {
+                return reply.status(404).send({
+                    error: "TRANSFER_EMAIL_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+            return this.handleError(error, reply);
+        }
+    }
     async exportExcel(request, reply) {
         try {
             this.assertReadPermission(request);

@@ -387,6 +387,7 @@ class InboundEmailMailboxProvider {
                     const duplicate = await this.findExistingByMessageId(messageId);
                     if (duplicate) {
                         await this.backfillDuplicateImapUid(duplicate, mailbox, fetchMessage.uid);
+                        await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
                         result.skipped += 1;
                         continue;
                     }
@@ -498,7 +499,7 @@ class InboundEmailMailboxProvider {
         }
     }
     buildAiCategoryFlag(category) {
-        const normalizedCategory = this.normalizeString(category);
+        const normalizedCategory = this.normalizeString(category)?.split(":")[0];
         if (!normalizedCategory) {
             return undefined;
         }
@@ -954,9 +955,9 @@ class InboundEmailMailboxProvider {
         const matchedAffiliateId = await this.findAffiliateId(customer);
         const needsHumanReview = extraction.needsHumanReview ?? Boolean(!matchedAffiliateId && !customer.documentNumber && !customer.cuil);
         return {
-            category: this.normalizeString(extraction.category),
-            sentiment: this.normalizeString(extraction.sentiment),
-            priority: this.normalizeString(extraction.priority),
+            category: this.sanitizeConfiguredOption(extraction.category, (input.mailbox.categories || []).map((category) => category.name)),
+            sentiment: this.sanitizeConfiguredOption(extraction.sentiment, input.mailbox.sentiments),
+            priority: this.sanitizeConfiguredOption(extraction.priority, input.mailbox.priorities),
             summary: this.normalizeString(extraction.summary),
             tags,
             aiModel: this.resolveAiModelName(),
@@ -982,7 +983,7 @@ class InboundEmailMailboxProvider {
                 "Todo el analisis debe basarse exclusivamente en la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
                 "No inventes datos ni completes campos con inferencias debiles.",
                 "Mailbox define las opciones posibles de category, sentiment, priority, tags y entities.",
-                "Debes responder usando texto libre, pero cuando mailbox defina opciones para category, sentiment o priority debes elegir una de esas opciones exactas.",
+                "Debes responder usando texto libre, pero cuando mailbox defina opciones para category, sentiment o priority debes elegir uno de los nombres exactos.",
                 "Para tags puedes usar tags del mailbox y tambien proponer nuevos tags si realmente hacen falta.",
                 "Para extractedEntities usa labels de entities del mailbox cuando existan.",
                 "Si un valor no se puede determinar con confianza suficiente, devuelve null.",
@@ -1007,7 +1008,7 @@ class InboundEmailMailboxProvider {
                 `entities: ${this.formatOptionObjects(mailboxEntities)}`,
             ]),
             this.buildSection("OUTPUT RULES", [
-                "category: devolver exactamente una opcion de mailbox.categories o null.",
+                "category: devolver exactamente un name de mailbox.categories o null; no incluir description.",
                 "sentiment: devolver exactamente una opcion de mailbox.sentiments o null.",
                 "priority: devolver exactamente una opcion de mailbox.priorities o null.",
                 "tags: devolver un array; puede incluir tags existentes y tambien tags nuevos.",
@@ -1080,6 +1081,35 @@ class InboundEmailMailboxProvider {
         const allowed = new Set(["SUBJECT", "BODY", "ATTACHMENT", "MANUAL"]);
         return value && allowed.has(value) ? value : undefined;
     }
+    sanitizeConfiguredOption(value, configuredOptions) {
+        const normalizedValue = this.normalizeString(value);
+        if (!normalizedValue) {
+            return undefined;
+        }
+        const options = (configuredOptions || [])
+            .map((option) => this.normalizeString(option))
+            .filter(Boolean);
+        if (!options.length) {
+            return normalizedValue;
+        }
+        const comparableValue = this.normalizeComparable(normalizedValue);
+        const exactMatch = options.find((option) => this.normalizeComparable(option) === comparableValue);
+        if (exactMatch) {
+            return exactMatch;
+        }
+        const parentValue = this.normalizeString(normalizedValue.split(":")[0]);
+        const parentMatch = parentValue
+            ? options.find((option) => this.normalizeComparable(option) === this.normalizeComparable(parentValue))
+            : undefined;
+        return parentMatch;
+    }
+    normalizeComparable(value) {
+        return value
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLowerCase();
+    }
     normalizeText(value) {
         return (value || "")
             .replace(/\u0000/g, " ")
@@ -1114,7 +1144,7 @@ class InboundEmailMailboxProvider {
             return "(sin definir)";
         }
         return values
-            .map((item) => item.description ? `${item.name}: ${item.description}` : item.name)
+            .map((item) => item.description ? `name=${item.name}; description=${item.description}` : `name=${item.name}`)
             .join(" | ");
     }
     buildSection(title, lines) {

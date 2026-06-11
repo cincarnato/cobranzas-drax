@@ -21,6 +21,23 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
 
     }
 
+    async create(data: ITransferEmailBase): Promise<ITransferEmail> {
+        data = this.withReevaluatedNeedsHumanReview(null, data)
+        return super.create(data)
+    }
+
+    async update(id: string, data: ITransferEmailBase): Promise<ITransferEmail> {
+        const currentTransferEmail = await this.findById(id)
+        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data)
+        return super.update(id, data)
+    }
+
+    async updatePartial(id: string, data: ITransferEmailBase): Promise<ITransferEmail> {
+        const currentTransferEmail = await this.findById(id)
+        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data)
+        return super.updatePartial(id, data)
+    }
+
     async exportExcel(options: IDraxFindOptions): Promise<ITransferEmailExcelExportResult> {
         const rows = await this.find({
             ...options,
@@ -98,6 +115,50 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             ].filter(Boolean).join(' / '))
             .filter(Boolean)
             .join('; ')
+    }
+
+    private withReevaluatedNeedsHumanReview(
+        currentTransferEmail: ITransferEmail | null,
+        data: ITransferEmailBase
+    ): ITransferEmailBase {
+        const mergedTransferEmail = {
+            ...(currentTransferEmail || {}),
+            ...data,
+        }
+
+        return {
+            ...data,
+            needsHumanReview: this.resolveNeedsHumanReview(currentTransferEmail, mergedTransferEmail, data.needsHumanReview),
+        }
+    }
+
+    private resolveNeedsHumanReview(
+        currentTransferEmail: ITransferEmail | null,
+        nextTransferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate' | 'needsHumanReview'>,
+        requestedNeedsHumanReview?: boolean
+    ): boolean {
+        if (this.isMissingCriticalTransferData(nextTransferEmail)) {
+            return true
+        }
+
+        if (requestedNeedsHumanReview === true) {
+            return true
+        }
+
+        if (
+            currentTransferEmail?.needsHumanReview
+            && !this.isMissingCriticalTransferData(currentTransferEmail)
+        ) {
+            return true
+        }
+
+        return false
+    }
+
+    private isMissingCriticalTransferData(
+        transferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate'>
+    ): boolean {
+        return !transferEmail.amount || !transferEmail.affiliateDocumentNumber || !transferEmail.transferDate
     }
 
 }

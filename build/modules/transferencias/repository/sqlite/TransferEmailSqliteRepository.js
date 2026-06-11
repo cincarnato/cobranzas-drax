@@ -3,9 +3,9 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
     constructor() {
         super(...arguments);
         this.tableName = 'TransferEmail';
-        this.searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail'];
+        this.searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'affiliateStrategy', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
         this.booleanFields = ['isTransferProof', 'needsHumanReview'];
-        this.jsonFields = [];
+        this.jsonFields = ['additionalAffiliates'];
         this.identifier = '_id';
         this.populateFields = [
             { field: 'inboundEmail', table: 'inboundEmail', identifier: '_id' }
@@ -17,6 +17,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "emailSubject", type: "TEXT", unique: undefined, primary: false },
             { name: "emailFromName", type: "TEXT", unique: undefined, primary: false },
             { name: "emailFromEmail", type: "TEXT", unique: undefined, primary: false },
+            { name: "emailDocumentNumber", type: "TEXT", unique: undefined, primary: false },
             { name: "isTransferProof", type: "TEXT", unique: undefined, primary: false },
             { name: "amount", type: "REAL", unique: undefined, primary: false },
             { name: "amount", type: "TEXT", unique: undefined, primary: false },
@@ -37,6 +38,8 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "affiliateName", type: "TEXT", unique: undefined, primary: false },
             { name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false },
             { name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false },
+            { name: "affiliateStrategy", type: "TEXT", unique: undefined, primary: false },
+            { name: "additionalAffiliates", type: "TEXT", unique: undefined, primary: false },
             { name: "month", type: "TEXT", unique: undefined, primary: false },
             { name: "observations", type: "TEXT", unique: undefined, primary: false },
             { name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false }

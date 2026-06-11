@@ -7,6 +7,7 @@ const TransferEmailSchema = new mongoose.Schema({
     emailSubject: { type: String, required: false, index: true, unique: false },
     emailFromName: { type: String, required: false, index: true, unique: false },
     emailFromEmail: { type: String, required: false, index: true, unique: false },
+    emailDocumentNumber: { type: String, required: false, index: true, unique: false },
     isTransferProof: { type: Boolean, required: false, index: false, unique: false },
     amount: { type: Number, required: false, index: false, unique: false },
     currency: { type: String, enum: ['ARS', 'USD', 'EUR', 'OTHER'], required: false, index: false, unique: false },
@@ -26,6 +27,12 @@ const TransferEmailSchema = new mongoose.Schema({
     affiliateName: { type: String, required: false, index: false, unique: false },
     affiliateEmail: { type: String, required: false, index: false, unique: false },
     affiliateDocumentNumber: { type: String, required: false, index: false, unique: false },
+    affiliateStrategy: { type: String, enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA'], required: false, index: true, unique: false },
+    additionalAffiliates: [{
+            name: { type: String, required: false },
+            email: { type: String, required: false },
+            documentNumber: { type: String, required: false }
+        }],
     month: { type: String, required: false, index: true, unique: false },
     observations: { type: String, required: false, index: false, unique: false },
     needsHumanReview: { type: Boolean, required: false, index: false, unique: false }
