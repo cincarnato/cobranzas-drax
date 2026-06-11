@@ -5,6 +5,20 @@ class TransferEmailService extends AbstractService {
         super(TransferEmailRepository, baseSchema, fullSchema);
         this._validateOutput = true;
     }
+    async create(data) {
+        data = this.withReevaluatedNeedsHumanReview(null, data);
+        return super.create(data);
+    }
+    async update(id, data) {
+        const currentTransferEmail = await this.findById(id);
+        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data);
+        return super.update(id, data);
+    }
+    async updatePartial(id, data) {
+        const currentTransferEmail = await this.findById(id);
+        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data);
+        return super.updatePartial(id, data);
+    }
     async exportExcel(options) {
         const rows = await this.find({
             ...options,
@@ -76,6 +90,32 @@ class TransferEmailService extends AbstractService {
         ].filter(Boolean).join(' / '))
             .filter(Boolean)
             .join('; ');
+    }
+    withReevaluatedNeedsHumanReview(currentTransferEmail, data) {
+        const mergedTransferEmail = {
+            ...(currentTransferEmail || {}),
+            ...data,
+        };
+        return {
+            ...data,
+            needsHumanReview: this.resolveNeedsHumanReview(currentTransferEmail, mergedTransferEmail, data.needsHumanReview),
+        };
+    }
+    resolveNeedsHumanReview(currentTransferEmail, nextTransferEmail, requestedNeedsHumanReview) {
+        if (this.isMissingCriticalTransferData(nextTransferEmail)) {
+            return true;
+        }
+        if (requestedNeedsHumanReview === true) {
+            return true;
+        }
+        if (currentTransferEmail?.needsHumanReview
+            && !this.isMissingCriticalTransferData(currentTransferEmail)) {
+            return true;
+        }
+        return false;
+    }
+    isMissingCriticalTransferData(transferEmail) {
+        return !transferEmail.amount || !transferEmail.affiliateDocumentNumber || !transferEmail.transferDate;
     }
 }
 export default TransferEmailService;
