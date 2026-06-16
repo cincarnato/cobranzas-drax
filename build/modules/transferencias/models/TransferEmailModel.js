@@ -24,6 +24,7 @@ const TransferEmailSchema = new mongoose.Schema({
     destinationCbu: { type: String, required: false, index: true, unique: false },
     destinationAlias: { type: String, required: false, index: false, unique: false },
     destinationBank: { type: String, required: false, index: false, unique: false },
+    //Deprecated
     affiliateName: { type: String, required: false, index: false, unique: false },
     affiliateEmail: { type: String, required: false, index: false, unique: false },
     affiliateDocumentNumber: { type: String, required: false, index: false, unique: false },
@@ -35,6 +36,22 @@ const TransferEmailSchema = new mongoose.Schema({
         }],
     month: { type: String, required: false, index: true, unique: false },
     observations: { type: String, required: false, index: false, unique: false },
+    //Deprecated
+    affiliates: [{
+            name: { type: String, required: false },
+            amount: { type: Number, required: false },
+            documentNumber: { type: String, required: false },
+            month: { type: String, required: false },
+            observations: { type: String, required: false }
+        }],
+    aiStatus: { type: String, enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'], required: true, default: 'PENDIENTE', index: true, unique: false },
+    aiProcessedAt: { type: Date, required: false, index: true, unique: false },
+    aiError: { type: String, required: false, index: false, unique: false },
+    humanStatus: { type: String, enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'], required: true, default: 'PENDIENTE', index: true, unique: false },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
+    auditedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
+    auditedAt: { type: Date, required: false, index: true, unique: false },
+    status: { type: String, enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'], required: true, default: 'PENDIENTE_IA', index: true, unique: false },
     needsHumanReview: { type: Boolean, required: false, index: false, unique: false }
 }, { timestamps: true });
 TransferEmailSchema.plugin(uniqueValidator, { message: 'validation.unique' });

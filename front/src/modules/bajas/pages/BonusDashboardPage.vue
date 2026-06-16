@@ -9,6 +9,7 @@ type BonusGroupByRow = {
   plan?: unknown
   createdBy?: unknown
   period?: unknown
+  status?: unknown
   bonifiedNetValue?: number | string | null
   count?: number
 }
@@ -21,11 +22,13 @@ type SummaryRow = {
 }
 
 type CardConfig = {
+  key: string
   title: string
   label: string
-  dimension: "appliedMonth" | "plan" | "createdBy" | "period"
+  dimension: "appliedMonth" | "plan" | "createdBy" | "period" | "status"
   icon: string
-  accent: "month" | "plan" | "created-by" | "period"
+  accent: "month" | "plan" | "created-by" | "period" | "status" | "status-amount"
+  showAmount: boolean
   rows: SummaryRow[]
 }
 
@@ -42,6 +45,8 @@ const monthRows = ref<SummaryRow[]>([]);
 const planRows = ref<SummaryRow[]>([]);
 const createdByRows = ref<SummaryRow[]>([]);
 const periodRows = ref<SummaryRow[]>([]);
+const statusRows = ref<SummaryRow[]>([]);
+const statusAmountRows = ref<SummaryRow[]>([]);
 const loading = ref(false);
 const error = ref("");
 let requestId = 0;
@@ -61,36 +66,64 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
 
 const cards = computed<CardConfig[]>(() => [
   {
+    key: "appliedMonth",
     title: "Bonificaciones por mes",
     label: "Mes aplicado",
     dimension: "appliedMonth",
     icon: "mdi-calendar-month-outline",
     accent: "month",
+    showAmount: true,
     rows: monthRows.value,
   },
   {
+    key: "plan",
     title: "Bonificaciones por plan",
     label: "Plan",
     dimension: "plan",
     icon: "mdi-clipboard-list-outline",
     accent: "plan",
+    showAmount: true,
     rows: planRows.value,
   },
   {
+    key: "createdBy",
     title: "Bonificaciones por usuario",
     label: "Usuario",
     dimension: "createdBy",
     icon: "mdi-account-cash-outline",
     accent: "created-by",
+    showAmount: true,
     rows: createdByRows.value,
   },
   {
+    key: "period",
     title: "Bonificaciones por periodo",
     label: "Periodo",
     dimension: "period",
     icon: "mdi-timer-sand",
     accent: "period",
+    showAmount: true,
     rows: periodRows.value,
+  },
+  {
+    key: "status",
+    title: "Bonificaciones por estado",
+    label: "Estado",
+    dimension: "status",
+    icon: "mdi-list-status",
+    accent: "status",
+    showAmount: false,
+    rows: statusRows.value,
+  },
+  {
+    key: "statusAmount",
+    title: "Bonificaciones por estado y monto",
+    label: "Estado",
+    dimension: "status",
+    icon: "mdi-cash-multiple",
+    accent: "status-amount",
+    showAmount: true,
+    rows: statusAmountRows.value,
   },
 ]);
 
@@ -163,6 +196,8 @@ function clearDashboardRows() {
   planRows.value = [];
   createdByRows.value = [];
   periodRows.value = [];
+  statusRows.value = [];
+  statusAmountRows.value = [];
 }
 
 async function fetchDashboardData() {
@@ -173,7 +208,7 @@ async function fetchDashboardData() {
 
   try {
     const filters = props.filters ?? [];
-    const [monthData, planData, createdByData, periodData] = await Promise.all([
+    const [monthData, planData, createdByData, periodData, statusData, statusAmountData] = await Promise.all([
       BonusProvider.instance.groupBy({
         fields: ["appliedMonth", "bonifiedNetValue"],
         filters,
@@ -190,6 +225,14 @@ async function fetchDashboardData() {
         fields: ["period", "bonifiedNetValue"],
         filters,
       }),
+      BonusProvider.instance.groupBy({
+        fields: ["status"],
+        filters,
+      }),
+      BonusProvider.instance.groupBy({
+        fields: ["status", "bonifiedNetValue"],
+        filters,
+      }),
     ]);
 
     if (currentRequestId !== requestId) return;
@@ -198,6 +241,8 @@ async function fetchDashboardData() {
     planRows.value = toSummaryRows(planData as BonusGroupByRow[], "plan");
     createdByRows.value = toSummaryRows(createdByData as BonusGroupByRow[], "createdBy");
     periodRows.value = toSummaryRows(periodData as BonusGroupByRow[], "period");
+    statusRows.value = toSummaryRows(statusData as BonusGroupByRow[], "status");
+    statusAmountRows.value = toSummaryRows(statusAmountData as BonusGroupByRow[], "status");
   } catch (fetchError) {
     if (currentRequestId !== requestId) return;
 
@@ -241,7 +286,7 @@ defineExpose({
     <v-row class="bonus-dashboard__cards">
       <v-col
         v-for="card in cards"
-        :key="card.dimension"
+        :key="card.key"
         cols="12"
         md="6"
         class="d-flex"
@@ -275,7 +320,7 @@ defineExpose({
                 size="small"
                 variant="flat"
               >
-                {{ formatCurrency(getTotalAmount(card.rows)) }}
+                {{ card.showAmount ? formatCurrency(getTotalAmount(card.rows)) : `${formatNumber(getTotalCount(card.rows))} casos` }}
               </v-chip>
               <v-chip
                 class="bonus-dashboard__metric"
@@ -306,7 +351,12 @@ defineExpose({
             <thead>
               <tr>
                 <th class="text-left">{{ card.label }}</th>
-                <th class="text-right">Monto</th>
+                <th
+                  v-if="card.showAmount"
+                  class="text-right"
+                >
+                  Monto
+                </th>
                 <th class="text-right">Cantidad</th>
                 <th class="text-right">%</th>
               </tr>
@@ -315,7 +365,7 @@ defineExpose({
               <tr v-if="!loading && card.rows.length === 0">
                 <td
                   class="text-center text-medium-emphasis"
-                  colspan="4"
+                  :colspan="card.showAmount ? 4 : 3"
                 >
                   No hay datos para los filtros seleccionados
                 </td>
@@ -336,7 +386,10 @@ defineExpose({
                     </div>
                   </div>
                 </td>
-                <td class="text-right bonus-dashboard__amount">
+                <td
+                  v-if="card.showAmount"
+                  class="text-right bonus-dashboard__amount"
+                >
                   {{ formatCurrency(row.amount) }}
                 </td>
                 <td class="text-right">{{ formatNumber(row.count) }}</td>
@@ -356,7 +409,12 @@ defineExpose({
                 <td>
                   <span class="bonus-dashboard__total-label">Total</span>
                 </td>
-                <td class="text-right">{{ formatCurrency(getTotalAmount(card.rows)) }}</td>
+                <td
+                  v-if="card.showAmount"
+                  class="text-right"
+                >
+                  {{ formatCurrency(getTotalAmount(card.rows)) }}
+                </td>
                 <td class="text-right">{{ formatNumber(getTotalCount(card.rows)) }}</td>
                 <td class="text-right">{{ card.rows.length ? "100,0%" : "0,0%" }}</td>
               </tr>
@@ -421,6 +479,18 @@ defineExpose({
   --dashboard-accent: #6d4c41;
   --dashboard-accent-soft: #efebe9;
   --dashboard-accent-text: #4e342e;
+}
+
+.bonus-dashboard__card--status {
+  --dashboard-accent: #8e24aa;
+  --dashboard-accent-soft: #f3e5f5;
+  --dashboard-accent-text: #6a1b9a;
+}
+
+.bonus-dashboard__card--status-amount {
+  --dashboard-accent: #2e7d32;
+  --dashboard-accent-soft: #e8f5e9;
+  --dashboard-accent-text: #1b5e20;
 }
 
 .bonus-dashboard__card--dark {

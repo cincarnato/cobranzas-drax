@@ -1,8 +1,10 @@
 import { z } from 'zod';
-const TransferEmailAdditionalAffiliateSchema = z.object({
+const TransferEmailAffiliateSchema = z.object({
     name: z.string().optional(),
-    email: z.string().optional(),
+    amount: z.number().optional(),
     documentNumber: z.string().optional(),
+    month: z.string().optional(),
+    observations: z.string().optional(),
 });
 const TransferEmailBaseSchema = z.object({
     inboundEmail: z.coerce.string().optional().nullable(),
@@ -27,19 +29,24 @@ const TransferEmailBaseSchema = z.object({
     destinationCbu: z.string().optional(),
     destinationAlias: z.string().optional(),
     destinationBank: z.string().optional(),
-    affiliateName: z.string().optional(),
-    affiliateEmail: z.string().optional(),
-    affiliateDocumentNumber: z.string().optional(),
     affiliateStrategy: z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
-    additionalAffiliates: z.array(TransferEmailAdditionalAffiliateSchema).optional().default([]),
-    month: z.string().optional(),
-    observations: z.string().optional(),
+    affiliates: z.array(TransferEmailAffiliateSchema).optional().default([]),
+    aiStatus: z.enum(['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']).optional(),
+    aiProcessedAt: z.coerce.date().nullable().optional(),
+    aiError: z.string().optional(),
+    humanStatus: z.enum(['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO']).optional(),
+    assignedTo: z.coerce.string().nullable().optional(),
+    auditedBy: z.coerce.string().nullable().optional(),
+    auditedAt: z.coerce.date().nullable().optional(),
+    status: z.enum(['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO']).optional(),
     needsHumanReview: z.boolean().optional()
 });
 const TransferEmailSchema = TransferEmailBaseSchema
     .extend({
     _id: z.coerce.string(),
     inboundEmail: z.object({ _id: z.coerce.string(), messageId: z.string() }).nullable().optional(),
+    assignedTo: z.object({ _id: z.coerce.string(), username: z.string().optional(), name: z.string().optional() }).nullable().optional(),
+    auditedBy: z.object({ _id: z.coerce.string(), username: z.string().optional(), name: z.string().optional() }).nullable().optional(),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
 });

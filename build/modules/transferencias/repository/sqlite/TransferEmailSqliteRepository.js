@@ -3,9 +3,9 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
     constructor() {
         super(...arguments);
         this.tableName = 'TransferEmail';
-        this.searchFields = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'affiliateStrategy', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
+        this.searchFields = ['affiliateStrategy', 'affiliates', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
         this.booleanFields = ['isTransferProof', 'needsHumanReview'];
-        this.jsonFields = ['additionalAffiliates'];
+        this.jsonFields = ['affiliates'];
         this.identifier = '_id';
         this.populateFields = [
             { field: 'inboundEmail', table: 'inboundEmail', identifier: '_id' }
@@ -35,13 +35,16 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "destinationCbu", type: "TEXT", unique: undefined, primary: false },
             { name: "destinationAlias", type: "TEXT", unique: undefined, primary: false },
             { name: "destinationBank", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateName", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false },
             { name: "affiliateStrategy", type: "TEXT", unique: undefined, primary: false },
-            { name: "additionalAffiliates", type: "TEXT", unique: undefined, primary: false },
-            { name: "month", type: "TEXT", unique: undefined, primary: false },
-            { name: "observations", type: "TEXT", unique: undefined, primary: false },
+            { name: "affiliates", type: "TEXT", unique: undefined, primary: false },
+            { name: "aiStatus", type: "TEXT", unique: undefined, primary: false },
+            { name: "aiProcessedAt", type: "TEXT", unique: undefined, primary: false },
+            { name: "aiError", type: "TEXT", unique: undefined, primary: false },
+            { name: "humanStatus", type: "TEXT", unique: undefined, primary: false },
+            { name: "assignedTo", type: "TEXT", unique: undefined, primary: false },
+            { name: "auditedBy", type: "TEXT", unique: undefined, primary: false },
+            { name: "auditedAt", type: "TEXT", unique: undefined, primary: false },
+            { name: "status", type: "TEXT", unique: undefined, primary: false },
             { name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false }
         ];
     }

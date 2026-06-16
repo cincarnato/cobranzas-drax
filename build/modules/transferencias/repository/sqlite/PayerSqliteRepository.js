@@ -3,19 +3,16 @@ class PayerSqliteRepository extends AbstractSqliteRepository {
     constructor() {
         super(...arguments);
         this.tableName = 'Payer';
-        this.searchFields = ['strategy', 'value', 'affiliateName', 'affiliateEmail', 'affiliateDocumentNumber'];
+        this.searchFields = ['strategy', 'value', 'affiliates'];
         this.booleanFields = [];
-        this.jsonFields = ['additionalAffiliates'];
+        this.jsonFields = ['affiliates'];
         this.identifier = '_id';
         this.populateFields = [];
         this.verbose = false;
         this.tableFields = [
             { name: "strategy", type: "TEXT", unique: undefined, primary: false },
             { name: "value", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateName", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false },
-            { name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false },
-            { name: "additionalAffiliates", type: "TEXT", unique: undefined, primary: false }
+            { name: "affiliates", type: "TEXT", unique: undefined, primary: false }
         ];
     }
     async findByAnyStrategy(criteria) {

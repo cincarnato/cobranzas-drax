@@ -4,7 +4,7 @@ class PayerMongoRepository extends AbstractMongoRepository {
     constructor() {
         super();
         this._model = PayerModel;
-        this._searchFields = ['strategy', 'value', 'affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'additionalAffiliates.name', 'additionalAffiliates.email', 'additionalAffiliates.documentNumber'];
+        this._searchFields = ['strategy', 'value', 'affiliates.name', 'affiliates.documentNumber'];
         this._populateFields = [];
         this._lean = true;
     }

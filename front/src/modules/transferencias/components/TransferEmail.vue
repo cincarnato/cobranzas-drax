@@ -5,7 +5,8 @@ import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {
   ITransferEmail,
-  ITransferEmailAffiliate
+  ITransferEmailAffiliate,
+  TransferEmailHumanStatus
 } from "@/modules/transferencias/interfaces/ITransferEmail";
 import InboundEmailProvider from "@/modules/mail/providers/InboundEmailProvider";
 import TransferEmailProvider from "@/modules/transferencias/providers/TransferEmailProvider";
@@ -52,7 +53,7 @@ const partialForm = reactive<Required<TransferEmailPartialForm>>({
   humanStatus: 'VALIDADO'
 })
 
-const humanStatusOptions = [
+const humanStatusOptions: Array<{title: string; value: TransferEmailHumanStatus; color: string}> = [
   {title: 'Validado', value: 'VALIDADO', color: 'success'},
   {title: 'Corregido', value: 'CORREGIDO', color: 'info'},
   {title: 'Descartado', value: 'DESCARTADO', color: 'error'}
