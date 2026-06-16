@@ -54,45 +54,50 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         const worksheet = workbook.addWorksheet('transferencias')
 
         worksheet.columns = [
-            {header: 'ID Mail', key: 'emailMessageId', width: 32},
+            {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
+            {header: 'DNI', key: 'documentNumber', width: 18},
+            {header: 'Nombre', key: 'name', width: 28},
+            {header: 'Monto', key: 'amount', width: 18},
+            {header: 'Mes', key: 'month', width: 14},
+            {header: 'Observaciones', key: 'observations', width: 36},
+            {header: 'Numero Operacion', key: 'operationNumber', width: 22},
+            {header: 'Concepto', key: 'concept', width: 28},
             {header: 'Asunto Mail', key: 'emailSubject', width: 42},
             {header: 'Remitente Nombre', key: 'emailFromName', width: 28},
             {header: 'Remitente Email', key: 'emailFromEmail', width: 32},
+            {header: 'ID Mail', key: 'emailMessageId', width: 32},
             {header: 'DNI Email', key: 'emailDocumentNumber', width: 16},
-            {header: 'Afiliados', key: 'affiliates', width: 50},
-            {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
             {header: 'Fecha Email', key: 'emailDate', width: 20},
             {header: 'Fecha Proceso', key: 'processDate', width: 20},
-            {header: 'Monto Comprobante', key: 'amount', width: 18},
-            {header: 'Mes', key: 'month', width: 14},
-            {header: 'Numero Operacion', key: 'operationNumber', width: 22},
-            {header: 'Concepto', key: 'concept', width: 28},
             {header: 'CBU Origen', key: 'originCbu', width: 24},
             {header: 'Alias Origen', key: 'originAlias', width: 24},
             {header: 'Banco Origen', key: 'originBank', width: 24},
-            {header: 'Observaciones', key: 'observations', width: 36},
+
         ]
 
         for (const row of rows) {
-            worksheet.addRow({
-                emailMessageId: row.emailMessageId ?? '',
-                emailSubject: row.emailSubject ?? '',
-                emailFromName: row.emailFromName ?? '',
-                emailFromEmail: row.emailFromEmail ?? '',
-                emailDocumentNumber: row.emailDocumentNumber ?? '',
-                affiliates: this.formatAffiliates(row.affiliates),
-                transferDate: row.transferDate ? new Date(row.transferDate) : '',
-                emailDate: row.emailDate ? new Date(row.emailDate) : '',
-                processDate: row.processDate ? new Date(row.processDate) : '',
-                amount: row.amount ?? null,
-                month: this.formatAffiliateMonths(row.affiliates),
-                operationNumber: row.operationNumber ?? '',
-                concept: row.concept ?? '',
-                originCbu: row.originCbu ?? '',
-                originAlias: row.originAlias ?? '',
-                originBank: row.originBank ?? '',
-                observations: this.formatAffiliateObservations(row.affiliates),
-            })
+            for (const affiliate of row.affiliates || []) {
+                worksheet.addRow({
+                    emailMessageId: row.emailMessageId ?? '',
+                    emailSubject: row.emailSubject ?? '',
+                    emailFromName: row.emailFromName ?? '',
+                    emailFromEmail: row.emailFromEmail ?? '',
+                    emailDocumentNumber: row.emailDocumentNumber ?? '',
+                    transferDate: row.transferDate ? new Date(row.transferDate) : '',
+                    emailDate: row.emailDate ? new Date(row.emailDate) : '',
+                    processDate: row.processDate ? new Date(row.processDate) : '',
+                    operationNumber: row.operationNumber ?? '',
+                    concept: row.concept ?? '',
+                    originCbu: row.originCbu ?? '',
+                    originAlias: row.originAlias ?? '',
+                    originBank: row.originBank ?? '',
+                    name: affiliate.name ?? '',
+                    amount: affiliate.amount ?? null,
+                    documentNumber: affiliate.documentNumber ?? '',
+                    month: affiliate.month ?? '',
+                    observations: affiliate.observations ?? '',
+                })
+            }
         }
 
         worksheet.getRow(1).font = {bold: true}
@@ -106,28 +111,6 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
             fileName: `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
         }
-    }
-
-    private formatAffiliates(affiliates?: ITransferEmail['affiliates']): string {
-        return (affiliates || [])
-            .map((affiliate) => [
-                affiliate.name,
-                affiliate.email,
-                affiliate.amount,
-                affiliate.documentNumber,
-                affiliate.month,
-                affiliate.observations,
-            ].filter(Boolean).join(' / '))
-            .filter(Boolean)
-            .join('; ')
-    }
-
-    private formatAffiliateMonths(affiliates?: ITransferEmail['affiliates']): string {
-        return Array.from(new Set((affiliates || []).map((affiliate) => affiliate.month).filter(Boolean))).join('; ')
-    }
-
-    private formatAffiliateObservations(affiliates?: ITransferEmail['affiliates']): string {
-        return (affiliates || []).map((affiliate) => affiliate.observations).filter(Boolean).join('; ')
     }
 
     private withResolvedProcessingFields(

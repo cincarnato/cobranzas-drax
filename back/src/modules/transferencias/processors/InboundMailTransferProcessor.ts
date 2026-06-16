@@ -579,7 +579,6 @@ class InboundMailTransferProcessor {
                     input.amount,
                     {
                         name: input.emailFromName,
-                        email: input.emailFromEmail,
                         documentNumber: input.emailDocumentNumber,
                     }
                 ),
@@ -594,7 +593,6 @@ class InboundMailTransferProcessor {
                 input.affiliates,
                 {
                     name: input.emailFromName,
-                    email: input.emailFromEmail,
                     documentNumber: input.emailDocumentNumber,
                     amount: input.amount,
                 },
@@ -661,7 +659,6 @@ class InboundMailTransferProcessor {
         const formatted = (affiliates || [])
             .map((affiliate) => [
                 affiliate.name,
-                affiliate.email,
                 affiliate.amount,
                 affiliate.documentNumber,
                 affiliate.month,
@@ -680,7 +677,7 @@ class InboundMailTransferProcessor {
         payer: IPayer,
         fallbackAffiliates?: ITransferEmailBase["affiliates"],
         totalAmount?: number,
-        fallbackPrimary?: { name?: string; email?: string; documentNumber?: string }
+        fallbackPrimary?: { name?: string; documentNumber?: string }
     ): ITransferEmailBase["affiliates"] {
         const payerAffiliates = this.normalizeAffiliates(payer.affiliates);
         const normalizedFallbackAffiliates = this.normalizeAffiliates(fallbackAffiliates, totalAmount);
@@ -704,7 +701,6 @@ class InboundMailTransferProcessor {
     private findMatchingAffiliateMetadata(
         affiliate: {
             name?: string;
-            email?: string;
             documentNumber?: string;
         },
         fallbackAffiliates: ITransferEmailBase["affiliates"] = [],
@@ -713,7 +709,6 @@ class InboundMailTransferProcessor {
         return fallbackAffiliates.find((fallbackAffiliate) =>
             Boolean(
                 affiliate.documentNumber && fallbackAffiliate.documentNumber === affiliate.documentNumber
-                || affiliate.email && fallbackAffiliate.email === affiliate.email
                 || affiliate.name && fallbackAffiliate.name === affiliate.name
             )
         ) || fallbackAffiliates[index];
@@ -959,13 +954,12 @@ class InboundMailTransferProcessor {
         const normalized = (affiliates || [])
             .map((affiliate) => this.removeUndefinedFields({
                 name: this.normalizeString(affiliate.name),
-                email: this.normalizeString(affiliate.email),
                 amount: typeof affiliate.amount === "number" && Number.isFinite(affiliate.amount) ? affiliate.amount : undefined,
                 documentNumber: this.normalizeDocumentNumber(affiliate.documentNumber),
                 month: this.normalizeString(affiliate.month),
                 observations: this.normalizeString(affiliate.observations),
             }))
-            .filter((affiliate) => affiliate.name || affiliate.email || affiliate.documentNumber || affiliate.amount !== undefined || affiliate.month || affiliate.observations);
+            .filter((affiliate) => affiliate.name || affiliate.documentNumber || affiliate.amount !== undefined || affiliate.month || affiliate.observations);
 
         if (normalized.length === 1 && normalized[0].amount === undefined && totalAmount !== undefined) {
             normalized[0].amount = totalAmount;
@@ -978,7 +972,6 @@ class InboundMailTransferProcessor {
         affiliates?: ITransferEmailBase["affiliates"],
         fallbackAffiliate?: {
             name?: string;
-            email?: string;
             amount?: number;
             documentNumber?: string;
         },

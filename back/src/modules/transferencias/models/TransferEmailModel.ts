@@ -31,7 +31,6 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
             affiliateStrategy: {type: String,  enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA'], required: false, index: true, unique: false },
             affiliates: [{
                 name: {type: String, required: false},
-                email: {type: String, required: false},
                 amount: {type: Number, required: false},
                 documentNumber: {type: String, required: false},
                 month: {type: String, required: false},

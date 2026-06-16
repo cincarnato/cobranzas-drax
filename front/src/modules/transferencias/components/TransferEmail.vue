@@ -161,7 +161,7 @@ function resolveInitialHumanStatus(humanStatus?: ITransferEmail['humanStatus']) 
 }
 
 function cloneAffiliates(affiliates: ITransferEmailAffiliate[]) {
-  const legacyTransferEmail = email.value as ITransferEmail & {month?: string; observations?: string}
+  const legacyTransferEmail = email.value as ITransferEmail & { month?: string; observations?: string }
 
   return affiliates.map((affiliate, index) => ({
     name: affiliate.name || '',
@@ -336,395 +336,387 @@ const humanStatusPresentation = (status?: string) => {
 
 <template>
   <div class="transfer-email-layout">
-    <div class="status-overview">
-      <v-chip
-        :color="statusPresentation(email.status).color"
-        :prepend-icon="statusPresentation(email.status).icon"
-        variant="flat"
-        size="small"
-      >
-        {{ statusPresentation(email.status).label }}
-      </v-chip>
-      <v-chip
-        :color="aiStatusPresentation(email.aiStatus).color"
-        :prepend-icon="aiStatusPresentation(email.aiStatus).icon"
-        variant="tonal"
-        size="small"
-      >
-        IA: {{ aiStatusPresentation(email.aiStatus).label }}
-      </v-chip>
-      <v-chip
-        :color="humanStatusPresentation(email.humanStatus).color"
-        :prepend-icon="humanStatusPresentation(email.humanStatus).icon"
-        variant="tonal"
-        size="small"
-      >
-        Auditoría: {{ humanStatusPresentation(email.humanStatus).label }}
-      </v-chip>
-      <v-chip
-        v-if="showHumanReviewAlert"
-        color="warning"
-        prepend-icon="mdi-alert"
-        variant="tonal"
-        size="small"
-      >
-        Revisión humana requerida
-      </v-chip>
-    </div>
+  <div class="status-overview">
+    <v-chip
+      :color="statusPresentation(email.status).color"
+      :prepend-icon="statusPresentation(email.status).icon"
+      variant="flat"
+      size="small"
+    >
+      {{ statusPresentation(email.status).label }}
+    </v-chip>
+    <v-chip
+      :color="aiStatusPresentation(email.aiStatus).color"
+      :prepend-icon="aiStatusPresentation(email.aiStatus).icon"
+      variant="tonal"
+      size="small"
+    >
+      IA: {{ aiStatusPresentation(email.aiStatus).label }}
+    </v-chip>
+    <v-chip
+      :color="humanStatusPresentation(email.humanStatus).color"
+      :prepend-icon="humanStatusPresentation(email.humanStatus).icon"
+      variant="tonal"
+      size="small"
+    >
+      Auditoría: {{ humanStatusPresentation(email.humanStatus).label }}
+    </v-chip>
+    <v-chip
+      v-if="showHumanReviewAlert"
+      color="warning"
+      prepend-icon="mdi-alert"
+      variant="tonal"
+      size="small"
+    >
+      Revisión humana requerida
+    </v-chip>
+  </div>
 
-    <v-row class="align-start">
-      <v-col cols="12" md="5" lg="4">
-        <v-card class="sketch-card proof-card" variant="flat">
-          <div class="proof-title">Comprobante</div>
+  <v-row class="align-start">
+    <v-col cols="12" md="5" lg="4">
+      <v-card class="sketch-card proof-card" variant="flat">
+        <div class="proof-title">Comprobante</div>
 
-          <v-skeleton-loader
-            v-if="loadingInboundEmail"
-            type="image, article"
-            class="proof-loader"
-          />
+        <v-skeleton-loader
+          v-if="loadingInboundEmail"
+          type="image, article"
+          class="proof-loader"
+        />
 
-          <v-alert
-            v-else-if="inboundEmailError"
-            type="error"
-            variant="tonal"
-            class="ma-4"
+        <v-alert
+          v-else-if="inboundEmailError"
+          type="error"
+          variant="tonal"
+          class="ma-4"
+        >
+          {{ inboundEmailError }}
+        </v-alert>
+
+        <div v-else-if="proofAttachment" class="proof-preview">
+          <a
+            v-if="isProofImage"
+            :href="proofAttachment.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="proof-image-link"
+            :title="`Abrir ${firstAttachmentName}`"
           >
-            {{ inboundEmailError }}
-          </v-alert>
-
-          <div v-else-if="proofAttachment" class="proof-preview">
+            <v-img
+              :src="proofAttachment.url"
+              :alt="firstAttachmentName"
+              cover
+              class="proof-image"
+            />
+          </a>
+          <div v-else-if="isProofPdf" class="proof-pdf-preview">
+            <iframe
+              :src="proofPdfPreviewUrl"
+              :title="firstAttachmentName"
+              class="proof-pdf-frame"
+            />
             <a
-              v-if="isProofImage"
               :href="proofAttachment.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="proof-image-link"
-              :title="`Abrir ${firstAttachmentName}`"
+              class="proof-open-link"
             >
-              <v-img
-                :src="proofAttachment.url"
-                :alt="firstAttachmentName"
-                cover
-                class="proof-image"
-              />
+              Abrir PDF
             </a>
-            <div v-else-if="isProofPdf" class="proof-pdf-preview">
-              <iframe
-                :src="proofPdfPreviewUrl"
-                :title="firstAttachmentName"
-                class="proof-pdf-frame"
-              />
-              <a
-                :href="proofAttachment.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="proof-open-link"
-              >
-                Abrir PDF
-              </a>
-            </div>
-            <DraxImagePreview v-else :image="proofAttachment" />
-            <div class="proof-filename">{{ firstAttachmentName }}</div>
           </div>
+          <DraxImagePreview v-else :image="proofAttachment"/>
+          <div class="proof-filename">{{ firstAttachmentName }}</div>
+        </div>
 
-          <div v-else class="proof-empty">
-            <v-icon icon="mdi-file-image-outline" size="42" />
-            <span>No hay comprobante adjunto para mostrar.</span>
-          </div>
-        </v-card>
+        <div v-else class="proof-empty">
+          <v-icon icon="mdi-file-image-outline" size="42"/>
+          <span>No hay comprobante adjunto para mostrar.</span>
+        </div>
+      </v-card>
 
-        <v-card class="sketch-card ocr-card mt-4" variant="flat">
-          <v-expansion-panels v-model="ocrPanel" variant="accordion" flat>
-            <v-expansion-panel>
-              <v-expansion-panel-title class="ocr-title">
-                Texto OCR Extraído
-              </v-expansion-panel-title>
-              <v-expansion-panel-text>
-                <div v-if="attachmentsOcrText" class="ocr-text">
-                  {{ attachmentsOcrText }}
-                </div>
-                <div v-else class="ocr-empty">
-                  No hay texto OCR extraído de adjuntos.
-                </div>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="7" lg="8">
-        <v-expansion-panels
-          v-model="detailsPanels"
-          multiple
-          variant="accordion"
-          class="detail-panels"
-        >
-          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-            <v-expansion-panel-title class="detail-panel-title">
-              Estado
+      <v-card class="sketch-card ocr-card mt-4" variant="flat">
+        <v-expansion-panels v-model="ocrPanel" variant="accordion" flat>
+          <v-expansion-panel>
+            <v-expansion-panel-title class="ocr-title">
+              Texto OCR Extraído
             </v-expansion-panel-title>
             <v-expansion-panel-text>
-              <div class="summary-block">
-                <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
-                <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
-                <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
-                <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
-                <v-divider></v-divider>
-                <p><span class="summary-label">Estado auditoría:</span> {{ humanStatusPresentation(email.humanStatus).label }}</p>
-                <p><span class="summary-label">Asignado a:</span> {{ valueOrDash(email.assignedTo?.username || email.assignedTo?.name) }}</p>
-                <p><span class="summary-label">Auditado por:</span> {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}</p>
-                <p><span class="summary-label">Fecha auditoría:</span> {{ formatDate(email.auditedAt) }}</p>
+              <div v-if="attachmentsOcrText" class="ocr-text">
+                {{ attachmentsOcrText }}
               </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-            <v-expansion-panel-title class="detail-panel-title">
-              Email
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="summary-block">
-
-                <p><span class="summary-label">Fecha Email:</span> {{ formatDate(email.emailDate) }}</p>
-                <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
-                <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
-                <p><span class="summary-label">Email Remitente:</span> {{ valueOrDash(email.emailFromEmail) }}</p>
-                <p><span class="summary-label">Documento Email:</span> {{ valueOrDash(email.emailDocumentNumber) }}</p>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-            <v-expansion-panel-title class="detail-panel-title">
-              Comprobante
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="summary-block">
-                <p><span class="summary-label">Monto Transferido:</span> {{ formatCurrency(email.amount, email.currency) }}</p>
-                <p><span class="summary-label">Fecha de Transferencia:</span> {{ formatDate(email.transferDate) }}</p>
-                <p><span class="summary-label">Número de Operación:</span> {{ valueOrDash(email.operationNumber) }}</p>
-                <p><span class="summary-label">Concepto:</span> {{ valueOrDash(email.concept) }}</p>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-            <v-expansion-panel-title class="detail-panel-title">
-              Origen
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="summary-block">
-                <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.originAccount) }}</p>
-                <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.originCbu) }}</p>
-                <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.originAlias) }}</p>
-                <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.originBank) }}</p>
-              </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-            <v-expansion-panel-title class="detail-panel-title">
-              Destino
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <div class="summary-block">
-                <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.destinationAccount) }}</p>
-                <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.destinationCbu) }}</p>
-                <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.destinationAlias) }}</p>
-                <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.destinationBank) }}</p>
+              <div v-else class="ocr-empty">
+                No hay texto OCR extraído de adjuntos.
               </div>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
+      </v-card>
+    </v-col>
 
-        <v-card class="sketch-card partial-form-card" variant="flat">
-          <div class="partial-form-header">
-            <div class="partial-form-title">Actualizar registro</div>
-            <v-chip
-              color="primary"
-              variant="tonal"
-              class="affiliate-strategy-chip"
-            >
-              Estrategia Afiliado:
-              <strong class="affiliate-strategy-value">{{ valueOrDash(email.affiliateStrategy) }}</strong>
-            </v-chip>
-          </div>
-
-          <v-text-field
-            v-model.number="partialForm.amount"
-            label="Monto comprobante"
-            type="number"
-            variant="outlined"
-            density="compact"
-            hide-details="auto"
-            :readonly="readonly"
-            class="sketch-input mt-3"
-          />
-
-
-
-          <v-expansion-panels
-            v-model="affiliatesPanel"
-            variant="accordion"
-            class="additional-affiliates-panel"
-          >
-            <v-expansion-panel class="additional-affiliates-card" rounded="lg">
-              <v-expansion-panel-title class="additional-affiliates-title">
-                Afiliados
-                <v-chip
-                  size="x-small"
-                  variant="tonal"
-                  color="teal"
-                  class="ml-2"
-                >
-                  {{ partialForm.affiliates.length }}
-                </v-chip>
-              </v-expansion-panel-title>
-              <v-expansion-panel-text>
-                <div
-                  v-for="(affiliate, index) in partialForm.affiliates"
-                  :key="index"
-                  class="additional-affiliate-row"
-                >
-                  <v-row class="align-start">
-                    <v-col cols="12" md="5">
-                      <v-text-field
-                        v-model="affiliate.name"
-                        label="Nombre"
-                        variant="outlined"
-                        density="compact"
-                        hide-details="auto"
-                        :readonly="readonly"
-                        class="sketch-input"
-                      />
-                    </v-col>
-
-                    <v-col cols="12" md="3">
-                      <v-text-field
-                        v-model.number="affiliate.amount"
-                        label="Monto afiliado"
-                        type="number"
-                        variant="outlined"
-                        density="compact"
-                        hide-details="auto"
-                        :readonly="readonly || partialForm.affiliates.length === 1"
-                        class="sketch-input"
-                      />
-                    </v-col>
-
-                    <v-col cols="12" md="4">
-                      <v-text-field
-                        v-model="affiliate.documentNumber"
-                        label="Documento"
-                        variant="outlined"
-                        density="compact"
-                        hide-details="auto"
-                        :readonly="readonly"
-                        class="sketch-input"
-                      />
-                    </v-col>
-
-                    <v-col cols="12" md="3">
-                      <v-select
-                        v-model="affiliate.month"
-                        :items="months"
-                        label="Mes"
-                        placeholder="Seleccionar mes"
-                        variant="outlined"
-                        density="compact"
-                        hide-details="auto"
-                        :readonly="readonly"
-                        clearable
-                        class="sketch-input"
-                      />
-                    </v-col>
-
-                    <v-col cols="12" md="8">
-                      <v-text-field
-                        v-model="affiliate.observations"
-                        label="Observaciones"
-                        placeholder="Ingresar observaciones"
-                        variant="outlined"
-                        density="compact"
-                        hide-details="auto"
-                        :readonly="readonly"
-                        class="sketch-input observations-input"
-                      />
-                    </v-col>
-
-                    <v-col
-                      cols="12"
-                      md="1"
-                      class="additional-affiliate-row__actions d-flex justify-start justify-md-end align-start align-md-center"
-                    >
-                      <v-btn
-                        icon="mdi-delete-outline"
-                        variant="text"
-                        color="error"
-                        size="small"
-                        :disabled="readonly"
-                        @click="removeAffiliate(index)"
-                      />
-                    </v-col>
-                  </v-row>
-
-                  <v-divider
-                    v-if="index < partialForm.affiliates.length - 1"
-                    class="my-2"
-                  />
-                </div>
-
-                <div
-                  v-if="!partialForm.affiliates.length"
-                  class="additional-affiliates-empty"
-                >
-                  No hay afiliados cargados.
-                </div>
-
-                <v-btn
-                  color="teal"
-                  variant="tonal"
-                  size="small"
-                  prepend-icon="mdi-plus"
-                  :disabled="readonly"
-                  class="mt-2"
-                  @click="addAffiliate"
-                >
-                  Agregar afiliado
-                </v-btn>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
-
-          <div class="human-status-group mt-3">
-            <div class="human-status-group__label">Estado auditoría</div>
-            <div class="human-status-group__actions">
-              <v-btn
-                v-for="option in humanStatusOptions"
-                :key="option.value"
-                :color="partialForm.humanStatus === option.value ? option.color : undefined"
-                :variant="partialForm.humanStatus === option.value ? 'flat' : 'outlined'"
-                :disabled="readonly"
-                class="human-status-group__button"
-                @click="setHumanStatus(option.value)"
-              >
-                {{ option.title }}
-              </v-btn>
+    <v-col cols="12" md="7" lg="8">
+      <v-expansion-panels
+        v-model="detailsPanels"
+        multiple
+        variant="accordion"
+        class="detail-panels"
+      >
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Estado
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
+              <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
+              <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
+              <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
+              <v-divider></v-divider>
+              <p><span class="summary-label">Estado auditoría:</span>
+                {{ humanStatusPresentation(email.humanStatus).label }}</p>
+              <p><span class="summary-label">Asignado a:</span>
+                {{ valueOrDash(email.assignedTo?.username || email.assignedTo?.name) }}</p>
+              <p><span class="summary-label">Auditado por:</span>
+                {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}</p>
+              <p><span class="summary-label">Fecha auditoría:</span> {{ formatDate(email.auditedAt) }}</p>
             </div>
-          </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Email
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
 
-          <v-divider class="mt-2"></v-divider>
+              <p><span class="summary-label">Fecha Email:</span> {{ formatDate(email.emailDate) }}</p>
+              <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
+              <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
+              <p><span class="summary-label">Email Remitente:</span> {{ valueOrDash(email.emailFromEmail) }}</p>
+              <p><span class="summary-label">Documento Email:</span> {{ valueOrDash(email.emailDocumentNumber) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
 
-          <div class="partial-form-actions">
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Comprobante
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Monto Transferido:</span> {{
+                  formatCurrency(email.amount, email.currency)
+                }}</p>
+              <p><span class="summary-label">Fecha de Transferencia:</span> {{ formatDate(email.transferDate) }}</p>
+              <p><span class="summary-label">Número de Operación:</span> {{ valueOrDash(email.operationNumber) }}</p>
+              <p><span class="summary-label">Concepto:</span> {{ valueOrDash(email.concept) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Origen
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.originAccount) }}</p>
+              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.originCbu) }}</p>
+              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.originAlias) }}</p>
+              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.originBank) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Destino
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.destinationAccount) }}</p>
+              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.destinationCbu) }}</p>
+              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.destinationAlias) }}</p>
+              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.destinationBank) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+
+      <v-card class="sketch-card partial-form-card" variant="flat">
+        <div class="partial-form-header">
+          <div class="partial-form-title">Actualizar registro</div>
+          <v-chip
+            color="primary"
+            variant="tonal"
+            class="affiliate-strategy-chip"
+          >
+            Estrategia Afiliado:
+            <strong class="affiliate-strategy-value">{{ valueOrDash(email.affiliateStrategy) }}</strong>
+          </v-chip>
+        </div>
+
+        <v-text-field
+          v-model.number="partialForm.amount"
+          label="Monto comprobante"
+          type="number"
+          variant="outlined"
+          density="compact"
+          hide-details="auto"
+          :readonly="readonly"
+          class="sketch-input mt-3"
+        />
+
+
+        <v-expansion-panels
+          v-model="affiliatesPanel"
+          variant="accordion"
+          class="additional-affiliates-panel"
+        >
+          <v-expansion-panel class="additional-affiliates-card" rounded="lg">
+            <v-expansion-panel-title class="additional-affiliates-title">
+              Afiliados
+              <v-chip
+                size="x-small"
+                variant="tonal"
+                color="teal"
+                class="ml-2"
+              >
+                {{ partialForm.affiliates.length }}
+              </v-chip>
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <div
+                v-for="(affiliate, index) in partialForm.affiliates"
+                :key="index"
+                class="additional-affiliate-row"
+              >
+                <v-row class="align-start" dense>
+                  <v-col cols="12" md="5">
+                    <v-text-field
+                      v-model="affiliate.name"
+                      label="Nombre"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input"
+                    />
+                  </v-col>
+
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model.number="affiliate.amount"
+                      label="Monto afiliado"
+                      type="number"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly || partialForm.affiliates.length === 1"
+                      class="sketch-input"
+                    />
+                  </v-col>
+
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="affiliate.documentNumber"
+                      label="Documento"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input"
+                    />
+                  </v-col>
+
+                  <v-col cols="12" md="3">
+                    <v-select
+                      v-model="affiliate.month"
+                      :items="months"
+                      label="Mes"
+                      placeholder="Seleccionar mes"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      clearable
+                      class="sketch-input"
+                    />
+                  </v-col>
+
+                  <v-col cols="12" md="8">
+                    <v-text-field
+                      v-model="affiliate.observations"
+                      label="Observaciones"
+                      placeholder="Ingresar observaciones"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input observations-input"
+                    />
+                  </v-col>
+
+                  <v-col
+                    cols="12"
+                    md="1"
+                  >
+                    <v-btn
+                      icon="mdi-delete-outline"
+                      variant="text"
+                      color="error"
+                      :disabled="readonly"
+                      @click="removeAffiliate(index)"
+                    />
+                  </v-col>
+                </v-row>
+
+                <v-divider
+                  v-if="index < partialForm.affiliates.length - 1"
+                  class="my-3"
+                />
+              </div>
+
+              <div
+                v-if="!partialForm.affiliates.length"
+                class="additional-affiliates-empty"
+              >
+                No hay afiliados cargados.
+              </div>
+
+              <v-btn
+                color="teal"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-plus"
+                :disabled="readonly"
+                class="mt-2"
+                @click="addAffiliate"
+              >
+                Agregar afiliado
+              </v-btn>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+
+        <div class="human-status-group mt-3">
+          <div class="human-status-group__label">Estado auditoría</div>
+          <div class="human-status-group__actions">
             <v-btn
-              color="primary"
-              variant="flat"
-              :loading="savingMetadata"
-              :disabled="readonly || !email._id"
-              @click="saveMetadata"
+              v-for="option in humanStatusOptions"
+              :key="option.value"
+              :color="partialForm.humanStatus === option.value ? option.color : undefined"
+              :variant="partialForm.humanStatus === option.value ? 'flat' : 'outlined'"
+              :disabled="readonly"
+              class="human-status-group__button"
+              @click="setHumanStatus(option.value)"
             >
-              Actualizar
+              {{ option.title }}
             </v-btn>
           </div>
+        </div>
+
+        <v-divider class="mt-2"></v-divider>
+
+        <v-card-actions>
 
           <div
             v-if="!readonly && (savingMetadata || metadataSaveError || metadataSaveSuccess)"
@@ -740,51 +732,64 @@ const humanStatusPresentation = (status?: string) => {
             />
             {{ metadataSaveError || metadataSaveSuccess || 'Guardando cambios...' }}
           </div>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-expansion-panels
-      v-if="inboundEmailId"
-      v-model="inboundEmailPanel"
-      variant="accordion"
-      class="original-email-panel"
-    >
-      <v-expansion-panel rounded="lg">
-        <v-expansion-panel-title class="original-email-title">
-          <v-icon icon="mdi-email-outline" class="mr-2" />
-          Email original
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <v-skeleton-loader
-            v-if="loadingInboundEmail"
-            type="article"
-          />
-
-          <v-alert
-            v-else-if="inboundEmailError"
-            type="error"
-            variant="tonal"
-            class="mb-2"
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :loading="savingMetadata"
+            :disabled="readonly || !email._id"
+            @click="saveMetadata"
           >
-            {{ inboundEmailError }}
-          </v-alert>
+            Actualizar
+          </v-btn>
 
-          <InboundEmailView
-            v-else-if="linkedInboundEmail"
-            :inbound-email="linkedInboundEmail"
-          />
+        </v-card-actions>
 
-          <v-alert
-            v-else
-            type="info"
-            variant="tonal"
-          >
-            No hay email original para mostrar.
-          </v-alert>
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
+      </v-card>
+    </v-col>
+  </v-row>
+
+  <v-expansion-panels
+    v-if="inboundEmailId"
+    v-model="inboundEmailPanel"
+    variant="accordion"
+    class="original-email-panel"
+  >
+    <v-expansion-panel rounded="lg">
+      <v-expansion-panel-title class="original-email-title">
+        <v-icon icon="mdi-email-outline" class="mr-2"/>
+        Email original
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <v-skeleton-loader
+          v-if="loadingInboundEmail"
+          type="article"
+        />
+
+        <v-alert
+          v-else-if="inboundEmailError"
+          type="error"
+          variant="tonal"
+          class="mb-2"
+        >
+          {{ inboundEmailError }}
+        </v-alert>
+
+        <InboundEmailView
+          v-else-if="linkedInboundEmail"
+          :inbound-email="linkedInboundEmail"
+        />
+
+        <v-alert
+          v-else
+          type="info"
+          variant="tonal"
+        >
+          No hay email original para mostrar.
+        </v-alert>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  </v-expansion-panels>
   </div>
 </template>
 
@@ -864,7 +869,10 @@ const humanStatusPresentation = (status?: string) => {
 
 .partial-form-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-top: 10px;
 }
 
@@ -958,7 +966,6 @@ const humanStatusPresentation = (status?: string) => {
 }
 
 
-
 .additional-affiliates-empty {
   color: var(--transfer-muted);
   font-size: 0.82rem;
@@ -968,9 +975,9 @@ const humanStatusPresentation = (status?: string) => {
   display: flex;
   align-items: center;
   min-height: 20px;
-  margin-top: 4px;
   color: var(--transfer-muted);
   font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .metadata-save-state--error {

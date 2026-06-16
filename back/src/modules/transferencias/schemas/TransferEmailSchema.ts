@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 const TransferEmailAffiliateSchema = z.object({
     name: z.string().optional(),
-    email: z.string().optional(),
     amount: z.number().optional(),
     documentNumber: z.string().optional(),
     month: z.string().optional(),

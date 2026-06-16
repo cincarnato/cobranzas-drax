@@ -1,7 +1,6 @@
 
 interface ITransferEmailAffiliate {
     name?: string
-    email?: string
     amount?: number
     documentNumber?: string
     month?: string
