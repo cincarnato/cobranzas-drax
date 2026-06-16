@@ -36,9 +36,9 @@ type TransferEmailPartialForm = Pick<
 >
 
 const email = computed(() => props.transferEmail)
-const detailsPanels = ref<number[]>([1, 2])
+const detailsPanels = ref<number[]>([2])
 const affiliatesPanel = ref<number | null>(0)
-const ocrPanel = ref<number | null>(0)
+const ocrPanel = ref<number | null>(null)
 const inboundEmailPanel = ref<number | null>(null)
 const loadingInboundEmail = ref(false)
 const linkedInboundEmail = ref<IInboundEmail | null>(null)
@@ -372,8 +372,8 @@ const humanStatusPresentation = (status?: string) => {
       </v-chip>
     </div>
 
-    <div class="transfer-email-grid">
-      <section class="transfer-email-left">
+    <v-row class="align-start">
+      <v-col cols="12" md="5" lg="4">
         <v-card class="sketch-card proof-card" variant="flat">
           <div class="proof-title">Comprobante</div>
 
@@ -450,9 +450,9 @@ const humanStatusPresentation = (status?: string) => {
             </v-expansion-panel>
           </v-expansion-panels>
         </v-card>
-      </section>
+      </v-col>
 
-      <section class="transfer-email-right">
+      <v-col cols="12" md="7" lg="8">
         <v-expansion-panels
           v-model="detailsPanels"
           multiple
@@ -585,65 +585,77 @@ const humanStatusPresentation = (status?: string) => {
                   :key="index"
                   class="additional-affiliate-row"
                 >
-                  <div class="additional-affiliate-row__line additional-affiliate-row__line--primary">
-                    <v-text-field
-                      v-model="affiliate.name"
-                      label="Nombre"
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      :readonly="readonly"
-                      class="sketch-input"
-                    />
+                  <v-row class="align-start">
+                    <v-col cols="12" md="5">
+                      <v-text-field
+                        v-model="affiliate.name"
+                        label="Nombre"
+                        variant="outlined"
+                        density="compact"
+                        hide-details="auto"
+                        :readonly="readonly"
+                        class="sketch-input"
+                      />
+                    </v-col>
 
-                    <v-text-field
-                      v-model.number="affiliate.amount"
-                      label="Monto afiliado"
-                      type="number"
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      :readonly="readonly || partialForm.affiliates.length === 1"
-                      class="sketch-input"
-                    />
+                    <v-col cols="12" md="3">
+                      <v-text-field
+                        v-model.number="affiliate.amount"
+                        label="Monto afiliado"
+                        type="number"
+                        variant="outlined"
+                        density="compact"
+                        hide-details="auto"
+                        :readonly="readonly || partialForm.affiliates.length === 1"
+                        class="sketch-input"
+                      />
+                    </v-col>
 
-                    <v-text-field
-                      v-model="affiliate.documentNumber"
-                      label="Documento"
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      :readonly="readonly"
-                      class="sketch-input"
-                    />
-                  </div>
+                    <v-col cols="12" md="4">
+                      <v-text-field
+                        v-model="affiliate.documentNumber"
+                        label="Documento"
+                        variant="outlined"
+                        density="compact"
+                        hide-details="auto"
+                        :readonly="readonly"
+                        class="sketch-input"
+                      />
+                    </v-col>
 
-                  <div class="additional-affiliate-row__line additional-affiliate-row__line--secondary">
-                    <v-select
-                      v-model="affiliate.month"
-                      :items="months"
-                      label="Mes"
-                      placeholder="Seleccionar mes"
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      :readonly="readonly"
-                      clearable
-                      class="sketch-input"
-                    />
+                    <v-col cols="12" md="3">
+                      <v-select
+                        v-model="affiliate.month"
+                        :items="months"
+                        label="Mes"
+                        placeholder="Seleccionar mes"
+                        variant="outlined"
+                        density="compact"
+                        hide-details="auto"
+                        :readonly="readonly"
+                        clearable
+                        class="sketch-input"
+                      />
+                    </v-col>
 
-                    <v-text-field
-                      v-model="affiliate.observations"
-                      label="Observaciones"
-                      placeholder="Ingresar observaciones"
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      :readonly="readonly"
-                      class="sketch-input observations-input"
-                    />
+                    <v-col cols="12" md="8">
+                      <v-text-field
+                        v-model="affiliate.observations"
+                        label="Observaciones"
+                        placeholder="Ingresar observaciones"
+                        variant="outlined"
+                        density="compact"
+                        hide-details="auto"
+                        :readonly="readonly"
+                        class="sketch-input observations-input"
+                      />
+                    </v-col>
 
-                    <div class="additional-affiliate-row__actions">
+                    <v-col
+                      cols="12"
+                      md="1"
+                      class="additional-affiliate-row__actions d-flex justify-start justify-md-end align-start align-md-center"
+                    >
                       <v-btn
                         icon="mdi-delete-outline"
                         variant="text"
@@ -652,8 +664,13 @@ const humanStatusPresentation = (status?: string) => {
                         :disabled="readonly"
                         @click="removeAffiliate(index)"
                       />
-                    </div>
-                  </div>
+                    </v-col>
+                  </v-row>
+
+                  <v-divider
+                    v-if="index < partialForm.affiliates.length - 1"
+                    class="my-2"
+                  />
                 </div>
 
                 <div
@@ -724,8 +741,8 @@ const humanStatusPresentation = (status?: string) => {
             {{ metadataSaveError || metadataSaveSuccess || 'Guardando cambios...' }}
           </div>
         </v-card>
-      </section>
-    </div>
+      </v-col>
+    </v-row>
 
     <v-expansion-panels
       v-if="inboundEmailId"
@@ -785,19 +802,6 @@ const humanStatusPresentation = (status?: string) => {
   --transfer-border: rgba(var(--v-theme-on-surface), 0.42);
   --transfer-muted: rgba(var(--v-theme-on-surface), 0.68);
   --transfer-preview-surface: rgb(var(--v-theme-surface-variant));
-}
-
-.transfer-email-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
-  gap: 32px 46px;
-  align-items: start;
-}
-
-.transfer-email-left,
-.transfer-email-right {
-  min-width: 0;
-  width: 100%;
 }
 
 .sketch-card {
@@ -945,35 +949,15 @@ const humanStatusPresentation = (status?: string) => {
   font-weight: 700;
 }
 
-.additional-affiliate-row {
-  display: grid;
-  gap: 8px;
-}
-
-.additional-affiliate-row__line {
-  display: grid;
-  gap: 8px;
-  align-items: start;
-}
-
-.additional-affiliate-row__line--primary {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1fr);
-}
-
-.additional-affiliate-row__line--secondary {
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) auto;
-}
-
 .additional-affiliate-row__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
   min-height: 40px;
 }
 
 .additional-affiliate-row + .additional-affiliate-row {
   margin-top: 8px;
 }
+
+
 
 .additional-affiliates-empty {
   color: var(--transfer-muted);
@@ -1144,11 +1128,6 @@ const humanStatusPresentation = (status?: string) => {
 }
 
 @media (max-width: 900px) {
-  .transfer-email-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
   .proof-card {
     min-height: 520px;
   }
@@ -1163,16 +1142,6 @@ const humanStatusPresentation = (status?: string) => {
   .proof-preview :deep(.drax-image-preview) {
     min-height: 435px;
     height: 435px;
-  }
-
-  .additional-affiliate-row {
-    gap: 10px;
-  }
-
-  .additional-affiliate-row__line,
-  .additional-affiliate-row__line--primary,
-  .additional-affiliate-row__line--secondary {
-    grid-template-columns: 1fr;
   }
 
   .additional-affiliate-row__actions {
