@@ -32,8 +32,7 @@ type TransferEmailPartialForm = Pick<
   ITransferEmail,
   | 'amount'
   | 'affiliates'
-  | 'month'
-  | 'observations'
+  | 'humanStatus'
 >
 
 const email = computed(() => props.transferEmail)
@@ -50,9 +49,14 @@ const metadataSaveSuccess = ref('')
 const partialForm = reactive<Required<TransferEmailPartialForm>>({
   amount: 0,
   affiliates: [],
-  month: '',
-  observations: ''
+  humanStatus: 'VALIDADO'
 })
+
+const humanStatusOptions = [
+  {title: 'Validado', value: 'VALIDADO', color: 'success'},
+  {title: 'Corregido', value: 'CORREGIDO', color: 'info'},
+  {title: 'Descartado', value: 'DESCARTADO', color: 'error'}
+]
 
 const months = [
   'Enero',
@@ -120,6 +124,15 @@ const proofPdfPreviewUrl = computed(() => {
   return `${url}${url.includes('#') ? '&' : '#'}toolbar=0&navpanes=0&scrollbar=0&view=FitH`
 })
 
+const argentinaDateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})
+
 watch(inboundEmailId, () => {
   linkedInboundEmail.value = null
   inboundEmailError.value = ''
@@ -127,22 +140,36 @@ watch(inboundEmailId, () => {
 }, {immediate: true})
 
 watch(() => props.transferEmail._id, syncPartialForm, {immediate: true})
+watch(() => partialForm.amount, syncSingleAffiliateAmount)
+watch(() => partialForm.affiliates.length, syncSingleAffiliateAmount)
 
 function syncPartialForm() {
   partialForm.amount = email.value.amount || 0
   partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
-  partialForm.month = email.value.month || ''
-  partialForm.observations = email.value.observations || ''
+  partialForm.humanStatus = resolveInitialHumanStatus(email.value.humanStatus)
+  syncSingleAffiliateAmount()
   metadataSaveError.value = ''
   metadataSaveSuccess.value = ''
 }
 
+function resolveInitialHumanStatus(humanStatus?: ITransferEmail['humanStatus']) {
+  if (humanStatus === 'VALIDADO' || humanStatus === 'CORREGIDO' || humanStatus === 'DESCARTADO') {
+    return humanStatus
+  }
+
+  return 'VALIDADO'
+}
+
 function cloneAffiliates(affiliates: ITransferEmailAffiliate[]) {
-  return affiliates.map((affiliate) => ({
+  const legacyTransferEmail = email.value as ITransferEmail & {month?: string; observations?: string}
+
+  return affiliates.map((affiliate, index) => ({
     name: affiliate.name || '',
     email: affiliate.email || '',
     amount: affiliate.amount || 0,
-    documentNumber: affiliate.documentNumber || ''
+    documentNumber: affiliate.documentNumber || '',
+    month: affiliate.month || (affiliates.length === 1 && index === 0 ? legacyTransferEmail.month || '' : ''),
+    observations: affiliate.observations || (affiliates.length === 1 && index === 0 ? legacyTransferEmail.observations || '' : '')
   }))
 }
 
@@ -151,23 +178,41 @@ function addAffiliate() {
     name: '',
     email: '',
     amount: 0,
-    documentNumber: ''
+    documentNumber: '',
+    month: '',
+    observations: ''
   })
+  syncSingleAffiliateAmount()
 }
 
 function removeAffiliate(index: number) {
   partialForm.affiliates.splice(index, 1)
+  syncSingleAffiliateAmount()
+}
+
+function syncSingleAffiliateAmount() {
+  if (partialForm.affiliates.length === 1) {
+    partialForm.affiliates[0].amount = partialForm.amount || 0
+  }
 }
 
 function buildAffiliatesPayload() {
+  const isSingleAffiliate = partialForm.affiliates.length === 1
+
   return partialForm.affiliates
     .map((affiliate) => ({
       name: affiliate.name?.trim() || '',
       email: affiliate.email?.trim() || '',
-      amount: affiliate.amount || 0,
-      documentNumber: affiliate.documentNumber?.trim() || ''
+      amount: isSingleAffiliate ? partialForm.amount || 0 : affiliate.amount || 0,
+      documentNumber: affiliate.documentNumber?.trim() || '',
+      month: affiliate.month?.trim() || '',
+      observations: affiliate.observations?.trim() || ''
     }))
-    .filter((affiliate) => affiliate.name || affiliate.email || affiliate.amount || affiliate.documentNumber)
+    .filter((affiliate) => affiliate.name || affiliate.email || affiliate.amount || affiliate.documentNumber || affiliate.month || affiliate.observations)
+}
+
+function setHumanStatus(humanStatus: Required<TransferEmailPartialForm>['humanStatus']) {
+  partialForm.humanStatus = humanStatus
 }
 
 async function saveMetadata() {
@@ -181,14 +226,11 @@ async function saveMetadata() {
     const updated = await TransferEmailProvider.instance.updatePartial(email.value._id, {
       amount: partialForm.amount || 0,
       affiliates: buildAffiliatesPayload(),
-      month: partialForm.month || '',
-      observations: partialForm.observations || ''
+      humanStatus: partialForm.humanStatus
     })
 
     email.value.amount = updated.amount || 0
     email.value.affiliates = cloneAffiliates(updated.affiliates || [])
-    email.value.month = updated.month || ''
-    email.value.observations = updated.observations || ''
     email.value.aiStatus = updated.aiStatus
     email.value.aiProcessedAt = updated.aiProcessedAt
     email.value.aiError = updated.aiError
@@ -238,7 +280,7 @@ const formatDate = (date?: Date | string | null) => {
   if (!date) return '-'
   const parsedDate = new Date(date)
   if (Number.isNaN(parsedDate.getTime())) return '-'
-  return parsedDate.toLocaleString('es-AR')
+  return argentinaDateTimeFormatter.format(parsedDate)
 }
 
 const valueOrDash = (value?: string | number | null) => {
@@ -294,16 +336,6 @@ const humanStatusPresentation = (status?: string) => {
 
 <template>
   <div class="transfer-email-layout">
-    <v-alert
-      v-if="showHumanReviewAlert"
-      type="warning"
-      variant="tonal"
-      icon="mdi-alert"
-      title="Revisión humana requerida"
-      text="Este comprobante requiere atención manual por posibles inconsistencias o validaciones pendientes."
-      class="mb-4"
-    />
-
     <div class="status-overview">
       <v-chip
         :color="statusPresentation(email.status).color"
@@ -328,6 +360,15 @@ const humanStatusPresentation = (status?: string) => {
         size="small"
       >
         Auditoría: {{ humanStatusPresentation(email.humanStatus).label }}
+      </v-chip>
+      <v-chip
+        v-if="showHumanReviewAlert"
+        color="warning"
+        prepend-icon="mdi-alert"
+        variant="tonal"
+        size="small"
+      >
+        Revisión humana requerida
       </v-chip>
     </div>
 
@@ -442,12 +483,7 @@ const humanStatusPresentation = (status?: string) => {
             </v-expansion-panel-title>
             <v-expansion-panel-text>
               <div class="summary-block">
-                <p>
-                  <span class="summary-label mail-message-id-label">ID Mail:</span>
-                  <span class="mail-message-id" :title="valueOrDash(email.emailMessageId)">
-                    {{ valueOrDash(email.emailMessageId) }}
-                  </span>
-                </p>
+
                 <p><span class="summary-label">Fecha Email:</span> {{ formatDate(email.emailDate) }}</p>
                 <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
                 <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
@@ -506,7 +542,6 @@ const humanStatusPresentation = (status?: string) => {
             <v-chip
               color="primary"
               variant="tonal"
-              size="small"
               class="affiliate-strategy-chip"
             >
               Estrategia Afiliado:
@@ -516,7 +551,7 @@ const humanStatusPresentation = (status?: string) => {
 
           <v-text-field
             v-model.number="partialForm.amount"
-            label="Monto"
+            label="Monto comprobante"
             type="number"
             variant="outlined"
             density="compact"
@@ -525,30 +560,7 @@ const humanStatusPresentation = (status?: string) => {
             class="sketch-input mt-3"
           />
 
-          <v-select
-            v-model="partialForm.month"
-            :items="months"
-            label="MES"
-            placeholder="Seleccionar mes"
-            variant="outlined"
-            density="compact"
-            hide-details="auto"
-            :readonly="readonly"
-            clearable
-            class="sketch-input mt-3"
-          />
 
-          <v-text-field
-            v-model="partialForm.observations"
-            label="Observaciones"
-            placeholder="Ingresar observaciones"
-            variant="outlined"
-            density="compact"
-            auto-grow
-            hide-details="auto"
-            :readonly="readonly"
-            class="sketch-input observations-input mt-3"
-          />
 
           <v-expansion-panels
             v-model="affiliatesPanel"
@@ -573,55 +585,75 @@ const humanStatusPresentation = (status?: string) => {
                   :key="index"
                   class="additional-affiliate-row"
                 >
-                  <v-text-field
-                    v-model="affiliate.name"
-                    label="Nombre"
-                    variant="outlined"
-                    density="compact"
-                    hide-details="auto"
-                    :readonly="readonly"
-                    class="sketch-input"
-                  />
+                  <div class="additional-affiliate-row__line additional-affiliate-row__line--primary">
+                    <v-text-field
+                      v-model="affiliate.name"
+                      label="Nombre"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input"
+                    />
 
-                  <v-text-field
-                    v-model="affiliate.email"
-                    label="Email"
-                    variant="outlined"
-                    density="compact"
-                    hide-details="auto"
-                    :readonly="readonly"
-                    class="sketch-input"
-                  />
+                    <v-text-field
+                      v-model.number="affiliate.amount"
+                      label="Monto afiliado"
+                      type="number"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly || partialForm.affiliates.length === 1"
+                      class="sketch-input"
+                    />
 
-                  <v-text-field
-                    v-model.number="affiliate.amount"
-                    label="Monto"
-                    type="number"
-                    variant="outlined"
-                    density="compact"
-                    hide-details="auto"
-                    :readonly="readonly"
-                    class="sketch-input"
-                  />
+                    <v-text-field
+                      v-model="affiliate.documentNumber"
+                      label="Documento"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input"
+                    />
+                  </div>
 
-                  <v-text-field
-                    v-model="affiliate.documentNumber"
-                    label="Documento"
-                    variant="outlined"
-                    density="compact"
-                    hide-details="auto"
-                    :readonly="readonly"
-                    class="sketch-input"
-                  />
+                  <div class="additional-affiliate-row__line additional-affiliate-row__line--secondary">
+                    <v-select
+                      v-model="affiliate.month"
+                      :items="months"
+                      label="Mes"
+                      placeholder="Seleccionar mes"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      clearable
+                      class="sketch-input"
+                    />
 
-                  <v-btn
-                    icon="mdi-delete-outline"
-                    variant="text"
-                    color="error"
-                    size="small"
-                    :disabled="readonly"
-                    @click="removeAffiliate(index)"
-                  />
+                    <v-text-field
+                      v-model="affiliate.observations"
+                      label="Observaciones"
+                      placeholder="Ingresar observaciones"
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      :readonly="readonly"
+                      class="sketch-input observations-input"
+                    />
+
+                    <div class="additional-affiliate-row__actions">
+                      <v-btn
+                        icon="mdi-delete-outline"
+                        variant="text"
+                        color="error"
+                        size="small"
+                        :disabled="readonly"
+                        @click="removeAffiliate(index)"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div
@@ -645,6 +677,25 @@ const humanStatusPresentation = (status?: string) => {
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
+
+          <div class="human-status-group mt-3">
+            <div class="human-status-group__label">Estado auditoría</div>
+            <div class="human-status-group__actions">
+              <v-btn
+                v-for="option in humanStatusOptions"
+                :key="option.value"
+                :color="partialForm.humanStatus === option.value ? option.color : undefined"
+                :variant="partialForm.humanStatus === option.value ? 'flat' : 'outlined'"
+                :disabled="readonly"
+                class="human-status-group__button"
+                @click="setHumanStatus(option.value)"
+              >
+                {{ option.title }}
+              </v-btn>
+            </div>
+          </div>
+
+          <v-divider class="mt-2"></v-divider>
 
           <div class="partial-form-actions">
             <v-btn
@@ -822,6 +873,26 @@ const humanStatusPresentation = (status?: string) => {
   margin-left: 4px;
 }
 
+.human-status-group {
+  display: grid;
+  gap: 8px;
+}
+
+.human-status-group__label {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.human-status-group__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.human-status-group__button {
+  min-width: 118px;
+}
+
 .summary-block p {
   margin: 0;
   line-height: 1.28;
@@ -876,9 +947,28 @@ const humanStatusPresentation = (status?: string) => {
 
 .additional-affiliate-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.85fr) auto;
+  gap: 8px;
+}
+
+.additional-affiliate-row__line {
+  display: grid;
   gap: 8px;
   align-items: start;
+}
+
+.additional-affiliate-row__line--primary {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1fr);
+}
+
+.additional-affiliate-row__line--secondary {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) auto;
+}
+
+.additional-affiliate-row__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
 }
 
 .additional-affiliate-row + .additional-affiliate-row {
@@ -1076,7 +1166,18 @@ const humanStatusPresentation = (status?: string) => {
   }
 
   .additional-affiliate-row {
+    gap: 10px;
+  }
+
+  .additional-affiliate-row__line,
+  .additional-affiliate-row__line--primary,
+  .additional-affiliate-row__line--secondary {
     grid-template-columns: 1fr;
+  }
+
+  .additional-affiliate-row__actions {
+    justify-content: flex-start;
+    min-height: unset;
   }
 }
 </style>

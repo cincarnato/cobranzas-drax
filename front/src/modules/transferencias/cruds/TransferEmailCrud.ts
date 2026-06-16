@@ -65,9 +65,6 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'affiliateStrategy', key: 'affiliateStrategy', align: 'start'},
       {title: 'affiliates', key: 'affiliates', align: 'start'},
 
-      {title: 'month', key: 'month', align: 'start'},
-      {title: 'observations', key: 'observations', align: 'start'},
-
       {title: 'operationNumber', key: 'operationNumber', align: 'start'},
       {title: 'concept', key: 'concept', align: 'start'},
 
@@ -154,24 +151,24 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
         {name:'affiliates',type:'array.object',label:'affiliates',default:[],objectFields: [
   {name: 'name', type: 'string', label: 'name', default: ''},
   {name: 'email', type: 'string', label: 'email', default: ''},
-  {name: 'amount', type: 'number', label: 'amount', default: null},
-  {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''}
+  {name: 'amount', type: 'number', label: 'Monto afiliado', default: null},
+  {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''},
+  {name: 'month', type: 'select', label: 'Mes', default: null, items: [
+    {title: 'Enero', value: 'Enero'},
+    {title: 'Febrero', value: 'Febrero'},
+    {title: 'Marzo', value: 'Marzo'},
+    {title: 'Abril', value: 'Abril'},
+    {title: 'Mayo', value: 'Mayo'},
+    {title: 'Junio', value: 'Junio'},
+    {title: 'Julio', value: 'Julio'},
+    {title: 'Agosto', value: 'Agosto'},
+    {title: 'Septiembre', value: 'Septiembre'},
+    {title: 'Octubre', value: 'Octubre'},
+    {title: 'Noviembre', value: 'Noviembre'},
+    {title: 'Diciembre', value: 'Diciembre'}
+  ]},
+  {name: 'observations', type: 'longString', label: 'Observaciones', default: ''}
 ]},
-{name:'month',type:'select',label:'month',default:null,items: [
-  {title: 'Enero', value: 'Enero'},
-  {title: 'Febrero', value: 'Febrero'},
-  {title: 'Marzo', value: 'Marzo'},
-  {title: 'Abril', value: 'Abril'},
-  {title: 'Mayo', value: 'Mayo'},
-  {title: 'Junio', value: 'Junio'},
-  {title: 'Julio', value: 'Julio'},
-  {title: 'Agosto', value: 'Agosto'},
-  {title: 'Septiembre', value: 'Septiembre'},
-  {title: 'Octubre', value: 'Octubre'},
-  {title: 'Noviembre', value: 'Noviembre'},
-  {title: 'Diciembre', value: 'Diciembre'}
-]},
-{name:'observations',type:'longString',label:'observations',default:''},
 {name:'status',type:'enum',label:'status',default:'PENDIENTE_IA',enum:['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO']},
 {name:'aiStatus',type:'enum',label:'aiStatus',default:'PENDIENTE',enum:['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']},
 {name:'aiProcessedAt',type:'date',label:'aiProcessedAt',default:null},
@@ -225,7 +222,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'month', 'observations']
+    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt']
   }
 
   get isImportable(){

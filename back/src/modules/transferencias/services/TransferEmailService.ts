@@ -63,7 +63,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
             {header: 'Fecha Email', key: 'emailDate', width: 20},
             {header: 'Fecha Proceso', key: 'processDate', width: 20},
-            {header: 'Monto', key: 'amount', width: 14},
+            {header: 'Monto Comprobante', key: 'amount', width: 18},
             {header: 'Mes', key: 'month', width: 14},
             {header: 'Numero Operacion', key: 'operationNumber', width: 22},
             {header: 'Concepto', key: 'concept', width: 28},
@@ -85,13 +85,13 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                 emailDate: row.emailDate ? new Date(row.emailDate) : '',
                 processDate: row.processDate ? new Date(row.processDate) : '',
                 amount: row.amount ?? null,
-                month: row.month ?? '',
+                month: this.formatAffiliateMonths(row.affiliates),
                 operationNumber: row.operationNumber ?? '',
                 concept: row.concept ?? '',
                 originCbu: row.originCbu ?? '',
                 originAlias: row.originAlias ?? '',
                 originBank: row.originBank ?? '',
-                observations: row.observations ?? '',
+                observations: this.formatAffiliateObservations(row.affiliates),
             })
         }
 
@@ -115,9 +115,19 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                 affiliate.email,
                 affiliate.amount,
                 affiliate.documentNumber,
+                affiliate.month,
+                affiliate.observations,
             ].filter(Boolean).join(' / '))
             .filter(Boolean)
             .join('; ')
+    }
+
+    private formatAffiliateMonths(affiliates?: ITransferEmail['affiliates']): string {
+        return Array.from(new Set((affiliates || []).map((affiliate) => affiliate.month).filter(Boolean))).join('; ')
+    }
+
+    private formatAffiliateObservations(affiliates?: ITransferEmail['affiliates']): string {
+        return (affiliates || []).map((affiliate) => affiliate.observations).filter(Boolean).join('; ')
     }
 
     private withResolvedProcessingFields(
@@ -130,7 +140,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         }
         const aiStatus = this.resolveAiStatus(currentTransferEmail, data, mergedTransferEmail)
         const humanStatus = this.resolveHumanStatus(currentTransferEmail, data)
-        const status = this.resolveStatus(currentTransferEmail, data, aiStatus)
+        const status = this.resolveStatus(currentTransferEmail, data, aiStatus, humanStatus)
 
         return {
             ...data,
@@ -173,10 +183,15 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
     private resolveStatus(
         currentTransferEmail: ITransferEmail | null,
         data: ITransferEmailBase,
-        aiStatus: TransferEmailAiStatus
+        aiStatus: TransferEmailAiStatus,
+        humanStatus: TransferEmailHumanStatus
     ): TransferEmailStatus {
         if (data.status) {
             return data.status
+        }
+
+        if (['VALIDADO', 'CORREGIDO', 'DESCARTADO'].includes(humanStatus)) {
+            return 'AUDITADO'
         }
 
         if (currentTransferEmail?.status === 'AUDITADO') {

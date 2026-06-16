@@ -6,6 +6,8 @@ const TransferEmailAffiliateSchema = z.object({
     email: z.string().optional(),
     amount: z.number().optional(),
     documentNumber: z.string().optional(),
+    month: z.string().optional(),
+    observations: z.string().optional(),
 });
 
 const TransferEmailBaseSchema = z.object({
@@ -33,8 +35,6 @@ const TransferEmailBaseSchema = z.object({
     destinationBank: z.string().optional(),
     affiliateStrategy: z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
     affiliates: z.array(TransferEmailAffiliateSchema).optional().default([]),
-    month: z.string().optional(),
-    observations: z.string().optional(),
     aiStatus: z.enum(['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']).optional(),
     aiProcessedAt: z.coerce.date().nullable().optional(),
     aiError: z.string().optional(),

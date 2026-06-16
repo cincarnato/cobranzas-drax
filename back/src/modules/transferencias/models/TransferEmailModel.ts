@@ -33,10 +33,10 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
                 name: {type: String, required: false},
                 email: {type: String, required: false},
                 amount: {type: Number, required: false},
-                documentNumber: {type: String, required: false}
+                documentNumber: {type: String, required: false},
+                month: {type: String, required: false},
+                observations: {type: String, required: false}
             }],
-            month: {type: String,   required: false, index: true, unique: false },
-            observations: {type: String,   required: false, index: false, unique: false },
             aiStatus: {type: String, enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'], required: true, default: 'PENDIENTE', index: true, unique: false },
             aiProcessedAt: {type: Date, required: false, index: true, unique: false },
             aiError: {type: String, required: false, index: false, unique: false },

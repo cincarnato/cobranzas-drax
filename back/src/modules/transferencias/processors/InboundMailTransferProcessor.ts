@@ -528,7 +528,7 @@ class InboundMailTransferProcessor {
                 transferDate,
                 emailDate: inboundEmail.receivedAt,
                 processDate,
-                operationNumber: this.normalizeString(extraction.operationNumber),
+                operationNumber: this.normalizeOperationNumber(extraction.operationNumber),
                 concept: this.normalizeString(extraction.concept),
                 originAccount,
                 originCbu,
@@ -664,6 +664,8 @@ class InboundMailTransferProcessor {
                 affiliate.email,
                 affiliate.amount,
                 affiliate.documentNumber,
+                affiliate.month,
+                affiliate.observations,
             ].filter(Boolean).join(" / "))
             .filter(Boolean);
 
@@ -681,19 +683,40 @@ class InboundMailTransferProcessor {
         fallbackPrimary?: { name?: string; email?: string; documentNumber?: string }
     ): ITransferEmailBase["affiliates"] {
         const payerAffiliates = this.normalizeAffiliates(payer.affiliates);
+        const normalizedFallbackAffiliates = this.normalizeAffiliates(fallbackAffiliates, totalAmount);
 
         if (payerAffiliates.length > 0) {
             return payerAffiliates.map((affiliate, index) => ({
                 ...affiliate,
                 amount: this.resolveAffiliateAmount(affiliate.amount, totalAmount, payerAffiliates.length, index),
+                month: this.findMatchingAffiliateMetadata(affiliate, normalizedFallbackAffiliates, index)?.month,
+                observations: this.findMatchingAffiliateMetadata(affiliate, normalizedFallbackAffiliates, index)?.observations,
             }));
         }
 
         return this.ensureAffiliates(
-            fallbackAffiliates,
+            normalizedFallbackAffiliates,
             fallbackPrimary ? {...fallbackPrimary, amount: totalAmount} : undefined,
             totalAmount
         );
+    }
+
+    private findMatchingAffiliateMetadata(
+        affiliate: {
+            name?: string;
+            email?: string;
+            documentNumber?: string;
+        },
+        fallbackAffiliates: ITransferEmailBase["affiliates"] = [],
+        index = 0
+    ): Pick<NonNullable<ITransferEmailBase["affiliates"]>[number], "month" | "observations"> | undefined {
+        return fallbackAffiliates.find((fallbackAffiliate) =>
+            Boolean(
+                affiliate.documentNumber && fallbackAffiliate.documentNumber === affiliate.documentNumber
+                || affiliate.email && fallbackAffiliate.email === affiliate.email
+                || affiliate.name && fallbackAffiliate.name === affiliate.name
+            )
+        ) || fallbackAffiliates[index];
     }
 
     private buildPayerLookupCriteria(input: {
@@ -795,6 +818,8 @@ class InboundMailTransferProcessor {
                     "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
                     "No inventes ni completes campos por inferencia débil.",
                     "Si un dato no está claro o no aparece, devuélvelo como null.",
+                    "operationNumber solo debe completarse si aparece explicitamente como numero, id, codigo o referencia de operacion/comprobante.",
+                    "Nunca uses una fecha, una hora o una combinacion de fecha y hora como operationNumber.",
                     "Si no es un comprobante de transferencia, devuelve isTransferProof=false y transfers=[].",
                     "Para transferDate devuelve una fecha ISO 8601 completa cuando sea posible en cada item.",
                     "affiliateDocumentNumber debe contener solo dígitos del DNI del remitente o pagador si aparece; no devuelvas CUIL/CUIT completo salvo que no puedas separar el DNI.",
@@ -885,6 +910,36 @@ class InboundMailTransferProcessor {
         return digits;
     }
 
+    private normalizeOperationNumber(value?: string | null): string | undefined {
+        const normalized = this.normalizeString(value);
+        if (!normalized) {
+            return undefined;
+        }
+
+        if (!/\d/.test(normalized)) {
+            return undefined;
+        }
+
+        if (this.looksLikeDateTimeValue(normalized)) {
+            return undefined;
+        }
+
+        return normalized;
+    }
+
+    private looksLikeDateTimeValue(value: string): boolean {
+        const normalized = value
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\b(a|p)\.\s*m\.\b/g, "")
+            .replace(/hs\b/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        return /^(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})(?:\s*[,-]?\s*\d{1,2}:\d{2}(?::\d{2})?)?$/.test(normalized);
+    }
+
     private extractDocumentNumberFromCuil(value?: string | null): string | undefined {
         const digits = value?.replace(/\D/g, "");
         if (digits && digits.length === 11) {
@@ -898,6 +953,8 @@ class InboundMailTransferProcessor {
         email?: string | null;
         amount?: number | null;
         documentNumber?: string | null;
+        month?: string | null;
+        observations?: string | null;
     }> | null, totalAmount?: number): ITransferEmailBase["affiliates"] {
         const normalized = (affiliates || [])
             .map((affiliate) => this.removeUndefinedFields({
@@ -905,8 +962,10 @@ class InboundMailTransferProcessor {
                 email: this.normalizeString(affiliate.email),
                 amount: typeof affiliate.amount === "number" && Number.isFinite(affiliate.amount) ? affiliate.amount : undefined,
                 documentNumber: this.normalizeDocumentNumber(affiliate.documentNumber),
+                month: this.normalizeString(affiliate.month),
+                observations: this.normalizeString(affiliate.observations),
             }))
-            .filter((affiliate) => affiliate.name || affiliate.email || affiliate.documentNumber || affiliate.amount !== undefined);
+            .filter((affiliate) => affiliate.name || affiliate.email || affiliate.documentNumber || affiliate.amount !== undefined || affiliate.month || affiliate.observations);
 
         if (normalized.length === 1 && normalized[0].amount === undefined && totalAmount !== undefined) {
             normalized[0].amount = totalAmount;

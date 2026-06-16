@@ -4,6 +4,8 @@ interface ITransferEmailAffiliate {
     amount?: number
     email?: string
     documentNumber?: string
+    month?: string
+    observations?: string
 }
 
 type TransferEmailAffiliateStrategy = 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
@@ -36,8 +38,6 @@ interface ITransferEmailBase {
     destinationBank?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
     affiliates?: ITransferEmailAffiliate[]
-    month?: string
-    observations?: string
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
     aiError?: string
@@ -77,8 +77,6 @@ interface ITransferEmail {
     destinationBank?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
     affiliates?: ITransferEmailAffiliate[]
-    month?: string
-    observations?: string
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
     aiError?: string

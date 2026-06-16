@@ -339,7 +339,7 @@ async function exportExcel() {
           variant="tonal"
           size="small"
         >
-          {{ [affiliate.name, affiliate.email, affiliate.amount, affiliate.documentNumber].filter(Boolean).join(' / ') || '-' }}
+          {{ [affiliate.name, affiliate.email, affiliate.amount, affiliate.documentNumber, affiliate.month, affiliate.observations].filter(Boolean).join(' / ') || '-' }}
         </v-chip>
         <span v-if="!value?.length">-</span>
       </div>
