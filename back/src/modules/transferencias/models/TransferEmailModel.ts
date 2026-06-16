@@ -29,19 +29,7 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
             destinationAlias: {type: String,   required: false, index: false, unique: false },
             destinationBank: {type: String,   required: false, index: false, unique: false },
 
-            //Deprecated
-            affiliateName: {type: String,   required: false, index: false, unique: false },
-            affiliateEmail: {type: String,   required: false, index: false, unique: false },
-            affiliateDocumentNumber: {type: String,   required: false, index: false, unique: false },
             affiliateStrategy: {type: String,  enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA'], required: false, index: true, unique: false },
-            additionalAffiliates: [{
-                name: {type: String, required: false},
-                email: {type: String, required: false},
-                documentNumber: {type: String, required: false}
-            }],
-            month: {type: String,   required: false, index: true, unique: false },
-            observations: {type: String,   required: false, index: false, unique: false },
-            //Deprecated
 
             affiliates: [{
                 name: {type: String, required: false},
@@ -50,6 +38,7 @@ const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
                 month: {type: String, required: false},
                 observations: {type: String, required: false}
             }],
+
             aiStatus: {type: String, enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'], required: true, default: 'PENDIENTE', index: true, unique: false },
             aiProcessedAt: {type: Date, required: false, index: true, unique: false },
             aiError: {type: String, required: false, index: false, unique: false },
