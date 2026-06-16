@@ -68,7 +68,7 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
   get rules(): IEntityCrudRules {
     return {
       strategy: [(v: any) => !!v || 'validation.required'],
-      value: [(v: any) => !!v || 'validation.required'],
+      value: [],
       affiliates: []
     }
   }
