@@ -59,9 +59,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             {header: 'Remitente Nombre', key: 'emailFromName', width: 28},
             {header: 'Remitente Email', key: 'emailFromEmail', width: 32},
             {header: 'DNI Email', key: 'emailDocumentNumber', width: 16},
-            {header: 'DNI Afiliado', key: 'affiliateDocumentNumber', width: 16},
-            {header: 'Nombre Afiliado', key: 'affiliateName', width: 32},
-            {header: 'Afiliados Adicionales', key: 'additionalAffiliates', width: 50},
+            {header: 'Afiliados', key: 'affiliates', width: 50},
             {header: 'Fecha Transferencia', key: 'transferDate', width: 20},
             {header: 'Fecha Email', key: 'emailDate', width: 20},
             {header: 'Fecha Proceso', key: 'processDate', width: 20},
@@ -82,9 +80,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                 emailFromName: row.emailFromName ?? '',
                 emailFromEmail: row.emailFromEmail ?? '',
                 emailDocumentNumber: row.emailDocumentNumber ?? '',
-                affiliateDocumentNumber: row.affiliateDocumentNumber ?? '',
-                affiliateName: row.affiliateName ?? '',
-                additionalAffiliates: this.formatAdditionalAffiliates(row.additionalAffiliates),
+                affiliates: this.formatAffiliates(row.affiliates),
                 transferDate: row.transferDate ? new Date(row.transferDate) : '',
                 emailDate: row.emailDate ? new Date(row.emailDate) : '',
                 processDate: row.processDate ? new Date(row.processDate) : '',
@@ -112,10 +108,11 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         }
     }
 
-    private formatAdditionalAffiliates(additionalAffiliates?: ITransferEmail['additionalAffiliates']): string {
-        return (additionalAffiliates || [])
+    private formatAffiliates(affiliates?: ITransferEmail['affiliates']): string {
+        return (affiliates || [])
             .map((affiliate) => [
                 affiliate.name,
+                affiliate.email,
                 affiliate.amount,
                 affiliate.documentNumber,
             ].filter(Boolean).join(' / '))
@@ -197,7 +194,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
 
     private resolveNeedsHumanReview(
         currentTransferEmail: ITransferEmail | null,
-        nextTransferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate' | 'needsHumanReview'>,
+        nextTransferEmail: Pick<ITransferEmail, 'amount' | 'affiliates' | 'transferDate' | 'needsHumanReview'>,
         requestedNeedsHumanReview: boolean | undefined,
         aiStatus?: TransferEmailAiStatus
     ): boolean {
@@ -228,9 +225,13 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
     }
 
     private isMissingCriticalTransferData(
-        transferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate'>
+        transferEmail: Pick<ITransferEmail, 'amount' | 'affiliates' | 'transferDate'>
     ): boolean {
-        return !transferEmail.amount || !transferEmail.affiliateDocumentNumber || !transferEmail.transferDate
+        const hasAffiliateDocumentNumber = Boolean(
+            transferEmail.affiliates?.some((affiliate) => Boolean(affiliate.documentNumber))
+        )
+
+        return !transferEmail.amount || !hasAffiliateDocumentNumber || !transferEmail.transferDate
     }
 
     private isLikelyAiProcessed(transferEmail: ITransferEmailBase): boolean {

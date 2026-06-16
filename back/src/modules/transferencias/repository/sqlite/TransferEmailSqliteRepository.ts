@@ -9,9 +9,9 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
     protected db: any;
     protected tableName: string = 'TransferEmail';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['affiliateName', 'affiliateEmail', 'affiliateDocumentNumber', 'affiliateStrategy', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
+    protected searchFields: string[] = ['affiliateStrategy', 'affiliates', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
     protected booleanFields: string[] = ['isTransferProof', 'needsHumanReview'];
-    protected jsonFields: string[] = ['additionalAffiliates'];
+    protected jsonFields: string[] = ['affiliates'];
     protected identifier: string = '_id';
     protected populateFields = [
         { field: 'inboundEmail', table: 'inboundEmail', identifier: '_id' }
@@ -41,11 +41,8 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
 {name: "destinationCbu", type: "TEXT", unique: undefined, primary: false},
 {name: "destinationAlias", type: "TEXT", unique: undefined, primary: false},
 {name: "destinationBank", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateName", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false},
 {name: "affiliateStrategy", type: "TEXT", unique: undefined, primary: false},
-{name: "additionalAffiliates", type: "TEXT", unique: undefined, primary: false},
+{name: "affiliates", type: "TEXT", unique: undefined, primary: false},
 {name: "month", type: "TEXT", unique: undefined, primary: false},
 {name: "observations", type: "TEXT", unique: undefined, primary: false},
 {name: "aiStatus", type: "TEXT", unique: undefined, primary: false},

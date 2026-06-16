@@ -8,10 +8,7 @@ const messages = {
       field: {
         strategy: 'Strategy',
         value: 'Value',
-        affiliateName: 'Affiliate Name',
-        affiliateEmail: 'Affiliate Email',
-        affiliateDocumentNumber: 'Affiliate Document Number',
-        additionalAffiliates: 'Additional Affiliates',
+        affiliates: 'Affiliates',
       }
     },
     permission: {
@@ -30,10 +27,7 @@ const messages = {
       field: {
         strategy: 'Estrategia',
         value: 'Valor',
-        affiliateName: 'Nombre del afiliado',
-        affiliateEmail: 'Email del afiliado',
-        affiliateDocumentNumber: 'Documento del afiliado',
-        additionalAffiliates: 'Afiliados adicionales',
+        affiliates: 'Afiliados',
       }
     },
     permission: {

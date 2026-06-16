@@ -1,5 +1,5 @@
 
-interface ITransferEmailAdditionalAffiliate {
+interface ITransferEmailAffiliate {
     name?: string
     amount?: number
     email?: string
@@ -34,11 +34,8 @@ interface ITransferEmailBase {
     destinationCbu?: string
     destinationAlias?: string
     destinationBank?: string
-    affiliateName?: string
-    affiliateEmail?: string
-    affiliateDocumentNumber?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
-    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
+    affiliates?: ITransferEmailAffiliate[]
     month?: string
     observations?: string
     aiStatus?: TransferEmailAiStatus
@@ -78,11 +75,8 @@ interface ITransferEmail {
     destinationCbu?: string
     destinationAlias?: string
     destinationBank?: string
-    affiliateName?: string
-    affiliateEmail?: string
-    affiliateDocumentNumber?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
-    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
+    affiliates?: ITransferEmailAffiliate[]
     month?: string
     observations?: string
     aiStatus?: TransferEmailAiStatus
@@ -99,7 +93,7 @@ interface ITransferEmail {
 }
 
 export type {
-ITransferEmailAdditionalAffiliate,
+ITransferEmailAffiliate,
 TransferEmailAffiliateStrategy,
 TransferEmailAiStatus,
 TransferEmailHumanStatus,

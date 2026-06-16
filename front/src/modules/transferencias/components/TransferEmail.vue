@@ -5,7 +5,7 @@ import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {
   ITransferEmail,
-  ITransferEmailAdditionalAffiliate
+  ITransferEmailAffiliate
 } from "@/modules/transferencias/interfaces/ITransferEmail";
 import InboundEmailProvider from "@/modules/mail/providers/InboundEmailProvider";
 import TransferEmailProvider from "@/modules/transferencias/providers/TransferEmailProvider";
@@ -30,18 +30,15 @@ const emit = defineEmits<{
 
 type TransferEmailPartialForm = Pick<
   ITransferEmail,
-  | 'affiliateName'
-  | 'affiliateEmail'
-  | 'affiliateDocumentNumber'
   | 'amount'
-  | 'additionalAffiliates'
+  | 'affiliates'
   | 'month'
   | 'observations'
 >
 
 const email = computed(() => props.transferEmail)
 const detailsPanels = ref<number[]>([1, 2])
-const additionalAffiliatesPanel = ref<number | null>(null)
+const affiliatesPanel = ref<number | null>(null)
 const ocrPanel = ref<number | null>(0)
 const inboundEmailPanel = ref<number | null>(null)
 const loadingInboundEmail = ref(false)
@@ -51,11 +48,8 @@ const savingMetadata = ref(false)
 const metadataSaveError = ref('')
 const metadataSaveSuccess = ref('')
 const partialForm = reactive<Required<TransferEmailPartialForm>>({
-  affiliateName: '',
-  affiliateEmail: '',
-  affiliateDocumentNumber: '',
   amount: 0,
-  additionalAffiliates: [],
+  affiliates: [],
   month: '',
   observations: ''
 })
@@ -135,45 +129,45 @@ watch(inboundEmailId, () => {
 watch(() => props.transferEmail._id, syncPartialForm, {immediate: true})
 
 function syncPartialForm() {
-  partialForm.affiliateName = email.value.affiliateName || ''
-  partialForm.affiliateEmail = email.value.affiliateEmail || ''
-  partialForm.affiliateDocumentNumber = email.value.affiliateDocumentNumber || ''
   partialForm.amount = email.value.amount || 0
-  partialForm.additionalAffiliates = cloneAdditionalAffiliates(email.value.additionalAffiliates || [])
+  partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
   partialForm.month = email.value.month || ''
   partialForm.observations = email.value.observations || ''
   metadataSaveError.value = ''
   metadataSaveSuccess.value = ''
 }
 
-function cloneAdditionalAffiliates(affiliates: ITransferEmailAdditionalAffiliate[]) {
+function cloneAffiliates(affiliates: ITransferEmailAffiliate[]) {
   return affiliates.map((affiliate) => ({
     name: affiliate.name || '',
+    email: affiliate.email || '',
     amount: affiliate.amount || 0,
     documentNumber: affiliate.documentNumber || ''
   }))
 }
 
-function addAdditionalAffiliate() {
-  partialForm.additionalAffiliates.push({
+function addAffiliate() {
+  partialForm.affiliates.push({
     name: '',
+    email: '',
     amount: 0,
     documentNumber: ''
   })
 }
 
-function removeAdditionalAffiliate(index: number) {
-  partialForm.additionalAffiliates.splice(index, 1)
+function removeAffiliate(index: number) {
+  partialForm.affiliates.splice(index, 1)
 }
 
-function buildAdditionalAffiliatesPayload() {
-  return partialForm.additionalAffiliates
+function buildAffiliatesPayload() {
+  return partialForm.affiliates
     .map((affiliate) => ({
       name: affiliate.name?.trim() || '',
+      email: affiliate.email?.trim() || '',
       amount: affiliate.amount || 0,
       documentNumber: affiliate.documentNumber?.trim() || ''
     }))
-    .filter((affiliate) => affiliate.name || affiliate.amount || affiliate.documentNumber)
+    .filter((affiliate) => affiliate.name || affiliate.email || affiliate.amount || affiliate.documentNumber)
 }
 
 async function saveMetadata() {
@@ -185,20 +179,14 @@ async function saveMetadata() {
 
   try {
     const updated = await TransferEmailProvider.instance.updatePartial(email.value._id, {
-      affiliateName: partialForm.affiliateName || '',
-      affiliateEmail: partialForm.affiliateEmail || '',
-      affiliateDocumentNumber: partialForm.affiliateDocumentNumber || '',
       amount: partialForm.amount || 0,
-      additionalAffiliates: buildAdditionalAffiliatesPayload(),
+      affiliates: buildAffiliatesPayload(),
       month: partialForm.month || '',
       observations: partialForm.observations || ''
     })
 
-    email.value.affiliateName = updated.affiliateName || ''
-    email.value.affiliateEmail = updated.affiliateEmail || ''
-    email.value.affiliateDocumentNumber = updated.affiliateDocumentNumber || ''
     email.value.amount = updated.amount || 0
-    email.value.additionalAffiliates = cloneAdditionalAffiliates(updated.additionalAffiliates || [])
+    email.value.affiliates = cloneAffiliates(updated.affiliates || [])
     email.value.month = updated.month || ''
     email.value.observations = updated.observations || ''
     email.value.aiStatus = updated.aiStatus
@@ -448,36 +436,6 @@ const humanStatusPresentation = (status?: string) => {
           </div>
 
           <v-text-field
-            v-model="partialForm.affiliateName"
-            label="Nombre Afiliado"
-            variant="outlined"
-            density="compact"
-            hide-details="auto"
-            :readonly="readonly"
-            class="sketch-input"
-          />
-
-          <v-text-field
-            v-model="partialForm.affiliateEmail"
-            label="Email Afiliado"
-            variant="outlined"
-            density="compact"
-            hide-details="auto"
-            :readonly="readonly"
-            class="sketch-input mt-3"
-          />
-
-          <v-text-field
-            v-model="partialForm.affiliateDocumentNumber"
-            label="Documento Afiliado"
-            variant="outlined"
-            density="compact"
-            hide-details="auto"
-            :readonly="readonly"
-            class="sketch-input mt-3"
-          />
-
-          <v-text-field
             v-model.number="partialForm.amount"
             label="Monto"
             type="number"
@@ -514,31 +472,41 @@ const humanStatusPresentation = (status?: string) => {
           />
 
           <v-expansion-panels
-            v-model="additionalAffiliatesPanel"
+            v-model="affiliatesPanel"
             variant="accordion"
             class="additional-affiliates-panel"
           >
             <v-expansion-panel class="additional-affiliates-card" rounded="lg">
               <v-expansion-panel-title class="additional-affiliates-title">
-                Afiliados adicionales
+                Afiliados
                 <v-chip
                   size="x-small"
                   variant="tonal"
                   color="teal"
                   class="ml-2"
                 >
-                  {{ partialForm.additionalAffiliates.length }}
+                  {{ partialForm.affiliates.length }}
                 </v-chip>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <div
-                  v-for="(affiliate, index) in partialForm.additionalAffiliates"
+                  v-for="(affiliate, index) in partialForm.affiliates"
                   :key="index"
                   class="additional-affiliate-row"
                 >
                   <v-text-field
                     v-model="affiliate.name"
                     label="Nombre"
+                    variant="outlined"
+                    density="compact"
+                    hide-details="auto"
+                    :readonly="readonly"
+                    class="sketch-input"
+                  />
+
+                  <v-text-field
+                    v-model="affiliate.email"
+                    label="Email"
                     variant="outlined"
                     density="compact"
                     hide-details="auto"
@@ -573,15 +541,15 @@ const humanStatusPresentation = (status?: string) => {
                     color="error"
                     size="small"
                     :disabled="readonly"
-                    @click="removeAdditionalAffiliate(index)"
+                    @click="removeAffiliate(index)"
                   />
                 </div>
 
                 <div
-                  v-if="!partialForm.additionalAffiliates.length"
+                  v-if="!partialForm.affiliates.length"
                   class="additional-affiliates-empty"
                 >
-                  No hay afiliados adicionales cargados.
+                  No hay afiliados cargados.
                 </div>
 
                 <v-btn
@@ -591,7 +559,7 @@ const humanStatusPresentation = (status?: string) => {
                   prepend-icon="mdi-plus"
                   :disabled="readonly"
                   class="mt-2"
-                  @click="addAdditionalAffiliate"
+                  @click="addAffiliate"
                 >
                   Agregar afiliado
                 </v-btn>

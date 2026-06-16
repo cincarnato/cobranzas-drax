@@ -63,10 +63,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'emailDocumentNumber', key: 'emailDocumentNumber', align: 'start'},
 
       {title: 'affiliateStrategy', key: 'affiliateStrategy', align: 'start'},
-      {title: 'affiliateName', key: 'affiliateName', align: 'start'},
-      {title: 'affiliateDocumentNumber', key: 'affiliateDocumentNumber', align: 'start'},
-      {title: 'affiliateEmail', key: 'affiliateEmail', align: 'start'},
-      {title: 'additionalAffiliates', key: 'additionalAffiliates', align: 'start'},
+      {title: 'affiliates', key: 'affiliates', align: 'start'},
 
       {title: 'month', key: 'month', align: 'start'},
       {title: 'observations', key: 'observations', align: 'start'},
@@ -154,11 +151,9 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'destinationCbu',type:'string',label:'destinationCbu',default:''},
 {name:'destinationAlias',type:'string',label:'destinationAlias',default:''},
 {name:'destinationBank',type:'string',label:'destinationBank',default:''},
-{name:'affiliateName',type:'string',label:'affiliateName',default:''},
-{name:'affiliateEmail',type:'string',label:'affiliateEmail',default:''},
-{name:'affiliateDocumentNumber',type:'string',label:'affiliateDocumentNumber',default:''},
-        {name:'additionalAffiliates',type:'array.object',label:'additionalAffiliates',default:[],objectFields: [
+        {name:'affiliates',type:'array.object',label:'affiliates',default:[],objectFields: [
   {name: 'name', type: 'string', label: 'name', default: ''},
+  {name: 'email', type: 'string', label: 'email', default: ''},
   {name: 'amount', type: 'number', label: 'amount', default: null},
   {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''}
 ]},
@@ -198,8 +193,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'emailSubject', type: 'string', label: 'Asunto Mail', default: '', operator: 'like' },
       {name: 'emailFromEmail', type: 'string', label: 'Email Remitente', default: '', operator: 'like' },
       {name: 'emailDocumentNumber', type: 'string', label: 'DNI Email', default: '', operator: 'eq' },
-      {name: 'affiliateName', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
-      {name: 'affiliateDocumentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'eq' },
+      {name: 'affiliates', type: 'string', label: 'Afiliados', default: '', operator: 'like' },
       {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
       {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'] },
       {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },
@@ -231,7 +225,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateName','affiliateDocumentNumber','additionalAffiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'month', 'observations']
+    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'month', 'observations']
   }
 
   get isImportable(){

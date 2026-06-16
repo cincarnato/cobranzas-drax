@@ -330,20 +330,7 @@ async function exportExcel() {
       </v-chip>
     </template>
 
-    <template v-slot:item.affiliateName="{value}">
-      <div class="field-cell strong-cell">
-        <v-icon icon="mdi-account-circle" size="18" color="teal-darken-2" />
-        <span>{{ value || '-' }}</span>
-      </div>
-    </template>
-
-    <template v-slot:item.affiliateDocumentNumber="{value}">
-      <v-chip color="cyan" variant="tonal"  >
-        {{ value || '-' }}
-      </v-chip>
-    </template>
-
-    <template v-slot:item.additionalAffiliates="{value}">
+    <template v-slot:item.affiliates="{value}">
       <div class="additional-affiliates-cell">
         <v-chip
           v-for="(affiliate, index) in value || []"
@@ -352,7 +339,7 @@ async function exportExcel() {
           variant="tonal"
           size="small"
         >
-          {{ [affiliate.name, affiliate.email, affiliate.documentNumber].filter(Boolean).join(' / ') || '-' }}
+          {{ [affiliate.name, affiliate.email, affiliate.amount, affiliate.documentNumber].filter(Boolean).join(' / ') || '-' }}
         </v-chip>
         <span v-if="!value?.length">-</span>
       </div>

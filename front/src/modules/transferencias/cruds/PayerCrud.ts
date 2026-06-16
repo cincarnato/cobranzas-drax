@@ -1,11 +1,10 @@
-
 import {EntityCrud} from "@drax/crud-vue";
-import type{
+import type {
   IDraxCrudProvider,
   IEntityCrud,
   IEntityCrudField,
   IEntityCrudFilter,
-  IEntityCrudHeader, 
+  IEntityCrudHeader,
   IEntityCrudPermissions,
   IEntityCrudRules
 } from "@drax/crud-share";
@@ -19,20 +18,20 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
     super();
     this.name = 'Payer'
   }
-  
+
   static get instance(): PayerCrud {
-    if(!PayerCrud.singleton){
+    if (!PayerCrud.singleton) {
       PayerCrud.singleton = new PayerCrud()
     }
     return PayerCrud.singleton
   }
 
-  get permissions(): IEntityCrudPermissions{
+  get permissions(): IEntityCrudPermissions {
     return {
-      manage: 'payer:manage', 
-      view: 'payer:view', 
-      create: 'payer:create', 
-      update: 'payer:update', 
+      manage: 'payer:manage',
+      view: 'payer:view',
+      create: 'payer:create',
+      update: 'payer:update',
       delete: 'payer:delete'
     }
   }
@@ -41,18 +40,15 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
     return [
       {title: 'strategy', key: 'strategy', align: 'start'},
       {title: 'value', key: 'value', align: 'start'},
-      {title: 'affiliateName', key: 'affiliateName', align: 'start'},
-      {title: 'affiliateEmail', key: 'affiliateEmail', align: 'start'},
-      {title: 'affiliateDocumentNumber', key: 'affiliateDocumentNumber', align: 'start'},
-      {title: 'additionalAffiliates', key: 'additionalAffiliates', align: 'start'}
+      {title: 'affiliates', key: 'affiliates', align: 'start'}
     ]
   }
-  
+
   get selectedHeaders(): string[] {
     return this.headers.map(header => header.key)
   }
-  
-  get actionHeaders():IEntityCrudHeader[]{
+
+  get actionHeaders(): IEntityCrudHeader[] {
     return [
       {
         title: 'action.actions',
@@ -65,74 +61,80 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
     ]
   }
 
-  get provider(): IDraxCrudProvider<any, any, any>{
+  get provider(): IDraxCrudProvider<any, any, any> {
     return PayerProvider.instance
   }
-  
-  get rules():IEntityCrudRules{
+
+  get rules(): IEntityCrudRules {
     return {
       strategy: [(v: any) => !!v || 'validation.required'],
       value: [(v: any) => !!v || 'validation.required'],
-      affiliateName: [],
-      affiliateEmail: [],
-      affiliateDocumentNumber: [],
-      additionalAffiliates: []
+      affiliates: []
     }
   }
 
-  get fields(): IEntityCrudField[]{
+  get fields(): IEntityCrudField[] {
     return [
-      {name: 'strategy', type: 'enum', label: 'strategy', default: 'EMAIL_FROM', enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']},
+      {
+        name: 'strategy',
+        type: 'enum',
+        label: 'strategy',
+        default: 'EMAIL_FROM',
+        enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']
+      },
       {name: 'value', type: 'string', label: 'value', default: ''},
-      {name: 'affiliateName', type: 'string', label: 'affiliateName', default: ''},
-      {name: 'affiliateEmail', type: 'string', label: 'affiliateEmail', default: ''},
-      {name: 'affiliateDocumentNumber', type: 'string', label: 'affiliateDocumentNumber', default: ''},
-      {name: 'additionalAffiliates', type: 'array.object', label: 'additionalAffiliates', default: [], objectFields: [
-        {name: 'name', type: 'string', label: 'name', default: ''},
-        {name: 'email', type: 'string', label: 'email', default: ''},
-        {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''}
-      ]}
+      {
+        name: 'affiliates',
+        type: 'array.object',
+        label: 'affiliates',
+        arrayObjectUI: 'menu',
+        default: [],
+        objectFields: [
+          {name: 'name', type: 'string', label: 'name', default: ''},
+          {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''}
+        ]
+      }
     ]
   }
-  
-  get filters():IEntityCrudFilter[]{
+
+  get filters(): IEntityCrudFilter[] {
     return [
       //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
     ]
   }
-  
-  get isViewable(){
+
+  get isViewable() {
     return true
   }
 
-  get isEditable(){
+  get isEditable() {
     return true
   }
 
-  get isCreatable(){
+  get isCreatable() {
     return true
   }
 
-  get isDeletable(){
+  get isDeletable() {
     return true
   }
 
-  get isExportable(){
+  get isExportable() {
     return true
   }
 
-  get exportFormats(){
+  get exportFormats() {
     return ['CSV', 'JSON']
   }
 
-  get exportHeaders(){
+  get exportHeaders() {
     return ['_id']
   }
 
-  get isImportable(){
+  get isImportable() {
     return false
   }
-  
+
   get isColumnSelectable() {
     return true
   }
@@ -141,35 +143,31 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
     return true
   }
 
-  get importFormats(){
+  get importFormats() {
     return ['CSV', 'JSON']
   }
 
-  get dialogFullscreen(){
+  get dialogFullscreen() {
     return false
   }
-  
+
   get tabs() {
-    return [
-     
-    ]
+    return []
   }
-  
+
   get menus() {
-    return [
-     
-    ]
+    return []
   }
-  
+
   get searchEnable() {
     return true
   }
 
-   get filtersEnable(){
+  get filtersEnable() {
     return true
   }
 
-  get dynamicFiltersEnable(){
+  get dynamicFiltersEnable() {
     return true
   }
 

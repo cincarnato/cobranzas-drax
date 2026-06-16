@@ -6,19 +6,15 @@ interface IPayerLookupCriteria {
     value: string
 }
 
-interface IPayerAdditionalAffiliate {
+interface IPayerAffiliate {
     name?: string
-    email?: string
     documentNumber?: string
 }
 
 interface IPayerBase {
     strategy: PayerStrategy
     value: string
-    affiliateName?: string
-    affiliateEmail?: string
-    affiliateDocumentNumber?: string
-    additionalAffiliates?: IPayerAdditionalAffiliate[]
+    affiliates?: IPayerAffiliate[]
     createdAt?: Date
     updatedAt?: Date
 }
@@ -30,7 +26,7 @@ interface IPayer extends IPayerBase {
 export type {
 PayerStrategy,
 IPayerLookupCriteria,
-IPayerAdditionalAffiliate,
+IPayerAffiliate,
 IPayerBase, 
 IPayer
 }

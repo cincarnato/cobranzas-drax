@@ -9,21 +9,18 @@ class PayerSqliteRepository extends AbstractSqliteRepository<IPayer, IPayerBase,
     protected db: any;
     protected tableName: string = 'Payer';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['strategy', 'value', 'affiliateName', 'affiliateEmail', 'affiliateDocumentNumber'];
+    protected searchFields: string[] = ['strategy', 'value', 'affiliates'];
     protected booleanFields: string[] = [];
-    protected jsonFields: string[] = ['additionalAffiliates'];
+    protected jsonFields: string[] = ['affiliates'];
     protected identifier: string = '_id';
     protected populateFields = [
         
     ]
     protected verbose: boolean = false;
     protected tableFields: SqliteTableField[] = [
-        {name: "strategy", type: "TEXT", unique: undefined, primary: false},
+{name: "strategy", type: "TEXT", unique: undefined, primary: false},
 {name: "value", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateName", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateEmail", type: "TEXT", unique: undefined, primary: false},
-{name: "affiliateDocumentNumber", type: "TEXT", unique: undefined, primary: false},
-{name: "additionalAffiliates", type: "TEXT", unique: undefined, primary: false}
+{name: "affiliates", type: "TEXT", unique: undefined, primary: false}
     ]
 
     async findByAnyStrategy(criteria: IPayerLookupCriteria[]): Promise<IPayer[]> {

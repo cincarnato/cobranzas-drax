@@ -1,17 +1,13 @@
 
-interface IPayerAdditionalAffiliate {
+interface IPayerAffiliate {
     name?: string
-    email?: string
     documentNumber?: string
 }
 
 interface IPayerBase {
     strategy: 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA'
     value: string
-    affiliateName?: string
-    affiliateEmail?: string
-    affiliateDocumentNumber?: string
-    additionalAffiliates?: IPayerAdditionalAffiliate[]
+    affiliates?: IPayerAffiliate[]
     createdAt?: Date
     updatedAt?: Date
 }
@@ -21,7 +17,7 @@ interface IPayer extends IPayerBase {
 }
 
 export type {
-IPayerAdditionalAffiliate,
+IPayerAffiliate,
 IPayerBase, 
 IPayer
 }

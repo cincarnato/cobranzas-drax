@@ -17,24 +17,8 @@ const PayerSchema = new mongoose.Schema<IPayer>({
         required: true,
         index: true
     },
-    affiliateName: {
-        type: String,
-        required: false,
-        index: true
-    },
-    affiliateEmail: {
-        type: String,
-        required: false,
-        index: true
-    },
-    affiliateDocumentNumber: {
-        type: String,
-        required: false,
-        index: true
-    },
-    additionalAffiliates: [{
+    affiliates: [{
         name: {type: String, required: false},
-        email: {type: String, required: false},
         documentNumber: {type: String, required: false}
     }]
 }, {timestamps: true});

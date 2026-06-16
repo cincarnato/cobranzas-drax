@@ -51,11 +51,12 @@ function formatValue(value?: string | null) {
   return value || '-'
 }
 
-function formatAdditionalAffiliates(affiliates?: ITransferEmail['additionalAffiliates']) {
+function formatAffiliates(affiliates?: ITransferEmail['affiliates']) {
   const formatted = (affiliates || [])
     .map((affiliate) => [
       affiliate.name,
       affiliate.email,
+      affiliate.amount,
       affiliate.documentNumber
     ].filter(Boolean).join(' / '))
     .filter(Boolean)
@@ -80,29 +81,14 @@ const reprocessChangedFields = computed(() => {
   }
   const fields = [
     {
-      label: 'Afiliado',
-      before: formatValue(previous.affiliateName),
-      after: formatValue(current.affiliateName)
-    },
-    {
-      label: 'Email afiliado',
-      before: formatValue(previous.affiliateEmail),
-      after: formatValue(current.affiliateEmail)
-    },
-    {
-      label: 'DNI afiliado',
-      before: formatValue(previous.affiliateDocumentNumber),
-      after: formatValue(current.affiliateDocumentNumber)
-    },
-    {
       label: 'Estrategia',
       before: formatValue(previous.affiliateStrategy),
       after: formatValue(current.affiliateStrategy)
     },
     {
-      label: 'Afiliados adicionales',
-      before: formatAdditionalAffiliates(previous.additionalAffiliates),
-      after: formatAdditionalAffiliates(current.additionalAffiliates)
+      label: 'Afiliados',
+      before: formatAffiliates(previous.affiliates),
+      after: formatAffiliates(current.affiliates)
     }
   ]
 
@@ -160,8 +146,7 @@ async function reprocessTransfer() {
       <v-card-text>
         <div v-if="reprocessItem" class="reprocess-summary">
           <div><strong>ID:</strong> {{ reprocessItem._id }}</div>
-          <div><strong>Afiliado anterior:</strong> {{ reprocessItem.affiliateName || '-' }}</div>
-          <div><strong>DNI anterior:</strong> {{ reprocessItem.affiliateDocumentNumber || '-' }}</div>
+          <div><strong>Afiliados anteriores:</strong> {{ formatAffiliates(reprocessItem.affiliates) }}</div>
           <div><strong>Estrategia anterior:</strong> {{ reprocessItem.affiliateStrategy || '-' }}</div>
         </div>
 
