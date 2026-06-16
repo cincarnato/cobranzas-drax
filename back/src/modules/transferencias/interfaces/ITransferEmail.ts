@@ -7,6 +7,12 @@ interface ITransferEmailAffiliate {
     observations?: string
 }
 
+interface ITransferEmailAdditionalAffiliate {
+    name?: string
+    email?: string
+    documentNumber?: string
+}
+
 type TransferEmailAffiliateStrategy = 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
 type TransferEmailAiStatus = 'PENDIENTE' | 'PROCESADO_CONFIABLE' | 'PROCESADO_CON_DUDAS' | 'PROCESADO_INCOMPLETO' | 'ERROR_PROCESAMIENTO'
 type TransferEmailHumanStatus = 'PENDIENTE' | 'VALIDADO' | 'CORREGIDO' | 'DESCARTADO'
@@ -35,7 +41,13 @@ interface ITransferEmailBase {
     destinationCbu?: string
     destinationAlias?: string
     destinationBank?: string
+    affiliateName?: string
+    affiliateEmail?: string
+    affiliateDocumentNumber?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
+    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
+    month?: string
+    observations?: string
     affiliates?: ITransferEmailAffiliate[]
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
@@ -74,7 +86,13 @@ interface ITransferEmail {
     destinationCbu?: string
     destinationAlias?: string
     destinationBank?: string
+    affiliateName?: string
+    affiliateEmail?: string
+    affiliateDocumentNumber?: string
     affiliateStrategy?: TransferEmailAffiliateStrategy
+    additionalAffiliates?: ITransferEmailAdditionalAffiliate[]
+    month?: string
+    observations?: string
     affiliates?: ITransferEmailAffiliate[]
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
@@ -91,6 +109,7 @@ interface ITransferEmail {
 
 export type {
 ITransferEmailAffiliate,
+ITransferEmailAdditionalAffiliate,
 TransferEmailAffiliateStrategy,
 TransferEmailAiStatus,
 TransferEmailHumanStatus,

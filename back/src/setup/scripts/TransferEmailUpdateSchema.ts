@@ -1,8 +1,5 @@
 
-import {DraxConfig, CommonConfig, mongoose} from "@drax/common-back";
-import MongoDb from "../../databases/MongoDB.js";
-
-const COLLECTION_NAME = "TransferEmail";
+import {TransferEmailModel} from "../../modules/transferencias/models/TransferEmailModel.js";
 const BULK_SIZE = 250;
 
 type LegacyAffiliate = {
@@ -75,20 +72,13 @@ function buildAffiliates(document: LegacyTransferEmail) {
 }
 
 async function transferEmailUpdateSchema() {
-    if (DraxConfig.get(CommonConfig.DbEngine) === "mongo") {
-        await MongoDb();
-    }
-
-    const collection = mongoose.connection.collection(COLLECTION_NAME);
-    const cursor = collection.find({});
     const operations: Array<any> = [];
     let scanned = 0;
     let updated = 0;
+    const cursor = TransferEmailModel.find({}).lean<LegacyTransferEmail>().cursor();
 
-    while (await cursor.hasNext()) {
-        const document = await cursor.next() as LegacyTransferEmail | null;
-
-        if (!document?._id) {
+    for await (const document of cursor) {
+        if (!document._id) {
             continue;
         }
 
@@ -98,6 +88,15 @@ async function transferEmailUpdateSchema() {
         const aiStatus = document.needsHumanReview
             ? "PROCESADO_CON_DUDAS"
             : "PROCESADO_CONFIABLE";
+
+        console.info("[TransferEmailUpdateSchema] updating document", {
+            id: document._id,
+            affiliateName: document.affiliateName,
+            affiliateDocumentNumber: document.affiliateDocumentNumber,
+            additionalAffiliatesCount: document.additionalAffiliates?.length || 0,
+            amount: document.amount,
+            needsHumanReview: document.needsHumanReview,
+        });
 
         operations.push({
             updateOne: {
@@ -122,23 +121,19 @@ async function transferEmailUpdateSchema() {
         });
 
         if (operations.length >= BULK_SIZE) {
-            const result = await collection.bulkWrite(operations);
+            const result = await TransferEmailModel.bulkWrite(operations);
             updated += result.modifiedCount;
             operations.length = 0;
         }
     }
 
     if (operations.length > 0) {
-        const result = await collection.bulkWrite(operations);
+        const result = await TransferEmailModel.bulkWrite(operations);
         updated += result.modifiedCount;
     }
 
-    console.info(`[TransferUpdateSchema] scanned=${scanned} updated=${updated}`);
-    await mongoose.connection.close();
+    console.info(`[TransferEmailUpdateSchema] scanned=${scanned} updated=${updated}`);
 }
-
-await transferEmailUpdateSchema();
-process.exit(0);
 
 export default transferEmailUpdateSchema;
 export {transferEmailUpdateSchema}
