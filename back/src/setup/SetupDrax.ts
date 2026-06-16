@@ -6,6 +6,7 @@ import CreateSystemRoles from "./CreateSystemRoles.js";
 import InitializeSettings from "./InitializeSettings.js";
 import InitializeAudit from "./InitializeAudit.js";
 import {projectPasswordPolicy} from "./data/policies/PasswordPolicy.js";
+import transferEmailUpdateSchema from "./scripts/TransferEmailUpdateSchema.js";
 
 async function SetupDrax(){
 
@@ -36,6 +37,8 @@ async function SetupDrax(){
     await CreateRootUserAndAdminRole()
 
     await CreateSystemRoles()
+
+    await transferEmailUpdateSchema()
 }
 
 export default SetupDrax
