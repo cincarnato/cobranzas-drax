@@ -10,7 +10,13 @@ import {AiProviderFactory} from "@drax/ai-back";
 import {SettingServiceFactory} from "@drax/settings-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import PayerServiceFactory from "../factory/services/PayerServiceFactory.js";
-import type {ITransferEmail, ITransferEmailBase, TransferEmailAffiliateStrategy} from "../interfaces/ITransferEmail.js";
+import type {
+    ITransferEmail,
+    ITransferEmailBase,
+    TransferEmailAffiliateStrategy,
+    TransferEmailAiStatus,
+    TransferEmailStatus
+} from "../interfaces/ITransferEmail.js";
 import type {IPayer, IPayerLookupCriteria, PayerStrategy} from "../interfaces/IPayer.js";
 import TransferEmailService from "../services/TransferEmailService.js";
 import PayerService from "../services/PayerService.js";
@@ -202,41 +208,57 @@ class InboundMailTransferProcessor {
             throw new Error("Transfer email not found");
         }
 
-        const affiliateResolution = await this.resolveAffiliateFromPayerMappings({
-            emailFromName: this.normalizeString(transferEmail.emailFromName),
-            emailFromEmail: this.normalizeString(transferEmail.emailFromEmail),
-            emailDocumentNumber: this.normalizeDocumentNumber(transferEmail.emailDocumentNumber),
-            originCbu: this.normalizeString(transferEmail.originCbu),
-            originAccount: this.normalizeString(transferEmail.originAccount),
-            additionalAffiliates: this.normalizeAdditionalAffiliates(transferEmail.additionalAffiliates),
-        });
+        try {
+            const affiliateResolution = await this.resolveAffiliateFromPayerMappings({
+                emailFromName: this.normalizeString(transferEmail.emailFromName),
+                emailFromEmail: this.normalizeString(transferEmail.emailFromEmail),
+                emailDocumentNumber: this.normalizeDocumentNumber(transferEmail.emailDocumentNumber),
+                originCbu: this.normalizeString(transferEmail.originCbu),
+                originAccount: this.normalizeString(transferEmail.originAccount),
+                additionalAffiliates: this.normalizeAdditionalAffiliates(transferEmail.additionalAffiliates),
+            });
 
-        const updatePayload: ITransferEmailBase = this.removeUndefinedFields({
-            affiliateName: affiliateResolution.affiliateName,
-            affiliateEmail: affiliateResolution.affiliateEmail,
-            affiliateDocumentNumber: affiliateResolution.affiliateDocumentNumber,
-            affiliateStrategy: affiliateResolution.affiliateStrategy,
-            additionalAffiliates: affiliateResolution.additionalAffiliates,
-            needsHumanReview: this.resolveReprocessedNeedsHumanReview(transferEmail, affiliateResolution.affiliateDocumentNumber),
-            processDate: new Date(),
-        });
+            const aiProcessedAt = new Date();
+            const aiStatus = this.resolveAiStatus({
+                amount: transferEmail.amount,
+                transferDate: transferEmail.transferDate,
+                affiliateDocumentNumber: affiliateResolution.affiliateDocumentNumber,
+                needsHumanReview: transferEmail.needsHumanReview,
+            });
+            const updatePayload: ITransferEmailBase = this.removeUndefinedFields({
+                affiliateName: affiliateResolution.affiliateName,
+                affiliateEmail: affiliateResolution.affiliateEmail,
+                affiliateDocumentNumber: affiliateResolution.affiliateDocumentNumber,
+                affiliateStrategy: affiliateResolution.affiliateStrategy,
+                additionalAffiliates: affiliateResolution.additionalAffiliates,
+                processDate: aiProcessedAt,
+                aiStatus,
+                aiProcessedAt,
+                aiError: undefined,
+                status: this.resolvePendingAuditStatus(transferEmail.status),
+                needsHumanReview: this.resolveNeedsHumanReviewFromAiStatus(aiStatus),
+            });
 
-        const changed = this.hasAffiliateResolutionChanged(transferEmail, updatePayload);
-        const changes = this.buildReprocessChanges(transferEmail, updatePayload);
-        await this.transferEmailService.updatePartial(transferEmailId, updatePayload);
-        const updatedTransferEmail = await this.transferEmailService.findById(transferEmailId);
+            const changed = this.hasAffiliateResolutionChanged(transferEmail, updatePayload);
+            const changes = this.buildReprocessChanges(transferEmail, updatePayload);
+            await this.transferEmailService.updatePartial(transferEmailId, updatePayload);
+            const updatedTransferEmail = await this.transferEmailService.findById(transferEmailId);
 
-        return {
-            transferEmail: updatedTransferEmail,
-            previousTransferEmail: transferEmail,
-            updatedFields: updatePayload,
-            changes,
-            changed,
-            payerFound: affiliateResolution.payerFound,
-            payerStrategy: affiliateResolution.payerStrategy,
-            previousAffiliateStrategy: transferEmail.affiliateStrategy,
-            currentAffiliateStrategy: updatedTransferEmail.affiliateStrategy,
-        };
+            return {
+                transferEmail: updatedTransferEmail,
+                previousTransferEmail: transferEmail,
+                updatedFields: updatePayload,
+                changes,
+                changed,
+                payerFound: affiliateResolution.payerFound,
+                payerStrategy: affiliateResolution.payerStrategy,
+                previousAffiliateStrategy: transferEmail.affiliateStrategy,
+                currentAffiliateStrategy: updatedTransferEmail.affiliateStrategy,
+            };
+        } catch (error) {
+            await this.markTransferEmailAiError(transferEmail, error);
+            throw error;
+        }
     }
 
     private async processInboundEmailBatch(inboundEmails: IInboundEmail[]): Promise<Pick<ProcessTransfersResult, "scanned" | "created" | "skipped" | "failed">> {
@@ -477,7 +499,13 @@ class InboundMailTransferProcessor {
                 originAccount,
                 additionalAffiliates,
             });
-            const isMissingCriticalData = !amount || !affiliateResolution.affiliateDocumentNumber || !transferDate;
+            const aiStatus = this.resolveAiStatus({
+                amount,
+                transferDate,
+                affiliateDocumentNumber: affiliateResolution.affiliateDocumentNumber,
+                needsHumanReview: Boolean(extraction.needsHumanReview),
+            });
+            const aiProcessedAt = processDate;
 
             const payload: ITransferEmailBase = {
                 inboundEmail: inboundEmail._id,
@@ -507,7 +535,12 @@ class InboundMailTransferProcessor {
                 affiliateDocumentNumber: affiliateResolution.affiliateDocumentNumber,
                 affiliateStrategy: affiliateResolution.affiliateStrategy,
                 additionalAffiliates: affiliateResolution.additionalAffiliates,
-                needsHumanReview: isMissingCriticalData || Boolean(extraction.needsHumanReview),
+                aiStatus,
+                aiProcessedAt,
+                aiError: undefined,
+                humanStatus: "PENDIENTE",
+                status: "PENDIENTE_AUDITORIA",
+                needsHumanReview: this.resolveNeedsHumanReviewFromAiStatus(aiStatus),
             };
 
             return this.removeUndefinedFields(payload);
@@ -554,22 +587,6 @@ class InboundMailTransferProcessor {
             additionalAffiliates: input.additionalAffiliates,
             payerFound: false,
         };
-    }
-
-    private resolveReprocessedNeedsHumanReview(
-        transferEmail: ITransferEmail,
-        affiliateDocumentNumber?: string
-    ): boolean {
-        const wasMissingCriticalData = this.isMissingCriticalTransferData(
-            transferEmail,
-            transferEmail.affiliateDocumentNumber
-        );
-
-        if (transferEmail.needsHumanReview && !wasMissingCriticalData) {
-            return true;
-        }
-
-        return this.isMissingCriticalTransferData(transferEmail, affiliateDocumentNumber);
     }
 
     private isMissingCriticalTransferData(
@@ -690,6 +707,51 @@ class InboundMailTransferProcessor {
         }
 
         return undefined;
+    }
+
+    private resolveAiStatus(input: {
+        amount?: number;
+        transferDate?: Date | string | null;
+        affiliateDocumentNumber?: string;
+        needsHumanReview?: boolean | null;
+    }): TransferEmailAiStatus {
+        if (!input.amount || !input.affiliateDocumentNumber || !input.transferDate) {
+            return "PROCESADO_INCOMPLETO";
+        }
+
+        if (input.needsHumanReview) {
+            return "PROCESADO_CON_DUDAS";
+        }
+
+        return "PROCESADO_CONFIABLE";
+    }
+
+    private resolveNeedsHumanReviewFromAiStatus(aiStatus: TransferEmailAiStatus): boolean {
+        return aiStatus === "PROCESADO_CON_DUDAS"
+            || aiStatus === "PROCESADO_INCOMPLETO"
+            || aiStatus === "ERROR_PROCESAMIENTO";
+    }
+
+    private resolvePendingAuditStatus(currentStatus?: TransferEmailStatus): TransferEmailStatus {
+        return currentStatus === "AUDITADO"
+            ? "AUDITADO"
+            : "PENDIENTE_AUDITORIA";
+    }
+
+    private async markTransferEmailAiError(transferEmail: ITransferEmail, error: unknown): Promise<void> {
+        try {
+            await this.transferEmailService.updatePartial(transferEmail._id, {
+                aiStatus: "ERROR_PROCESAMIENTO",
+                aiProcessedAt: new Date(),
+                aiError: this.serializeErrorMessage(error),
+                status: this.resolvePendingAuditStatus(transferEmail.status),
+                needsHumanReview: true,
+            });
+        } catch (updateError) {
+            this.logError("Error updating transfer email AI error state", updateError, {
+                transferEmailId: transferEmail._id,
+            });
+        }
     }
 
     private async extractTransferDataWithAi(inboundEmail: IInboundEmail): Promise<TransferEmailAiResult> {

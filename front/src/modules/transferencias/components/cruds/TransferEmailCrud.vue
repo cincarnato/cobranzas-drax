@@ -35,6 +35,51 @@ const formatCurrency = (value?: number | null) => {
   }).format(Number(value))
 }
 
+const resolveGeneralStatus = (value?: string | null) => {
+  switch (value) {
+    case 'PENDIENTE_IA':
+      return {label: 'Pendiente IA', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'PENDIENTE_AUDITORIA':
+      return {label: 'Pendiente auditoría', color: 'warning', icon: 'mdi-account-search-outline'}
+    case 'AUDITADO':
+      return {label: 'Auditado', color: 'success', icon: 'mdi-check-decagram-outline'}
+    default:
+      return {label: value || '-', color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
+
+const resolveAiStatus = (value?: string | null) => {
+  switch (value) {
+    case 'PENDIENTE':
+      return {label: 'Pendiente', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'PROCESADO_CONFIABLE':
+      return {label: 'Confiable', color: 'success', icon: 'mdi-robot-happy-outline'}
+    case 'PROCESADO_CON_DUDAS':
+      return {label: 'Con dudas', color: 'warning', icon: 'mdi-robot-confused-outline'}
+    case 'PROCESADO_INCOMPLETO':
+      return {label: 'Incompleto', color: 'deep-orange', icon: 'mdi-robot-dead-outline'}
+    case 'ERROR_PROCESAMIENTO':
+      return {label: 'Error', color: 'error', icon: 'mdi-robot-angry-outline'}
+    default:
+      return {label: value || '-', color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
+
+const resolveHumanStatus = (value?: string | null) => {
+  switch (value) {
+    case 'PENDIENTE':
+      return {label: 'Pendiente', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'VALIDADO':
+      return {label: 'Validado', color: 'success', icon: 'mdi-check-circle-outline'}
+    case 'CORREGIDO':
+      return {label: 'Corregido', color: 'info', icon: 'mdi-pencil-circle-outline'}
+    case 'DESCARTADO':
+      return {label: 'Descartado', color: 'error', icon: 'mdi-close-circle-outline'}
+    default:
+      return {label: value || '-', color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
+
 function expandRangeFilters(filters: Array<any>): IDraxFieldFilter[] {
   return filters.flatMap((filter) => {
     if (filter.operator !== 'range') {
@@ -193,6 +238,42 @@ async function exportExcel() {
       </v-chip>
     </template>
 
+    <template v-slot:item.status="{value}">
+      <v-chip
+        :color="resolveGeneralStatus(value).color"
+        :prepend-icon="resolveGeneralStatus(value).icon"
+        variant="flat"
+        size="small"
+        class="status-chip"
+      >
+        {{ resolveGeneralStatus(value).label }}
+      </v-chip>
+    </template>
+
+    <template v-slot:item.aiStatus="{value}">
+      <v-chip
+        :color="resolveAiStatus(value).color"
+        :prepend-icon="resolveAiStatus(value).icon"
+        variant="tonal"
+        size="small"
+        class="status-chip"
+      >
+        {{ resolveAiStatus(value).label }}
+      </v-chip>
+    </template>
+
+    <template v-slot:item.humanStatus="{value}">
+      <v-chip
+        :color="resolveHumanStatus(value).color"
+        :prepend-icon="resolveHumanStatus(value).icon"
+        variant="tonal"
+        size="small"
+        class="status-chip"
+      >
+        {{ resolveHumanStatus(value).label }}
+      </v-chip>
+    </template>
+
     <template v-slot:item.isTransferProof="{value}">
       <v-chip
         :color="value ? 'success' : 'grey'"
@@ -236,6 +317,13 @@ async function exportExcel() {
       </div>
     </template>
 
+    <template v-slot:item.aiProcessedAt="{value}">
+      <div class="field-cell date-cell">
+        <v-icon icon="mdi-robot-outline" size="16" color="primary" />
+        <span>{{ formatDateTime(value) }}</span>
+      </div>
+    </template>
+
     <template v-slot:item.operationNumber="{value}">
       <v-chip color="indigo" variant="tonal" size="small" prepend-icon="mdi-pound">
         {{ value || '-' }}
@@ -268,6 +356,22 @@ async function exportExcel() {
         </v-chip>
         <span v-if="!value?.length">-</span>
       </div>
+    </template>
+
+    <template v-slot:item.assignedTo="{value}">
+      <span>{{ value?.username || value?.name || '-' }}</span>
+    </template>
+
+    <template v-slot:item.auditedBy="{value}">
+      <span>{{ value?.username || value?.name || '-' }}</span>
+    </template>
+
+    <template v-slot:item.auditedAt="{value}">
+      {{ formatDateTime(value) }}
+    </template>
+
+    <template v-slot:item.aiError="{value}">
+      <span class="subject-cell">{{ value || '-' }}</span>
     </template>
 
     <template v-slot:item.needsHumanReview="{value}">

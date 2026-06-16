@@ -15,6 +15,7 @@ import TransferEmailProvider from "../providers/TransferEmailProvider";
 
 //Import EntityCrud Refs
 import InboundEmailCrud from "../../mail/cruds/InboundEmailCrud";
+import {UserCrud} from "@drax/identity-vue";
 
 class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
@@ -45,7 +46,15 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   get headers(): IEntityCrudHeader[] {
     return [
       {title: '_id', key: '_id', align: 'start'},
+      {title: 'status', key: 'status', align: 'start'},
+      {title: 'aiStatus', key: 'aiStatus', align: 'start'},
+      {title: 'humanStatus', key: 'humanStatus', align: 'start'},
       {title: 'needsHumanReview', key: 'needsHumanReview', align: 'start'},
+      {title: 'aiProcessedAt', key: 'aiProcessedAt', align: 'start'},
+      {title: 'aiError', key: 'aiError', align: 'start'},
+      {title: 'assignedTo', key: 'assignedTo', align: 'start'},
+      {title: 'auditedBy', key: 'auditedBy', align: 'start'},
+      {title: 'auditedAt', key: 'auditedAt', align: 'start'},
       {title: 'transferDate', key: 'transferDate', align: 'start'},
       {title: 'emailDate', key: 'emailDate', align: 'start'},
       {title: 'processDate', key: 'processDate', align: 'start'},
@@ -110,7 +119,8 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get refs(): IEntityCrudRefs{
     return {
-      InboundEmail: InboundEmailCrud.instance
+      InboundEmail: InboundEmailCrud.instance,
+      User: UserCrud.instance
     }
   }
 
@@ -167,6 +177,14 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   {title: 'Diciembre', value: 'Diciembre'}
 ]},
 {name:'observations',type:'longString',label:'observations',default:''},
+{name:'status',type:'enum',label:'status',default:'PENDIENTE_IA',enum:['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO']},
+{name:'aiStatus',type:'enum',label:'aiStatus',default:'PENDIENTE',enum:['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']},
+{name:'aiProcessedAt',type:'date',label:'aiProcessedAt',default:null},
+{name:'aiError',type:'string',label:'aiError',default:''},
+{name:'humanStatus',type:'enum',label:'humanStatus',default:'PENDIENTE',enum:['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO']},
+{name:'assignedTo',type:'ref',label:'assignedTo',default:null,ref:'User',refDisplay:'username'},
+{name:'auditedBy',type:'ref',label:'auditedBy',default:null,ref:'User',refDisplay:'username'},
+{name:'auditedAt',type:'date',label:'auditedAt',default:null},
 {name:'needsHumanReview',type:'boolean',label:'needsHumanReview',default:false}
     ]
   }
@@ -182,6 +200,9 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'emailDocumentNumber', type: 'string', label: 'DNI Email', default: '', operator: 'eq' },
       {name: 'affiliateName', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
       {name: 'affiliateDocumentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'eq' },
+      {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
+      {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'] },
+      {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },
     ]
   }
 
@@ -210,7 +231,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateName','affiliateDocumentNumber','additionalAffiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'month', 'observations']
+    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateName','affiliateDocumentNumber','additionalAffiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'month', 'observations']
   }
 
   get isImportable(){

@@ -1,6 +1,12 @@
 
 import type{ITransferEmailRepository} from "../interfaces/ITransferEmailRepository";
-import type {ITransferEmailBase, ITransferEmail} from "../interfaces/ITransferEmail";
+import type {
+    ITransferEmailBase,
+    ITransferEmail,
+    TransferEmailAiStatus,
+    TransferEmailHumanStatus,
+    TransferEmailStatus
+} from "../interfaces/ITransferEmail";
 import {AbstractService} from "@drax/crud-back";
 import type {ZodObject, ZodRawShape} from "zod";
 import ExcelJS from "exceljs";
@@ -22,19 +28,19 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
     }
 
     async create(data: ITransferEmailBase): Promise<ITransferEmail> {
-        data = this.withReevaluatedNeedsHumanReview(null, data)
+        data = this.withResolvedProcessingFields(null, data)
         return super.create(data)
     }
 
     async update(id: string, data: ITransferEmailBase): Promise<ITransferEmail> {
         const currentTransferEmail = await this.findById(id)
-        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data)
+        data = this.withResolvedProcessingFields(currentTransferEmail, data)
         return super.update(id, data)
     }
 
     async updatePartial(id: string, data: ITransferEmailBase): Promise<ITransferEmail> {
         const currentTransferEmail = await this.findById(id)
-        data = this.withReevaluatedNeedsHumanReview(currentTransferEmail, data)
+        data = this.withResolvedProcessingFields(currentTransferEmail, data)
         return super.updatePartial(id, data)
     }
 
@@ -117,7 +123,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             .join('; ')
     }
 
-    private withReevaluatedNeedsHumanReview(
+    private withResolvedProcessingFields(
         currentTransferEmail: ITransferEmail | null,
         data: ITransferEmailBase
     ): ITransferEmailBase {
@@ -125,23 +131,89 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             ...(currentTransferEmail || {}),
             ...data,
         }
+        const aiStatus = this.resolveAiStatus(currentTransferEmail, data, mergedTransferEmail)
+        const humanStatus = this.resolveHumanStatus(currentTransferEmail, data)
+        const status = this.resolveStatus(currentTransferEmail, data, aiStatus)
 
         return {
             ...data,
-            needsHumanReview: this.resolveNeedsHumanReview(currentTransferEmail, mergedTransferEmail, data.needsHumanReview),
+            aiStatus,
+            humanStatus,
+            status,
+            needsHumanReview: this.resolveNeedsHumanReview(currentTransferEmail, mergedTransferEmail, data.needsHumanReview, aiStatus),
         }
+    }
+
+    private resolveAiStatus(
+        currentTransferEmail: ITransferEmail | null,
+        data: ITransferEmailBase,
+        mergedTransferEmail: ITransferEmailBase
+    ): TransferEmailAiStatus {
+        if (data.aiStatus) {
+            return data.aiStatus
+        }
+
+        if (currentTransferEmail?.aiStatus) {
+            return currentTransferEmail.aiStatus
+        }
+
+        if (this.isLikelyAiProcessed(mergedTransferEmail)) {
+            return this.isMissingCriticalTransferData(mergedTransferEmail)
+                ? 'PROCESADO_INCOMPLETO'
+                : 'PROCESADO_CONFIABLE'
+        }
+
+        return 'PENDIENTE'
+    }
+
+    private resolveHumanStatus(
+        currentTransferEmail: ITransferEmail | null,
+        data: ITransferEmailBase
+    ): TransferEmailHumanStatus {
+        return data.humanStatus || currentTransferEmail?.humanStatus || 'PENDIENTE'
+    }
+
+    private resolveStatus(
+        currentTransferEmail: ITransferEmail | null,
+        data: ITransferEmailBase,
+        aiStatus: TransferEmailAiStatus
+    ): TransferEmailStatus {
+        if (data.status) {
+            return data.status
+        }
+
+        if (currentTransferEmail?.status === 'AUDITADO') {
+            return 'AUDITADO'
+        }
+
+        if (currentTransferEmail?.status) {
+            return currentTransferEmail.status
+        }
+
+        return aiStatus === 'PENDIENTE'
+            ? 'PENDIENTE_IA'
+            : 'PENDIENTE_AUDITORIA'
     }
 
     private resolveNeedsHumanReview(
         currentTransferEmail: ITransferEmail | null,
         nextTransferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate' | 'needsHumanReview'>,
-        requestedNeedsHumanReview?: boolean
+        requestedNeedsHumanReview: boolean | undefined,
+        aiStatus?: TransferEmailAiStatus
     ): boolean {
-        if (this.isMissingCriticalTransferData(nextTransferEmail)) {
+        if (requestedNeedsHumanReview !== undefined) {
+            return requestedNeedsHumanReview
+        }
+
+        if (aiStatus === 'PROCESADO_CON_DUDAS' || aiStatus === 'PROCESADO_INCOMPLETO' || aiStatus === 'ERROR_PROCESAMIENTO') {
             return true
         }
 
-        if (requestedNeedsHumanReview === true) {
+        if (aiStatus === 'PROCESADO_CONFIABLE') {
+            return false
+        }
+
+        if (this.isMissingCriticalTransferData(nextTransferEmail)) {
             return true
         }
 
@@ -159,6 +231,16 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         transferEmail: Pick<ITransferEmail, 'amount' | 'affiliateDocumentNumber' | 'transferDate'>
     ): boolean {
         return !transferEmail.amount || !transferEmail.affiliateDocumentNumber || !transferEmail.transferDate
+    }
+
+    private isLikelyAiProcessed(transferEmail: ITransferEmailBase): boolean {
+        return Boolean(
+            transferEmail.processDate
+            || transferEmail.aiProcessedAt
+            || transferEmail.isTransferProof
+            || transferEmail.emailMessageId
+            || transferEmail.inboundEmail
+        )
     }
 
 }

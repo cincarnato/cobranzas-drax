@@ -40,7 +40,7 @@ type TransferEmailPartialForm = Pick<
 >
 
 const email = computed(() => props.transferEmail)
-const detailsPanels = ref<number[]>([0, 1])
+const detailsPanels = ref<number[]>([1, 2])
 const additionalAffiliatesPanel = ref<number | null>(null)
 const ocrPanel = ref<number | null>(0)
 const inboundEmailPanel = ref<number | null>(null)
@@ -95,6 +95,9 @@ const proofAttachment = computed(() =>
 
 const attachmentsOcrText = computed(() => linkedInboundEmail.value?.attachmentsOcrText || '')
 const firstAttachmentName = computed(() => proofAttachment.value?.filename || 'Sin archivo')
+const showHumanReviewAlert = computed(() =>
+  email.value.status === 'PENDIENTE_AUDITORIA' || Boolean(email.value.needsHumanReview)
+)
 const isProofImage = computed(() => {
   const attachment = proofAttachment.value
   if (!attachment) return false
@@ -198,6 +201,14 @@ async function saveMetadata() {
     email.value.additionalAffiliates = cloneAdditionalAffiliates(updated.additionalAffiliates || [])
     email.value.month = updated.month || ''
     email.value.observations = updated.observations || ''
+    email.value.aiStatus = updated.aiStatus
+    email.value.aiProcessedAt = updated.aiProcessedAt
+    email.value.aiError = updated.aiError
+    email.value.humanStatus = updated.humanStatus
+    email.value.assignedTo = updated.assignedTo
+    email.value.auditedBy = updated.auditedBy
+    email.value.auditedAt = updated.auditedAt
+    email.value.status = updated.status
     email.value.needsHumanReview = Boolean(updated.needsHumanReview)
     syncPartialForm()
     emit('saved', updated)
@@ -246,12 +257,57 @@ const valueOrDash = (value?: string | number | null) => {
   if (value === null || value === undefined || value === '') return '-'
   return String(value)
 }
+
+const statusPresentation = (status?: string) => {
+  switch (status) {
+    case 'PENDIENTE_IA':
+      return {label: 'Pendiente IA', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'PENDIENTE_AUDITORIA':
+      return {label: 'Pendiente auditoría', color: 'warning', icon: 'mdi-account-search-outline'}
+    case 'AUDITADO':
+      return {label: 'Auditado', color: 'success', icon: 'mdi-check-decagram-outline'}
+    default:
+      return {label: valueOrDash(status), color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
+
+const aiStatusPresentation = (status?: string) => {
+  switch (status) {
+    case 'PENDIENTE':
+      return {label: 'Pendiente', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'PROCESADO_CONFIABLE':
+      return {label: 'Procesado confiable', color: 'success', icon: 'mdi-robot-happy-outline'}
+    case 'PROCESADO_CON_DUDAS':
+      return {label: 'Procesado con dudas', color: 'warning', icon: 'mdi-robot-confused-outline'}
+    case 'PROCESADO_INCOMPLETO':
+      return {label: 'Procesado incompleto', color: 'deep-orange', icon: 'mdi-robot-dead-outline'}
+    case 'ERROR_PROCESAMIENTO':
+      return {label: 'Error de procesamiento', color: 'error', icon: 'mdi-robot-angry-outline'}
+    default:
+      return {label: valueOrDash(status), color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
+
+const humanStatusPresentation = (status?: string) => {
+  switch (status) {
+    case 'PENDIENTE':
+      return {label: 'Pendiente', color: 'grey', icon: 'mdi-progress-clock'}
+    case 'VALIDADO':
+      return {label: 'Validado', color: 'success', icon: 'mdi-check-circle-outline'}
+    case 'CORREGIDO':
+      return {label: 'Corregido', color: 'info', icon: 'mdi-pencil-circle-outline'}
+    case 'DESCARTADO':
+      return {label: 'Descartado', color: 'error', icon: 'mdi-close-circle-outline'}
+    default:
+      return {label: valueOrDash(status), color: 'grey', icon: 'mdi-help-circle-outline'}
+  }
+}
 </script>
 
 <template>
   <div class="transfer-email-layout">
     <v-alert
-      v-if="email.needsHumanReview"
+      v-if="showHumanReviewAlert"
       type="warning"
       variant="tonal"
       icon="mdi-alert"
@@ -259,6 +315,33 @@ const valueOrDash = (value?: string | number | null) => {
       text="Este comprobante requiere atención manual por posibles inconsistencias o validaciones pendientes."
       class="mb-4"
     />
+
+    <div class="status-overview">
+      <v-chip
+        :color="statusPresentation(email.status).color"
+        :prepend-icon="statusPresentation(email.status).icon"
+        variant="flat"
+        size="small"
+      >
+        {{ statusPresentation(email.status).label }}
+      </v-chip>
+      <v-chip
+        :color="aiStatusPresentation(email.aiStatus).color"
+        :prepend-icon="aiStatusPresentation(email.aiStatus).icon"
+        variant="tonal"
+        size="small"
+      >
+        IA: {{ aiStatusPresentation(email.aiStatus).label }}
+      </v-chip>
+      <v-chip
+        :color="humanStatusPresentation(email.humanStatus).color"
+        :prepend-icon="humanStatusPresentation(email.humanStatus).icon"
+        variant="tonal"
+        size="small"
+      >
+        Auditoría: {{ humanStatusPresentation(email.humanStatus).label }}
+      </v-chip>
+    </div>
 
     <div class="transfer-email-grid">
       <section class="transfer-email-left">
@@ -268,6 +351,24 @@ const valueOrDash = (value?: string | number | null) => {
           variant="accordion"
           class="detail-panels"
         >
+          <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+            <v-expansion-panel-title class="detail-panel-title">
+              Estado
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <div class="summary-block">
+                <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
+                <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
+                <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
+                <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
+                <v-divider></v-divider>
+                <p><span class="summary-label">Estado auditoría:</span> {{ humanStatusPresentation(email.humanStatus).label }}</p>
+                <p><span class="summary-label">Asignado a:</span> {{ valueOrDash(email.assignedTo?.username || email.assignedTo?.name) }}</p>
+                <p><span class="summary-label">Auditado por:</span> {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}</p>
+                <p><span class="summary-label">Fecha auditoría:</span> {{ formatDate(email.auditedAt) }}</p>
+              </div>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
           <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
             <v-expansion-panel-title class="detail-panel-title">
               Email
@@ -650,6 +751,15 @@ const valueOrDash = (value?: string | number | null) => {
     </v-expansion-panels>
   </div>
 </template>
+
+<style scoped>
+.status-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+</style>
 
 <style scoped>
 .transfer-email-layout {
