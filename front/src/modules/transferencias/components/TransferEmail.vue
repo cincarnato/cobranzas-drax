@@ -38,7 +38,7 @@ type TransferEmailPartialForm = Pick<
 
 const email = computed(() => props.transferEmail)
 const detailsPanels = ref<number[]>([1, 2])
-const affiliatesPanel = ref<number | null>(null)
+const affiliatesPanel = ref<number | null>(0)
 const ocrPanel = ref<number | null>(0)
 const inboundEmailPanel = ref<number | null>(null)
 const loadingInboundEmail = ref(false)
@@ -333,6 +333,85 @@ const humanStatusPresentation = (status?: string) => {
 
     <div class="transfer-email-grid">
       <section class="transfer-email-left">
+        <v-card class="sketch-card proof-card" variant="flat">
+          <div class="proof-title">Comprobante</div>
+
+          <v-skeleton-loader
+            v-if="loadingInboundEmail"
+            type="image, article"
+            class="proof-loader"
+          />
+
+          <v-alert
+            v-else-if="inboundEmailError"
+            type="error"
+            variant="tonal"
+            class="ma-4"
+          >
+            {{ inboundEmailError }}
+          </v-alert>
+
+          <div v-else-if="proofAttachment" class="proof-preview">
+            <a
+              v-if="isProofImage"
+              :href="proofAttachment.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="proof-image-link"
+              :title="`Abrir ${firstAttachmentName}`"
+            >
+              <v-img
+                :src="proofAttachment.url"
+                :alt="firstAttachmentName"
+                cover
+                class="proof-image"
+              />
+            </a>
+            <div v-else-if="isProofPdf" class="proof-pdf-preview">
+              <iframe
+                :src="proofPdfPreviewUrl"
+                :title="firstAttachmentName"
+                class="proof-pdf-frame"
+              />
+              <a
+                :href="proofAttachment.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="proof-open-link"
+              >
+                Abrir PDF
+              </a>
+            </div>
+            <DraxImagePreview v-else :image="proofAttachment" />
+            <div class="proof-filename">{{ firstAttachmentName }}</div>
+          </div>
+
+          <div v-else class="proof-empty">
+            <v-icon icon="mdi-file-image-outline" size="42" />
+            <span>No hay comprobante adjunto para mostrar.</span>
+          </div>
+        </v-card>
+
+        <v-card class="sketch-card ocr-card mt-4" variant="flat">
+          <v-expansion-panels v-model="ocrPanel" variant="accordion" flat>
+            <v-expansion-panel>
+              <v-expansion-panel-title class="ocr-title">
+                Texto OCR Extraído
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <div v-if="attachmentsOcrText" class="ocr-text">
+                  {{ attachmentsOcrText }}
+                </div>
+                <div v-else class="ocr-empty">
+                  No hay texto OCR extraído de adjuntos.
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+        </v-card>
+      </section>
+
+      <section class="transfer-email-right">
         <v-expansion-panels
           v-model="detailsPanels"
           multiple
@@ -593,85 +672,6 @@ const humanStatusPresentation = (status?: string) => {
             />
             {{ metadataSaveError || metadataSaveSuccess || 'Guardando cambios...' }}
           </div>
-        </v-card>
-      </section>
-
-      <section class="transfer-email-right">
-        <v-card class="sketch-card proof-card" variant="flat">
-          <div class="proof-title">Comprobante</div>
-
-          <v-skeleton-loader
-            v-if="loadingInboundEmail"
-            type="image, article"
-            class="proof-loader"
-          />
-
-          <v-alert
-            v-else-if="inboundEmailError"
-            type="error"
-            variant="tonal"
-            class="ma-4"
-          >
-            {{ inboundEmailError }}
-          </v-alert>
-
-          <div v-else-if="proofAttachment" class="proof-preview">
-            <a
-              v-if="isProofImage"
-              :href="proofAttachment.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="proof-image-link"
-              :title="`Abrir ${firstAttachmentName}`"
-            >
-              <v-img
-                :src="proofAttachment.url"
-                :alt="firstAttachmentName"
-                cover
-                class="proof-image"
-              />
-            </a>
-            <div v-else-if="isProofPdf" class="proof-pdf-preview">
-              <iframe
-                :src="proofPdfPreviewUrl"
-                :title="firstAttachmentName"
-                class="proof-pdf-frame"
-              />
-              <a
-                :href="proofAttachment.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="proof-open-link"
-              >
-                Abrir PDF
-              </a>
-            </div>
-            <DraxImagePreview v-else :image="proofAttachment" />
-            <div class="proof-filename">{{ firstAttachmentName }}</div>
-          </div>
-
-          <div v-else class="proof-empty">
-            <v-icon icon="mdi-file-image-outline" size="42" />
-            <span>No hay comprobante adjunto para mostrar.</span>
-          </div>
-        </v-card>
-
-        <v-card class="sketch-card ocr-card mt-4" variant="flat">
-          <v-expansion-panels v-model="ocrPanel" variant="accordion" flat>
-            <v-expansion-panel>
-              <v-expansion-panel-title class="ocr-title">
-                Texto OCR Extraído
-              </v-expansion-panel-title>
-              <v-expansion-panel-text>
-                <div v-if="attachmentsOcrText" class="ocr-text">
-                  {{ attachmentsOcrText }}
-                </div>
-                <div v-else class="ocr-empty">
-                  No hay texto OCR extraído de adjuntos.
-                </div>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
         </v-card>
       </section>
     </div>
