@@ -60,7 +60,7 @@ const EMAIL_DATA_AFFILIATE_STRATEGY: TransferEmailAffiliateStrategy = "EMAIL_DAT
 
 const transferEmailAiAdditionalAffiliateSchema = z.object({
     name: z.string().nullable(),
-    email: z.string().nullable(),
+    amount: z.number().nullable(),
     documentNumber: z.string().nullable(),
 });
 
@@ -633,7 +633,7 @@ class InboundMailTransferProcessor {
         const formatted = (additionalAffiliates || [])
             .map((affiliate) => [
                 affiliate.name,
-                affiliate.email,
+                affiliate.amount,
                 affiliate.documentNumber,
             ].filter(Boolean).join(" / "))
             .filter(Boolean);

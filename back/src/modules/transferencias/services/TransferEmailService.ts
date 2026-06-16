@@ -16,7 +16,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
 
     constructor(TransferEmailRepository: ITransferEmailRepository, baseSchema?: ZodObject<ZodRawShape>, fullSchema?: ZodObject<ZodRawShape>) {
         super(TransferEmailRepository, baseSchema, fullSchema);
-        
+
         this._validateOutput = true
 
     }
@@ -110,7 +110,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         return (additionalAffiliates || [])
             .map((affiliate) => [
                 affiliate.name,
-                affiliate.email,
+                affiliate.amount,
                 affiliate.documentNumber,
             ].filter(Boolean).join(' / '))
             .filter(Boolean)

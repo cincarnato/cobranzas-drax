@@ -1,7 +1,7 @@
 
 interface ITransferEmailAdditionalAffiliate {
     name?: string
-    email?: string
+    amount?: number
     documentNumber?: string
 }
 

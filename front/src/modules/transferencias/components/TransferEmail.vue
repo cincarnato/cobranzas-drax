@@ -146,7 +146,7 @@ function syncPartialForm() {
 function cloneAdditionalAffiliates(affiliates: ITransferEmailAdditionalAffiliate[]) {
   return affiliates.map((affiliate) => ({
     name: affiliate.name || '',
-    email: affiliate.email || '',
+    amount: affiliate.amount || 0,
     documentNumber: affiliate.documentNumber || ''
   }))
 }
@@ -154,7 +154,7 @@ function cloneAdditionalAffiliates(affiliates: ITransferEmailAdditionalAffiliate
 function addAdditionalAffiliate() {
   partialForm.additionalAffiliates.push({
     name: '',
-    email: '',
+    amount: 0,
     documentNumber: ''
   })
 }
@@ -167,10 +167,10 @@ function buildAdditionalAffiliatesPayload() {
   return partialForm.additionalAffiliates
     .map((affiliate) => ({
       name: affiliate.name?.trim() || '',
-      email: affiliate.email?.trim() || '',
+      amount: affiliate.amount || 0,
       documentNumber: affiliate.documentNumber?.trim() || ''
     }))
-    .filter((affiliate) => affiliate.name || affiliate.email || affiliate.documentNumber)
+    .filter((affiliate) => affiliate.name || affiliate.amount || affiliate.documentNumber)
 }
 
 async function saveMetadata() {
@@ -446,8 +446,9 @@ const valueOrDash = (value?: string | number | null) => {
                   />
 
                   <v-text-field
-                    v-model="affiliate.email"
-                    label="Email"
+                    v-model.number="affiliate.amount"
+                    label="Monto"
+                    type="number"
                     variant="outlined"
                     density="compact"
                     hide-details="auto"

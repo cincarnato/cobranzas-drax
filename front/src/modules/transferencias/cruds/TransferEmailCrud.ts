@@ -147,9 +147,9 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'affiliateName',type:'string',label:'affiliateName',default:''},
 {name:'affiliateEmail',type:'string',label:'affiliateEmail',default:''},
 {name:'affiliateDocumentNumber',type:'string',label:'affiliateDocumentNumber',default:''},
-{name:'additionalAffiliates',type:'array.object',label:'additionalAffiliates',default:[],objectFields: [
+        {name:'additionalAffiliates',type:'array.object',label:'additionalAffiliates',default:[],objectFields: [
   {name: 'name', type: 'string', label: 'name', default: ''},
-  {name: 'email', type: 'string', label: 'email', default: ''},
+  {name: 'amount', type: 'number', label: 'amount', default: null},
   {name: 'documentNumber', type: 'string', label: 'documentNumber', default: ''}
 ]},
 {name:'month',type:'select',label:'month',default:null,items: [
