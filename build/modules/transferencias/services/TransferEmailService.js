@@ -43,6 +43,8 @@ class TransferEmailService extends AbstractService {
             { header: 'DNI Email', key: 'emailDocumentNumber', width: 16 },
             { header: 'Fecha Email', key: 'emailDate', width: 20 },
             { header: 'Fecha Proceso', key: 'processDate', width: 20 },
+            { header: 'Payer', key: 'payer', width: 32 },
+            { header: 'Estrategia Payer', key: 'affiliateStrategy', width: 18 },
             { header: 'CBU Origen', key: 'originCbu', width: 24 },
             { header: 'Alias Origen', key: 'originAlias', width: 24 },
             { header: 'Banco Origen', key: 'originBank', width: 24 },
@@ -58,6 +60,8 @@ class TransferEmailService extends AbstractService {
                     transferDate: row.transferDate ? new Date(row.transferDate) : '',
                     emailDate: row.emailDate ? new Date(row.emailDate) : '',
                     processDate: row.processDate ? new Date(row.processDate) : '',
+                    payer: this.formatPayer(row.payer),
+                    affiliateStrategy: row.affiliateStrategy ?? '',
                     operationNumber: row.operationNumber ?? '',
                     concept: row.concept ?? '',
                     originCbu: row.originCbu ?? '',
@@ -81,6 +85,15 @@ class TransferEmailService extends AbstractService {
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
             fileName: `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
         };
+    }
+    formatPayer(payer) {
+        if (!payer) {
+            return '';
+        }
+        if (typeof payer === 'string') {
+            return payer;
+        }
+        return [payer.strategy, payer.value].filter(Boolean).join(' / ') || payer._id?.toString?.() || payer._id || '';
     }
     async assignAvailableToSession(operatorId, sessionId, batchSize, leaseMs) {
         const assignedAt = new Date();

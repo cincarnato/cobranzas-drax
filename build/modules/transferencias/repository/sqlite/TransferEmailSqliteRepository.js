@@ -13,6 +13,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
         this.verbose = false;
         this.tableFields = [
             { name: "inboundEmail", type: "TEXT", unique: undefined, primary: false },
+            { name: "payer", type: "TEXT", unique: undefined, primary: false },
             { name: "emailMessageId", type: "TEXT", unique: undefined, primary: false },
             { name: "emailSubject", type: "TEXT", unique: undefined, primary: false },
             { name: "emailFromName", type: "TEXT", unique: undefined, primary: false },

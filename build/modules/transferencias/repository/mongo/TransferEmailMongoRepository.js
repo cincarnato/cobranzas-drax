@@ -6,7 +6,7 @@ class TransferEmailMongoRepository extends AbstractMongoRepository {
         super();
         this._model = TransferEmailModel;
         this._searchFields = ['affiliateStrategy', 'affiliates.name', 'affiliates.documentNumber', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
-        this._populateFields = ['inboundEmail', 'assignedTo', 'auditedBy'];
+        this._populateFields = ['inboundEmail', 'payer', 'assignedTo', 'auditedBy'];
         this._lean = true;
     }
     async assignNextAvailable(operatorId, sessionId, assignedAt, expiresAt) {

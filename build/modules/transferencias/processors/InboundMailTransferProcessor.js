@@ -141,6 +141,7 @@ class InboundMailTransferProcessor {
             });
             const updatePayload = this.removeUndefinedFields({
                 affiliateStrategy: affiliateResolution.affiliateStrategy,
+                payer: affiliateResolution.payer?._id || null,
                 affiliates: affiliateResolution.affiliates,
                 processDate: aiProcessedAt,
                 aiStatus,
@@ -160,6 +161,7 @@ class InboundMailTransferProcessor {
                 changes,
                 changed,
                 payerFound: affiliateResolution.payerFound,
+                payer: affiliateResolution.payer,
                 payerStrategy: affiliateResolution.payerStrategy,
                 previousAffiliateStrategy: transferEmail.affiliateStrategy,
                 currentAffiliateStrategy: updatedTransferEmail.affiliateStrategy,
@@ -405,6 +407,7 @@ class InboundMailTransferProcessor {
                 destinationAlias: this.normalizeString(extraction.destinationAlias),
                 destinationBank: this.normalizeString(extraction.destinationBank),
                 affiliateStrategy: affiliateResolution.affiliateStrategy,
+                payer: affiliateResolution.payer?._id,
                 affiliates: affiliateResolution.affiliates,
                 aiStatus,
                 aiProcessedAt,
@@ -428,6 +431,7 @@ class InboundMailTransferProcessor {
                     documentNumber: input.emailDocumentNumber,
                 }),
                 payerFound: true,
+                payer: payerMatch.payer,
                 payerStrategy: payerMatch.strategy,
             };
         }
@@ -439,6 +443,7 @@ class InboundMailTransferProcessor {
                 amount: input.amount,
             }, input.amount),
             payerFound: false,
+            payer: null,
         };
     }
     isMissingCriticalTransferData(transferEmail, affiliates) {
@@ -448,11 +453,13 @@ class InboundMailTransferProcessor {
     }
     hasAffiliateResolutionChanged(transferEmail, updatePayload) {
         return transferEmail.affiliateStrategy !== updatePayload.affiliateStrategy
+            || this.resolvePayerId(transferEmail.payer) !== this.resolvePayerId(updatePayload.payer)
             || JSON.stringify(this.normalizeAffiliates(transferEmail.affiliates)) !== JSON.stringify(this.normalizeAffiliates(updatePayload.affiliates));
     }
     buildReprocessChanges(transferEmail, updatePayload) {
         return [
             this.buildReprocessChange("affiliateStrategy", "Estrategia", transferEmail.affiliateStrategy, updatePayload.affiliateStrategy),
+            this.buildReprocessChange("payer", "Payer", this.formatPayer(transferEmail.payer), this.formatPayer(updatePayload.payer)),
             this.buildReprocessChange("affiliates", "Afiliados", this.formatAffiliates(transferEmail.affiliates), this.formatAffiliates(updatePayload.affiliates)),
         ].filter((change) => Boolean(change));
     }
@@ -483,6 +490,24 @@ class InboundMailTransferProcessor {
     }
     formatReprocessValue(value) {
         return value || "-";
+    }
+    resolvePayerId(payer) {
+        if (!payer) {
+            return "";
+        }
+        if (typeof payer === "string") {
+            return payer;
+        }
+        return payer._id?.toString?.() || payer._id || "";
+    }
+    formatPayer(payer) {
+        if (!payer) {
+            return "";
+        }
+        if (typeof payer === "string") {
+            return payer;
+        }
+        return [payer.strategy, payer.value].filter(Boolean).join(" / ") || this.resolvePayerId(payer);
     }
     resolveAffiliatesFromPayer(payer, fallbackAffiliates, totalAmount, fallbackPrimary) {
         const payerAffiliates = this.normalizeAffiliates(payer.affiliates);
