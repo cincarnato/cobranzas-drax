@@ -39,10 +39,9 @@ type TransferEmailPartialForm = Pick<
 >
 
 const email = computed(() => props.transferEmail)
+const activeLeftTab = ref('proof')
 const detailsPanels = ref<number[]>([2])
 const affiliatesPanel = ref<number | null>(0)
-const ocrPanel = ref<number | null>(null)
-const inboundEmailPanel = ref<number | null>(null)
 const loadingInboundEmail = ref(false)
 const linkedInboundEmail = ref<IInboundEmail | null>(null)
 const inboundEmailError = ref('')
@@ -399,81 +398,125 @@ const humanStatusPresentation = (status?: string) => {
 
   <v-row class="align-start">
     <v-col cols="12" md="5" lg="4">
-      <v-card class="sketch-card proof-card" variant="flat">
-        <div class="proof-title">Comprobante</div>
-
-        <v-skeleton-loader
-          v-if="loadingInboundEmail"
-          type="image, article"
-          class="proof-loader"
-        />
-
-        <v-alert
-          v-else-if="inboundEmailError"
-          type="error"
-          variant="tonal"
-          class="ma-4"
+      <v-card class="sketch-card left-tabs-card" variant="flat">
+        <v-tabs
+          v-model="activeLeftTab"
+          color="primary"
+          density="compact"
+          grow
+          class="left-tabs"
         >
-          {{ inboundEmailError }}
-        </v-alert>
+          <v-tab value="proof" prepend-icon="mdi-file-document-outline">
+            Comprobante
+          </v-tab>
+          <v-tab value="ocr" prepend-icon="mdi-ocr">
+            OCR
+          </v-tab>
+          <v-tab value="email" prepend-icon="mdi-email-outline">
+            Mail
+          </v-tab>
+        </v-tabs>
 
-        <div v-else-if="proofAttachment" class="proof-preview">
-          <a
-            v-if="isProofImage"
-            :href="proofAttachment.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="proof-image-link"
-            :title="`Abrir ${firstAttachmentName}`"
-          >
-            <v-img
-              :src="proofAttachment.url"
-              :alt="firstAttachmentName"
-              cover
-              class="proof-image"
-            />
-          </a>
-          <div v-else-if="isProofPdf" class="proof-pdf-preview">
-            <iframe
-              :src="proofPdfPreviewUrl"
-              :title="firstAttachmentName"
-              class="proof-pdf-frame"
-            />
-            <a
-              :href="proofAttachment.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="proof-open-link"
-            >
-              Abrir PDF
-            </a>
-          </div>
-          <DraxImagePreview v-else :image="proofAttachment"/>
-          <div class="proof-filename">{{ firstAttachmentName }}</div>
-        </div>
+        <v-window v-model="activeLeftTab" class="left-tab-window">
+          <v-window-item value="proof">
+            <div class="left-tab-content proof-tab-content">
+              <v-skeleton-loader
+                v-if="loadingInboundEmail"
+                type="image, article"
+                class="proof-loader"
+              />
 
-        <div v-else class="proof-empty">
-          <v-icon icon="mdi-file-image-outline" size="42"/>
-          <span>No hay comprobante adjunto para mostrar.</span>
-        </div>
-      </v-card>
+              <v-alert
+                v-else-if="inboundEmailError"
+                type="error"
+                variant="tonal"
+              >
+                {{ inboundEmailError }}
+              </v-alert>
 
-      <v-card class="sketch-card ocr-card mt-4" variant="flat">
-        <v-expansion-panels v-model="ocrPanel" variant="accordion" flat>
-          <v-expansion-panel>
-            <v-expansion-panel-title class="ocr-title">
-              Texto OCR Extraído
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
+              <div v-else-if="proofAttachment" class="proof-preview">
+                <a
+                  v-if="isProofImage"
+                  :href="proofAttachment.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="proof-image-link"
+                  :title="`Abrir ${firstAttachmentName}`"
+                >
+                  <v-img
+                    :src="proofAttachment.url"
+                    :alt="firstAttachmentName"
+                    cover
+                    class="proof-image"
+                  />
+                </a>
+                <div v-else-if="isProofPdf" class="proof-pdf-preview">
+                  <iframe
+                    :src="proofPdfPreviewUrl"
+                    :title="firstAttachmentName"
+                    class="proof-pdf-frame"
+                  />
+                  <a
+                    :href="proofAttachment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="proof-open-link"
+                  >
+                    Abrir PDF
+                  </a>
+                </div>
+                <DraxImagePreview v-else :image="proofAttachment"/>
+                <div class="proof-filename">{{ firstAttachmentName }}</div>
+              </div>
+
+              <div v-else class="proof-empty">
+                <v-icon icon="mdi-file-image-outline" size="42"/>
+                <span>No hay comprobante adjunto para mostrar.</span>
+              </div>
+            </div>
+          </v-window-item>
+
+          <v-window-item value="ocr">
+            <div class="left-tab-content ocr-tab-content">
               <div v-if="attachmentsOcrText" class="ocr-text">
                 {{ attachmentsOcrText }}
               </div>
               <div v-else class="ocr-empty">
                 No hay texto OCR extraído de adjuntos.
               </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
+            </div>
+          </v-window-item>
+
+          <v-window-item value="email">
+            <div class="left-tab-content email-tab-content">
+              <v-skeleton-loader
+                v-if="loadingInboundEmail"
+                type="article"
+              />
+
+              <v-alert
+                v-else-if="inboundEmailError"
+                type="error"
+                variant="tonal"
+              >
+                {{ inboundEmailError }}
+              </v-alert>
+
+              <InboundEmailView
+                v-else-if="linkedInboundEmail"
+                :inbound-email="linkedInboundEmail"
+              />
+
+              <v-alert
+                v-else
+                type="info"
+                variant="tonal"
+              >
+                No hay email original para mostrar.
+              </v-alert>
+            </div>
+          </v-window-item>
+        </v-window>
       </v-card>
     </v-col>
 
@@ -794,47 +837,6 @@ const humanStatusPresentation = (status?: string) => {
     </v-col>
   </v-row>
 
-  <v-expansion-panels
-    v-if="inboundEmailId"
-    v-model="inboundEmailPanel"
-    variant="accordion"
-    class="original-email-panel"
-  >
-    <v-expansion-panel rounded="lg">
-      <v-expansion-panel-title class="original-email-title">
-        <v-icon icon="mdi-email-outline" class="mr-2"/>
-        Email original
-      </v-expansion-panel-title>
-      <v-expansion-panel-text>
-        <v-skeleton-loader
-          v-if="loadingInboundEmail"
-          type="article"
-        />
-
-        <v-alert
-          v-else-if="inboundEmailError"
-          type="error"
-          variant="tonal"
-          class="mb-2"
-        >
-          {{ inboundEmailError }}
-        </v-alert>
-
-        <InboundEmailView
-          v-else-if="linkedInboundEmail"
-          :inbound-email="linkedInboundEmail"
-        />
-
-        <v-alert
-          v-else
-          type="info"
-          variant="tonal"
-        >
-          No hay email original para mostrar.
-        </v-alert>
-      </v-expansion-panel-text>
-    </v-expansion-panel>
-  </v-expansion-panels>
   </div>
 </template>
 
@@ -1038,27 +1040,40 @@ const humanStatusPresentation = (status?: string) => {
   min-height: 88px;
 }
 
-.proof-card {
-  min-height: 620px;
-  padding: 8px 12px 12px;
+.left-tabs-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.left-tabs {
+  border-bottom: 2px solid var(--transfer-border);
+}
+
+.left-tab-window {
+  height: min(720px, calc(100vh - 220px));
+  min-height: 560px;
+}
+
+.left-tab-window :deep(.v-window__container),
+.left-tab-window :deep(.v-window-item) {
+  height: 100%;
+}
+
+.left-tab-content {
+  height: 100%;
+  padding: 12px;
+  overflow: auto;
+}
+
+.proof-tab-content {
   display: flex;
   flex-direction: column;
 }
 
-.proof-title,
-.ocr-title {
-  text-align: center;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.proof-title {
-  padding: 0 0 6px;
-}
-
 .proof-preview {
-  min-height: 565px;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1069,7 +1084,7 @@ const humanStatusPresentation = (status?: string) => {
   width: 100%;
   flex: 1;
   display: flex;
-  min-height: 535px;
+  min-height: 0;
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
@@ -1091,7 +1106,7 @@ const humanStatusPresentation = (status?: string) => {
   width: 100%;
   flex: 1;
   display: flex;
-  min-height: 535px;
+  min-height: 0;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
@@ -1101,7 +1116,6 @@ const humanStatusPresentation = (status?: string) => {
 .proof-pdf-frame {
   width: 100%;
   height: 100%;
-  min-height: 535px;
   border: 0;
 }
 
@@ -1121,7 +1135,8 @@ const humanStatusPresentation = (status?: string) => {
 
 .proof-preview :deep(.drax-image-preview) {
   width: 100%;
-  height: 535px;
+  height: 100%;
+  min-height: 0;
 }
 
 .proof-filename {
@@ -1146,54 +1161,20 @@ const humanStatusPresentation = (status?: string) => {
   margin-top: 24px;
 }
 
-.ocr-card {
-  overflow: hidden;
-}
-
-.ocr-card :deep(.v-expansion-panel) {
-  background: transparent;
-}
-
-.ocr-card :deep(.v-expansion-panel-title) {
-  min-height: 40px;
-  border-bottom: 2px solid var(--transfer-border);
-}
-
-.ocr-card :deep(.v-expansion-panel-text__wrapper) {
-  padding: 18px 22px 22px;
-}
-
 .ocr-text {
   white-space: pre-wrap;
-  max-height: 330px;
-  overflow: auto;
   font-size: 0.95rem;
   line-height: 1.35;
 }
 
-.original-email-panel {
-  margin-top: 24px;
-}
-
-.original-email-title {
-  font-weight: 700;
+.email-tab-content {
+  padding: 8px;
 }
 
 @media (max-width: 900px) {
-  .proof-card {
-    min-height: 520px;
-  }
-
-  .proof-preview {
-    min-height: 465px;
-  }
-
-  .proof-image-link,
-  .proof-pdf-preview,
-  .proof-pdf-frame,
-  .proof-preview :deep(.drax-image-preview) {
-    min-height: 435px;
-    height: 435px;
+  .left-tab-window {
+    height: 560px;
+    min-height: 560px;
   }
 
   .additional-affiliate-row__actions {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from "vue";
+import {computed, ref} from "vue";
 import {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import {DraxImagePreview} from "@drax/common-vue";
 
@@ -16,6 +16,7 @@ const {inboundEmail} = defineProps<{
 }>()
 
 const emptyValue = "—";
+const bodyContentPanel = ref<string | null>('html');
 
 const processingColor = computed(() => {
   const s = inboundEmail.processingStatus?.toLowerCase();
@@ -183,8 +184,13 @@ const hasAttachmentSection = computed(() =>
     </v-card>
 
     <!-- ── EMAIL BODY (collapsible, HTML first) ── -->
-    <v-expansion-panels v-if="hasBodyContent" variant="accordion" class="iev-collapsed-section">
-      <v-expansion-panel v-if="inboundEmail.bodyHtml" rounded="lg">
+    <v-expansion-panels
+      v-if="hasBodyContent"
+      v-model="bodyContentPanel"
+      variant="accordion"
+      class="iev-collapsed-section"
+    >
+      <v-expansion-panel v-if="inboundEmail.bodyHtml" value="html" rounded="lg">
         <v-expansion-panel-title class="text-body-2">
           <v-icon icon="mdi-language-html5" size="18" class="mr-2" />
           Contenido HTML
@@ -193,7 +199,7 @@ const hasAttachmentSection = computed(() =>
           <div class="iev-body-scroll" v-html="inboundEmail.bodyHtml" />
         </v-expansion-panel-text>
       </v-expansion-panel>
-      <v-expansion-panel v-if="inboundEmail.bodyText" rounded="lg">
+      <v-expansion-panel v-if="inboundEmail.bodyText" value="text" rounded="lg">
         <v-expansion-panel-title class="text-body-2">
           <v-icon icon="mdi-text" size="18" class="mr-2" />
           Contenido Texto
