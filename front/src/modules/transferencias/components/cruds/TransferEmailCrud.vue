@@ -298,7 +298,6 @@ async function exportExcel() {
 
     <template v-slot:item.transferDate="{value}">
       <div class="field-cell date-cell">
-        <v-icon icon="mdi-calendar" size="16" color="primary" />
         <span>{{ formatDateTime(value) }}</span>
       </div>
     </template>

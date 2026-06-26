@@ -187,11 +187,13 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
     return [
       {name: 'transferDate', type: 'date', label: 'Transferencia', default: '', operator: 'range' },
       {name: 'emailDate', type: 'date', label: 'Email', default: '', operator: 'range' },
+      {name: 'auditedBy', type: 'ref', ref:'User', refDisplay:'username', label: 'Auditado Por', default: null, operator: 'eq' },
       {name: 'emailSubject', type: 'string', label: 'Asunto Mail', default: '', operator: 'like' },
       {name: 'emailFromEmail', type: 'string', label: 'Email Remitente', default: '', operator: 'like' },
       {name: 'emailDocumentNumber', type: 'string', label: 'DNI Email', default: '', operator: 'eq' },
       {name: 'affiliates.name', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
       {name: 'affiliates.documentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'like' },
+      {name: 'operationNumber', type: 'string', label: 'Número Operacion', default: '', operator: 'eq' },
       {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
       {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'] },
       {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },
@@ -259,7 +261,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get searchEnable() {
-    return true
+    return false
   }
 
    get filtersEnable(){

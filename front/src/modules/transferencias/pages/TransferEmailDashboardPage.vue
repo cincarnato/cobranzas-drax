@@ -5,16 +5,19 @@ import {VDateInput} from "vuetify/labs/VDateInput";
 import {useTheme} from "vuetify";
 import TransferEmailProvider from "../providers/TransferEmailProvider";
 
-type TransferDimension = "total" | "amount" | "month" | "needsHumanReview" | "destinationCbu"
-type Accent = "total" | "amount" | "month" | "review" | "cbu"
+type TransferDimension = "total" | "amount" | "month" | "status" | "aiStatus" | "humanStatus" | "auditedBy" | "affiliateStrategy"
+type Accent = "total" | "amount" | "month" | "status" | "ai" | "human" | "auditor" | "strategy"
 type DateGroupFormat = "day" | "month" | "year"
 
 type TransferGroupByRow = {
   transferDate?: unknown
   amount?: number | string | null
   month?: unknown
-  needsHumanReview?: unknown
-  destinationCbu?: unknown
+  status?: unknown
+  aiStatus?: unknown
+  humanStatus?: unknown
+  auditedBy?: unknown
+  affiliateStrategy?: unknown
   count?: number
 }
 
@@ -42,12 +45,15 @@ const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
 const fromDate = ref<Date | null>(monthStart);
 const toDate = ref<Date | null>(today);
-const dateGroupFormat = ref<DateGroupFormat>("day");
+const dateGroupFormat = ref<DateGroupFormat>("month");
 const totalRows = ref<SummaryRow[]>([]);
 const amountRows = ref<SummaryRow[]>([]);
 const monthRows = ref<SummaryRow[]>([]);
-const reviewRows = ref<SummaryRow[]>([]);
-const cbuRows = ref<SummaryRow[]>([]);
+const statusRows = ref<SummaryRow[]>([]);
+const aiStatusRows = ref<SummaryRow[]>([]);
+const humanStatusRows = ref<SummaryRow[]>([]);
+const auditedByRows = ref<SummaryRow[]>([]);
+const affiliateStrategyRows = ref<SummaryRow[]>([]);
 const loading = ref(false);
 const error = ref("");
 let requestId = 0;
@@ -85,6 +91,51 @@ const dateGroupHeader = computed(() => {
 
 const cards = computed<CardConfig[]>(() => [
   {
+    title: `Transferencias por ${dateGroupLabel.value} y estado`,
+    label: "Estado",
+    dimension: "status",
+    icon: "mdi-list-status",
+    accent: "status",
+    showAmount: false,
+    rows: statusRows.value,
+  },
+  {
+    title: `Transferencias por ${dateGroupLabel.value} y estado IA`,
+    label: "Estado IA",
+    dimension: "aiStatus",
+    icon: "mdi-robot-outline",
+    accent: "ai",
+    showAmount: false,
+    rows: aiStatusRows.value,
+  },
+  {
+    title: `Transferencias por ${dateGroupLabel.value} y estado humano`,
+    label: "Estado humano",
+    dimension: "humanStatus",
+    icon: "mdi-account-check-outline",
+    accent: "human",
+    showAmount: false,
+    rows: humanStatusRows.value,
+  },
+  {
+    title: `Transferencias por ${dateGroupLabel.value} y auditor`,
+    label: "Auditado por",
+    dimension: "auditedBy",
+    icon: "mdi-account-search-outline",
+    accent: "auditor",
+    showAmount: false,
+    rows: auditedByRows.value,
+  },
+  {
+    title: `Transferencias por ${dateGroupLabel.value} y estrategia`,
+    label: "Estrategia",
+    dimension: "affiliateStrategy",
+    icon: "mdi-source-branch",
+    accent: "strategy",
+    showAmount: false,
+    rows: affiliateStrategyRows.value,
+  },
+  {
     title: `Total de transferencias por ${dateGroupLabel.value}`,
     label: "Total",
     dimension: "total",
@@ -110,24 +161,6 @@ const cards = computed<CardConfig[]>(() => [
     accent: "month",
     showAmount: false,
     rows: monthRows.value,
-  },
-  {
-    title: `Transferencias por ${dateGroupLabel.value} y revisión`,
-    label: "Revisión humana",
-    dimension: "needsHumanReview",
-    icon: "mdi-account-alert-outline",
-    accent: "review",
-    showAmount: false,
-    rows: reviewRows.value,
-  },
-  {
-    title: `Transferencias por ${dateGroupLabel.value} y CBU destino`,
-    label: "CBU destino",
-    dimension: "destinationCbu",
-    icon: "mdi-bank-outline",
-    accent: "cbu",
-    showAmount: false,
-    rows: cbuRows.value,
   },
 ]);
 
@@ -260,8 +293,11 @@ function clearDashboardRows() {
   totalRows.value = [];
   amountRows.value = [];
   monthRows.value = [];
-  reviewRows.value = [];
-  cbuRows.value = [];
+  statusRows.value = [];
+  aiStatusRows.value = [];
+  humanStatusRows.value = [];
+  auditedByRows.value = [];
+  affiliateStrategyRows.value = [];
 }
 
 async function fetchDashboardData() {
@@ -272,21 +308,36 @@ async function fetchDashboardData() {
   try {
     const filters = buildFilters();
     const dateFormat = dateGroupFormat.value;
-    const [totalData, amountData, monthData, reviewData, cbuData] = await Promise.all([
+    const [
+      statusData,
+      aiStatusData,
+      humanStatusData,
+      auditedByData,
+      affiliateStrategyData,
+      totalData,
+      amountData,
+      monthData,
+    ] = await Promise.all([
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "status"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "aiStatus"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "humanStatus"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "auditedBy"], filters, dateFormat}),
+      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "affiliateStrategy"], filters, dateFormat}),
       TransferEmailProvider.instance.groupBy({fields: ["transferDate"], filters, dateFormat}),
       TransferEmailProvider.instance.groupBy({fields: ["transferDate", "amount"], filters, dateFormat}),
       TransferEmailProvider.instance.groupBy({fields: ["transferDate", "month"], filters, dateFormat}),
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "needsHumanReview"], filters, dateFormat}),
-      TransferEmailProvider.instance.groupBy({fields: ["transferDate", "destinationCbu"], filters, dateFormat}),
     ]);
 
     if (currentRequestId !== requestId) return;
 
+    statusRows.value = toSummaryRows(statusData as TransferGroupByRow[], "status");
+    aiStatusRows.value = toSummaryRows(aiStatusData as TransferGroupByRow[], "aiStatus");
+    humanStatusRows.value = toSummaryRows(humanStatusData as TransferGroupByRow[], "humanStatus");
+    auditedByRows.value = toSummaryRows(auditedByData as TransferGroupByRow[], "auditedBy");
+    affiliateStrategyRows.value = toSummaryRows(affiliateStrategyData as TransferGroupByRow[], "affiliateStrategy");
     totalRows.value = toSummaryRows(totalData as TransferGroupByRow[], "total");
     amountRows.value = toSummaryRows(amountData as TransferGroupByRow[], "amount");
     monthRows.value = toSummaryRows(monthData as TransferGroupByRow[], "month");
-    reviewRows.value = toSummaryRows(reviewData as TransferGroupByRow[], "needsHumanReview");
-    cbuRows.value = toSummaryRows(cbuData as TransferGroupByRow[], "destinationCbu");
   } catch (fetchError) {
     if (currentRequestId !== requestId) return;
 
@@ -303,7 +354,7 @@ async function fetchDashboardData() {
 function resetFilters() {
   fromDate.value = monthStart;
   toDate.value = today;
-  dateGroupFormat.value = "day";
+  dateGroupFormat.value = "month";
 }
 
 watch([fromDate, toDate, dateGroupFormat], () => {
@@ -564,16 +615,34 @@ watch([fromDate, toDate, dateGroupFormat], () => {
   --dashboard-accent-text: #e65100;
 }
 
-.transfer-dashboard__card--review {
-  --dashboard-accent: #d81b60;
-  --dashboard-accent-soft: #fce4ec;
-  --dashboard-accent-text: #ad1457;
+.transfer-dashboard__card--status {
+  --dashboard-accent: #5e35b1;
+  --dashboard-accent-soft: #ede7f6;
+  --dashboard-accent-text: #4527a0;
 }
 
-.transfer-dashboard__card--cbu {
-  --dashboard-accent: #1976d2;
-  --dashboard-accent-soft: #e3f2fd;
-  --dashboard-accent-text: #0d47a1;
+.transfer-dashboard__card--ai {
+  --dashboard-accent: #00838f;
+  --dashboard-accent-soft: #e0f7fa;
+  --dashboard-accent-text: #006064;
+}
+
+.transfer-dashboard__card--human {
+  --dashboard-accent: #2e7d32;
+  --dashboard-accent-soft: #e8f5e9;
+  --dashboard-accent-text: #1b5e20;
+}
+
+.transfer-dashboard__card--auditor {
+  --dashboard-accent: #6d4c41;
+  --dashboard-accent-soft: #efebe9;
+  --dashboard-accent-text: #4e342e;
+}
+
+.transfer-dashboard__card--strategy {
+  --dashboard-accent: #c2185b;
+  --dashboard-accent-soft: #fce4ec;
+  --dashboard-accent-text: #880e4f;
 }
 
 .transfer-dashboard__card--dark {
