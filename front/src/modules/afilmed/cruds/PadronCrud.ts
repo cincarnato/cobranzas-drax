@@ -68,7 +68,9 @@ class PadronCrud extends EntityCrud implements IEntityCrud {
 {title: 'baja_fecha',key:'baja_fecha', align: 'start'},
 {title: 'nro_ref_elect',key:'nro_ref_elect', align: 'start'},
 {title: 'celular',key:'celular', align: 'start'},
-{title: 'deno_provin',key:'deno_provin', align: 'start'}
+{title: 'deno_provin',key:'deno_provin', align: 'start'},
+{title: 'alias',key:'alias', align: 'start'},
+{title: 'cbu_siro',key:'cbu_siro', align: 'start'}
     ]
   }
   
@@ -132,7 +134,9 @@ ape_nom: [(v: any) => !!v || 'validation.required']
 {name:'baja_fecha',type:'date',label:'baja_fecha',default:null},
 {name:'nro_ref_elect',type:'string',label:'nro_ref_elect',default:''},
 {name:'celular',type:'string',label:'celular',default:''},
-{name:'deno_provin',type:'string',label:'deno_provin',default:''}
+{name:'deno_provin',type:'string',label:'deno_provin',default:''},
+{name:'alias',type:'string',label:'alias',default:''},
+{name:'cbu_siro',type:'string',label:'cbu_siro',default:''}
     ]
   }
   

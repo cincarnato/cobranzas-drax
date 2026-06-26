@@ -6,6 +6,16 @@ const messages = {
           entity: 'Padron',
           menu: 'Padron',
           crud: 'Manage Padron',
+          importMenu: 'Import Padron',
+          import: {
+            title: 'Import Padron',
+            warning: 'The uploaded file replaces every existing Padron record.',
+            file: 'XLSX or CSV file',
+            confirm: 'I understand that the current Padron will be replaced.',
+            submit: 'Import',
+            success: 'Imported {count} records.',
+            error: 'The Padron could not be imported.'
+          },
           field:{
                        origen:'origen',
            ente:'ente',
@@ -31,7 +41,9 @@ const messages = {
            baja_fecha:'baja_fecha',
            nro_ref_elect:'nro_ref_elect',
            celular:'celular',
-           deno_provin:'deno_provin'
+           deno_provin:'deno_provin',
+           alias:'alias',
+           cbu_siro:'cbu_siro'
           }
       },
       permission: {
@@ -47,6 +59,16 @@ const messages = {
           entity: 'Padron',
           menu: 'Padron',
           crud: 'Gestionar Padron',
+          importMenu: 'Importar Padron',
+          import: {
+            title: 'Importar Padron',
+            warning: 'El archivo subido reemplaza todos los registros existentes del Padron.',
+            file: 'Archivo XLSX o CSV',
+            confirm: 'Entiendo que se reemplazara el Padron actual.',
+            submit: 'Importar',
+            success: 'Se importaron {count} registros.',
+            error: 'No se pudo importar el Padron.'
+          },
           field:{
                        origen:'origen',
            ente:'ente',
@@ -72,7 +94,9 @@ const messages = {
            baja_fecha:'baja_fecha',
            nro_ref_elect:'nro_ref_elect',
            celular:'celular',
-           deno_provin:'deno_provin'
+           deno_provin:'deno_provin',
+           alias:'alias',
+           cbu_siro:'cbu_siro'
           }
       },
      permission: {

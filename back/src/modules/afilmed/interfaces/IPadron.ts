@@ -25,6 +25,8 @@ interface IPadronBase {
     nro_ref_elect?: string
     celular?: string
     deno_provin?: string
+    alias?: string
+    cbu_siro?: string
     createdAt?: Date
     updatedAt?: Date
 }
@@ -56,6 +58,8 @@ interface IPadron {
     nro_ref_elect?: string
     celular?: string
     deno_provin?: string
+    alias?: string
+    cbu_siro?: string
     createdAt?: Date
     updatedAt?: Date
 }

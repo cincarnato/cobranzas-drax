@@ -18,7 +18,7 @@ const env = {
 	DRAX_BASE_URL: '',
 
 	// MEDIA
-	DRAX_MAX_UPLOAD_SIZE: '5000000',
+	DRAX_MAX_UPLOAD_SIZE: '50000000',
 	DRAX_FILE_DIR: 'uploads',
 	DRAX_FILE_METADATA: 'true',
 

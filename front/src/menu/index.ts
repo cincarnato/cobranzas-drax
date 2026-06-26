@@ -227,8 +227,15 @@ const menu: MenuItem[] = [
 
       {
         icon: 'mdi-format-list-bulleted',
-        text: 'Padron',
+        text: 'padron.menu',
         link: { name: "PadronCrudPage" },
+        gallery: true,
+        permission: 'padron:manage'
+      },
+      {
+        icon: 'mdi-database-import-outline',
+        text: 'padron.importMenu',
+        link: { name: "PadronImportPage" },
         gallery: true,
         permission: 'padron:manage'
       },

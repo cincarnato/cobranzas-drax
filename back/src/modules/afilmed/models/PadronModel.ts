@@ -30,7 +30,9 @@ const PadronSchema = new mongoose.Schema<IPadron>({
             baja_fecha: {type: Date,   required: false, index: false, unique: false },
             nro_ref_elect: {type: String,   required: false, index: false, unique: false },
             celular: {type: String,   required: false, index: false, unique: false },
-            deno_provin: {type: String,   required: false, index: false, unique: false }
+            deno_provin: {type: String,   required: false, index: false, unique: false },
+            alias: {type: String,   required: false, index: false, unique: false },
+            cbu_siro: {type: String,   required: false, index: false, unique: false }
 }, {timestamps: true});
 
 PadronSchema.plugin(uniqueValidator, {message: 'validation.unique'});

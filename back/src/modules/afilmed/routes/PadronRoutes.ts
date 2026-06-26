@@ -21,6 +21,8 @@ async function PadronFastifyRoutes(fastify, options) {
     fastify.get('/api/padrones/group-by', {schema: schemas.groupBySchema}, (req,rep) => controller.groupBy(req,rep))
 
     fastify.post('/api/padrones', {schema: schemas.createSchema}, (req,rep) =>controller.create(req,rep))
+    
+    fastify.post('/api/padrones/import-file', (req,rep) =>controller.importFile(req,rep))
 
     fastify.put('/api/padrones/:id', {schema: schemas.updateSchema}, (req,rep) =>controller.update(req,rep))
     

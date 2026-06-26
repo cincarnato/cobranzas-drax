@@ -9,7 +9,7 @@ class PadronSqliteRepository extends AbstractSqliteRepository<IPadron, IPadronBa
     protected db: any;
     protected tableName: string = 'Padron';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['contra', 'ape_nom', 'domicilio', 'loca', 'nro_ref_elect', 'celular', 'deno_provin'];
+    protected searchFields: string[] = ['contra', 'ape_nom', 'domicilio', 'loca', 'nro_ref_elect', 'celular', 'deno_provin', 'alias', 'cbu_siro'];
     protected booleanFields: string[] = [];
     protected jsonFields: string[] = [];
     protected identifier: string = '_id';
@@ -50,7 +50,9 @@ class PadronSqliteRepository extends AbstractSqliteRepository<IPadron, IPadronBa
 {name: "baja_fecha", type: "TEXT", unique: undefined, primary: false},
 {name: "nro_ref_elect", type: "TEXT", unique: undefined, primary: false},
 {name: "celular", type: "TEXT", unique: undefined, primary: false},
-{name: "deno_provin", type: "TEXT", unique: undefined, primary: false}
+{name: "deno_provin", type: "TEXT", unique: undefined, primary: false},
+{name: "alias", type: "TEXT", unique: undefined, primary: false},
+{name: "cbu_siro", type: "TEXT", unique: undefined, primary: false}
     ]
   
 }

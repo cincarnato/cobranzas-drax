@@ -4,8 +4,8 @@ import {IDraxCrudRepository} from "@drax/crud-share";
 
 interface IPadronRepository extends IDraxCrudRepository<IPadron, IPadronBase, IPadronBase>{
 
+    deleteAll(): Promise<boolean>
 }
 
 export {IPadronRepository}
-
 
