@@ -386,6 +386,7 @@ async function exportExcel() {
         :transfer-email="form"
         :readonly="operation === 'view'"
         @saved="refreshAfterMetadataSave"
+        @reprocessed="refreshAfterReprocess"
       />
     </template>
 

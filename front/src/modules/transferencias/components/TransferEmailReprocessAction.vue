@@ -4,9 +4,13 @@ import TransferEmailProvider from "../providers/TransferEmailProvider";
 import type {ITransferEmail} from "../interfaces/ITransferEmail";
 import type {TransferEmailReprocessResult} from "../providers/TransferEmailProvider";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   item: unknown
-}>()
+  label?: string
+  size?: 'x-small' | 'small' | 'default' | 'large' | 'x-large'
+}>(), {
+  size: 'small'
+})
 
 const emit = defineEmits<{
   reprocessed: [result: TransferEmailReprocessResult]
@@ -124,8 +128,22 @@ async function reprocessTransfer() {
   <v-tooltip text="Reprocesar transferencia con mapeos actuales de Pagador" location="top">
     <template #activator="{ props: tooltipProps }">
       <v-btn
+        v-if="label"
         v-bind="tooltipProps"
-        size="small"
+        :size="size"
+        variant="text"
+        prepend-icon="mdi-sync"
+        color="primary"
+        :loading="reprocessing"
+        :disabled="reprocessing"
+        @click="reprocessTransfer"
+      >
+        {{ label }}
+      </v-btn>
+      <v-btn
+        v-else
+        v-bind="tooltipProps"
+        :size="size"
         variant="text"
         icon="mdi-sync"
         color="primary"

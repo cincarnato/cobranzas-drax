@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from "vue";
 import {DraxImagePreview} from "@drax/common-vue";
+import {CrudCreateOnTheFlyButton} from "@drax/crud-vue";
 import {VDateInput} from 'vuetify/labs/VDateInput'
 import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
@@ -11,6 +12,9 @@ import type {
 } from "@/modules/transferencias/interfaces/ITransferEmail";
 import InboundEmailProvider from "@/modules/mail/providers/InboundEmailProvider";
 import TransferEmailProvider from "@/modules/transferencias/providers/TransferEmailProvider";
+import TransferEmailReprocessAction from "@/modules/transferencias/components/TransferEmailReprocessAction.vue";
+import type {TransferEmailReprocessResult} from "@/modules/transferencias/providers/TransferEmailProvider";
+import PayerCrud from "@/modules/transferencias/cruds/PayerCrud";
 
 interface InboundAttachment {
   filename: string
@@ -33,6 +37,7 @@ const emit = defineEmits<{
   validated: [transferEmail: ITransferEmail]
   corrected: [transferEmail: ITransferEmail]
   discarded: [transferEmail: ITransferEmail]
+  reprocessed: [result: TransferEmailReprocessResult]
   close: []
   'dirty-change': [isDirty: boolean]
 }>()
@@ -291,6 +296,12 @@ async function saveMetadata() {
   }
 }
 
+function refreshAfterReprocess(result: TransferEmailReprocessResult) {
+  Object.assign(email.value, result.transferEmail, result.updatedFields)
+  syncPartialForm()
+  emit('reprocessed', result)
+}
+
 defineExpose({
   saveMetadata
 })
@@ -432,6 +443,18 @@ const humanStatusPresentation = (status?: string) => {
     >
       Revisión humana requerida
     </v-chip>
+
+    <v-spacer></v-spacer>
+    <crud-create-on-the-fly-button :entity="PayerCrud.instance" label="pagador"></crud-create-on-the-fly-button>
+
+
+    <transfer-email-reprocess-action
+      :item="email"
+      size="default"
+      label="Reprocesar IA"
+      @reprocessed="refreshAfterReprocess"
+    />
+
   </div>
 
   <v-row class="align-start">
