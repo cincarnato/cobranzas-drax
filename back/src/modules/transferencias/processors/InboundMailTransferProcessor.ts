@@ -50,6 +50,7 @@ type ReprocessTransferEmailResult = {
     changes: ReprocessTransferEmailChange[];
     changed: boolean;
     payerFound: boolean;
+    payer?: IPayer | null;
     payerStrategy?: PayerStrategy;
     previousAffiliateStrategy?: TransferEmailAffiliateStrategy;
     currentAffiliateStrategy?: TransferEmailAffiliateStrategy;
@@ -229,6 +230,7 @@ class InboundMailTransferProcessor {
             });
             const updatePayload: ITransferEmailBase = this.removeUndefinedFields({
                 affiliateStrategy: affiliateResolution.affiliateStrategy,
+                payer: affiliateResolution.payer?._id || null,
                 affiliates: affiliateResolution.affiliates,
                 processDate: aiProcessedAt,
                 aiStatus,
@@ -250,6 +252,7 @@ class InboundMailTransferProcessor {
                 changes,
                 changed,
                 payerFound: affiliateResolution.payerFound,
+                payer: affiliateResolution.payer,
                 payerStrategy: affiliateResolution.payerStrategy,
                 previousAffiliateStrategy: transferEmail.affiliateStrategy,
                 currentAffiliateStrategy: updatedTransferEmail.affiliateStrategy,
@@ -539,6 +542,7 @@ class InboundMailTransferProcessor {
                 destinationAlias: this.normalizeString(extraction.destinationAlias),
                 destinationBank: this.normalizeString(extraction.destinationBank),
                 affiliateStrategy: affiliateResolution.affiliateStrategy,
+                payer: affiliateResolution.payer?._id,
                 affiliates: affiliateResolution.affiliates,
                 aiStatus,
                 aiProcessedAt,
@@ -564,6 +568,7 @@ class InboundMailTransferProcessor {
         affiliateStrategy: TransferEmailAffiliateStrategy;
         affiliates?: ITransferEmailBase["affiliates"];
         payerFound: boolean;
+        payer?: IPayer | null;
         payerStrategy?: PayerStrategy;
     }> {
         const criteria = this.buildPayerLookupCriteria(input);
@@ -583,6 +588,7 @@ class InboundMailTransferProcessor {
                     }
                 ),
                 payerFound: true,
+                payer: payerMatch.payer,
                 payerStrategy: payerMatch.strategy,
             };
         }
@@ -599,6 +605,7 @@ class InboundMailTransferProcessor {
                 input.amount
             ),
             payerFound: false,
+            payer: null,
         };
     }
 
@@ -616,6 +623,7 @@ class InboundMailTransferProcessor {
         updatePayload: ITransferEmailBase
     ): boolean {
         return transferEmail.affiliateStrategy !== updatePayload.affiliateStrategy
+            || this.resolvePayerId(transferEmail.payer) !== this.resolvePayerId(updatePayload.payer)
             || JSON.stringify(this.normalizeAffiliates(transferEmail.affiliates)) !== JSON.stringify(this.normalizeAffiliates(updatePayload.affiliates));
     }
 
@@ -625,6 +633,7 @@ class InboundMailTransferProcessor {
     ): ReprocessTransferEmailChange[] {
         return [
             this.buildReprocessChange("affiliateStrategy", "Estrategia", transferEmail.affiliateStrategy, updatePayload.affiliateStrategy),
+            this.buildReprocessChange("payer", "Payer", this.formatPayer(transferEmail.payer), this.formatPayer(updatePayload.payer)),
             this.buildReprocessChange(
                 "affiliates",
                 "Afiliados",
@@ -671,6 +680,30 @@ class InboundMailTransferProcessor {
 
     private formatReprocessValue(value?: string | null): string {
         return value || "-";
+    }
+
+    private resolvePayerId(payer?: any): string {
+        if (!payer) {
+            return "";
+        }
+
+        if (typeof payer === "string") {
+            return payer;
+        }
+
+        return payer._id?.toString?.() || payer._id || "";
+    }
+
+    private formatPayer(payer?: any): string {
+        if (!payer) {
+            return "";
+        }
+
+        if (typeof payer === "string") {
+            return payer;
+        }
+
+        return [payer.strategy, payer.value].filter(Boolean).join(" / ") || this.resolvePayerId(payer);
     }
 
     private resolveAffiliatesFromPayer(

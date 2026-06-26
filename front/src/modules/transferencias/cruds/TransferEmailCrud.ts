@@ -16,6 +16,7 @@ import TransferEmailProvider from "../providers/TransferEmailProvider";
 //Import EntityCrud Refs
 import InboundEmailCrud from "../../mail/cruds/InboundEmailCrud";
 import {UserCrud} from "@drax/identity-vue";
+import PayerCrud from "./PayerCrud";
 
 class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
@@ -62,6 +63,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'currency', key: 'currency', align: 'start'},
 
       {title: 'affiliateStrategy', key: 'affiliateStrategy', align: 'start'},
+      {title: 'payer', key: 'payer', align: 'start'},
       {title: 'affiliates', key: 'affiliates', align: 'start'},
 
       {title: 'operationNumber', key: 'operationNumber', align: 'start'},
@@ -93,7 +95,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get selectedHeaders(): string[] {
-    return ['status','aiStatus','humanStatus', 'transferDate', 'amount', 'affiliates','emailFromEmail', 'emailDate']
+    return ['status','aiStatus','humanStatus', 'transferDate', 'amount', 'affiliateStrategy', 'payer', 'affiliates','emailFromEmail', 'emailDate']
   }
 
   get actionHeaders():IEntityCrudHeader[]{
@@ -116,6 +118,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   get refs(): IEntityCrudRefs{
     return {
       InboundEmail: InboundEmailCrud.instance,
+      Payer: PayerCrud.instance,
       User: UserCrud.instance
     }
   }
@@ -150,6 +153,8 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'destinationCbu',type:'string',label:'destinationCbu',default:''},
 {name:'destinationAlias',type:'string',label:'destinationAlias',default:''},
 {name:'destinationBank',type:'string',label:'destinationBank',default:''},
+{name:'affiliateStrategy',type:'enum',label:'affiliateStrategy',default:null,enum:['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']},
+{name:'payer',type:'ref',label:'payer',default:null,ref:'Payer',refDisplay:'value'},
         {name:'affiliates',type:'array.object',label:'affiliates',default:[],objectFields: [
   {name: 'name', type: 'string', label: 'name', default: ''},
   {name: 'email', type: 'string', label: 'email', default: ''},
@@ -225,7 +230,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt']
+    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateStrategy','payer','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt']
   }
 
   get isImportable(){

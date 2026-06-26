@@ -41,6 +41,7 @@ const messages = {
         auditedAt: 'Audited At',
         needsHumanReview: 'Needs Human Review',
         affiliateStrategy: 'Strategy',
+        payer: 'Payer',
       }
     },
     permission: {
@@ -92,6 +93,7 @@ const messages = {
         auditedAt: 'Fecha de auditoría',
         needsHumanReview: 'Requiere revisión humana',
         affiliateStrategy: 'Estrategia',
+        payer: 'Payer',
       }
     },
     permission: {

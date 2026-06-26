@@ -1,3 +1,5 @@
+import type {IPayer} from "@/modules/transferencias/interfaces/IPayer";
+
 interface ITransferEmailAffiliate {
   name?: string
   amount?: number
@@ -19,6 +21,7 @@ type TransferEmailStatus = 'PENDIENTE_IA' | 'PENDIENTE_AUDITORIA' | 'AUDITADO'
 
 interface ITransferEmailBase {
   inboundEmail?: any
+  payer?: IPayer | string | null
   emailMessageId?: string
   emailSubject?: string
   emailFromName?: string
@@ -62,6 +65,7 @@ interface ITransferEmailBase {
 interface ITransferEmail {
   _id: string
   inboundEmail?: any
+  payer?: IPayer | string | null
   emailMessageId?: string
   emailSubject?: string
   emailFromName?: string

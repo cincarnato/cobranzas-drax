@@ -1,5 +1,4 @@
-
-import { z } from 'zod';
+import {z} from 'zod';
 
 const TransferEmailAffiliateSchema = z.object({
     name: z.string().optional(),
@@ -10,7 +9,8 @@ const TransferEmailAffiliateSchema = z.object({
 });
 
 const TransferEmailBaseSchema = z.object({
-      inboundEmail: z.coerce.string().optional().nullable(),
+    inboundEmail: z.coerce.string().optional().nullable(),
+    payer: z.coerce.string().optional().nullable(),
     emailMessageId: z.string().optional(),
     emailSubject: z.string().optional(),
     emailFromName: z.string().optional(),
@@ -51,11 +51,24 @@ const TransferEmailBaseSchema = z.object({
 
 const TransferEmailSchema = TransferEmailBaseSchema
     .extend({
-      _id: z.coerce.string(),
-       inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}).nullable().optional(),
-       assignedTo: z.object({_id: z.coerce.string(), username: z.string().optional(), name: z.string().optional()}).nullable().optional(),
-       auditSessionId: z.coerce.string().nullable().optional(),
-       auditedBy: z.object({_id: z.coerce.string(), username: z.string().optional(), name: z.string().optional()}).nullable().optional(),
+        _id: z.coerce.string(),
+        inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}).nullable().optional(),
+        payer: z.object({
+            _id: z.coerce.string(),
+            strategy: z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA']).optional(),
+            value: z.string().optional(),
+        }).nullable().optional(),
+        assignedTo: z.object({
+            _id: z.coerce.string(),
+            username: z.string().optional(),
+            name: z.string().optional()
+        }).nullable().optional(),
+        auditSessionId: z.coerce.string().nullable().optional(),
+        auditedBy: z.object({
+            _id: z.coerce.string(),
+            username: z.string().optional(),
+            name: z.string().optional()
+        }).nullable().optional(),
         createdAt: z.coerce.date(),
         updatedAt: z.coerce.date(),
     })

@@ -89,6 +89,7 @@ async function TransferEmailFastifyRoutes(fastify, options) {
                             },
                             changed: {type: "boolean"},
                             payerFound: {type: "boolean"},
+                            payer: {type: "object", additionalProperties: true, nullable: true},
                             payerStrategy: {type: "string"},
                             previousAffiliateStrategy: {type: "string"},
                             currentAffiliateStrategy: {type: "string"},

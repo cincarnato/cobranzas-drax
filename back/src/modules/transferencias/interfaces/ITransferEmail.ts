@@ -20,6 +20,7 @@ type TransferEmailStatus = 'PENDIENTE_IA' | 'PENDIENTE_AUDITORIA' | 'AUDITADO'
 
 interface ITransferEmailBase {
     inboundEmail?: any
+    payer?: any
     emailMessageId?: string
     emailSubject?: string
     emailFromName?: string
@@ -69,6 +70,7 @@ interface ITransferEmailBase {
 interface ITransferEmail {
     _id: string
     inboundEmail?: any
+    payer?: any
     emailMessageId?: string
     emailSubject?: string
     emailFromName?: string

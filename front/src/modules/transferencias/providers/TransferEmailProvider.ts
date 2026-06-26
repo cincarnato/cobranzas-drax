@@ -28,6 +28,7 @@ type TransferEmailReprocessResult = {
   }>
   changed: boolean
   payerFound: boolean
+  payer?: ITransferEmail['payer']
   payerStrategy?: ITransferEmail['affiliateStrategy']
   previousAffiliateStrategy?: ITransferEmail['affiliateStrategy']
   currentAffiliateStrategy?: ITransferEmail['affiliateStrategy']

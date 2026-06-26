@@ -7,6 +7,7 @@ import type {ITransferEmail} from '../interfaces/ITransferEmail'
 
 const TransferEmailSchema = new mongoose.Schema<ITransferEmail>({
             inboundEmail: {type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail',  required: false, index: false, unique: false },
+            payer: {type: mongoose.Schema.Types.ObjectId, ref: 'Payer', required: false, index: true, unique: false },
             emailMessageId: {type: String,   required: false, index: true, unique: false },
             emailSubject: {type: String,   required: false, index: true, unique: false },
             emailFromName: {type: String,   required: false, index: true, unique: false },

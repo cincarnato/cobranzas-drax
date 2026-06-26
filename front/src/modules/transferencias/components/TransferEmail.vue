@@ -297,7 +297,7 @@ async function saveMetadata() {
 }
 
 function refreshAfterReprocess(result: TransferEmailReprocessResult) {
-  Object.assign(email.value, result.transferEmail, result.updatedFields)
+  Object.assign(email.value, result.updatedFields, result.transferEmail)
   syncPartialForm()
   emit('reprocessed', result)
 }
@@ -342,6 +342,20 @@ const valueOrDash = (value?: string | number | null) => {
   if (value === null || value === undefined || value === '') return '-'
   return String(value)
 }
+
+const payerId = computed(() => {
+  const payer = email.value.payer
+  if (!payer) return ''
+  if (typeof payer === 'string') return payer
+  return payer._id || ''
+})
+
+const payerLabel = computed(() => {
+  const payer = email.value.payer
+  if (!payer) return ''
+  if (typeof payer === 'string') return payer
+  return [payer.strategy, payer.value].filter(Boolean).join(' / ') || payer._id || ''
+})
 
 const statusPresentation = (status?: string) => {
   switch (status) {
@@ -442,6 +456,15 @@ const humanStatusPresentation = (status?: string) => {
       size="small"
     >
       Revisión humana requerida
+    </v-chip>
+    <v-chip
+      v-if="payerLabel"
+      color="teal"
+      prepend-icon="mdi-account-cash-outline"
+      variant="tonal"
+      size="small"
+    >
+      Pagador: {{ payerLabel }}
     </v-chip>
 
     <v-spacer></v-spacer>
@@ -596,6 +619,8 @@ const humanStatusPresentation = (status?: string) => {
             <div class="summary-block">
               <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
               <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
+              <p><span class="summary-label">Pagador mapeado:</span> {{ valueOrDash(payerLabel) }}</p>
+              <p><span class="summary-label">ID Payer:</span> {{ valueOrDash(payerId) }}</p>
               <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
               <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
               <v-divider></v-divider>

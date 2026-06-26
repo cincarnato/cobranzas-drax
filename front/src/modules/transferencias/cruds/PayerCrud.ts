@@ -99,7 +99,15 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
 
   get filters(): IEntityCrudFilter[] {
     return [
-      //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
+      {name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
+      {
+        name: 'strategy',
+        type: 'enum',
+        label: 'strategy',
+        default: 'EMAIL_FROM',
+        enum: ['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA'], operator: 'eq'
+      },
+      {name: 'value', type: 'string', label: 'value', default: '', operator: 'eq'},
     ]
   }
 
@@ -160,7 +168,7 @@ class PayerCrud extends EntityCrud implements IEntityCrud {
   }
 
   get searchEnable() {
-    return true
+    return false
   }
 
   get filtersEnable() {
