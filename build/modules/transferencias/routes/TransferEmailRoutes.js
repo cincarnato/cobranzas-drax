@@ -53,9 +53,9 @@ async function TransferEmailFastifyRoutes(fastify, options) {
                 200: {
                     type: "object",
                     properties: {
-                        transferEmail: { type: "object" },
-                        previousTransferEmail: { type: "object" },
-                        updatedFields: { type: "object" },
+                        transferEmail: { type: "object", additionalProperties: true },
+                        previousTransferEmail: { type: "object", additionalProperties: true },
+                        updatedFields: { type: "object", additionalProperties: true },
                         changes: {
                             type: "array",
                             items: {
