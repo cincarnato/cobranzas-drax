@@ -3,7 +3,7 @@ class PadronSqliteRepository extends AbstractSqliteRepository {
     constructor() {
         super(...arguments);
         this.tableName = 'Padron';
-        this.searchFields = ['contra', 'ape_nom', 'domicilio', 'loca', 'nro_ref_elect', 'celular', 'deno_provin'];
+        this.searchFields = ['contra', 'ape_nom', 'domicilio', 'loca', 'nro_ref_elect', 'celular', 'deno_provin', 'alias', 'cbu_siro'];
         this.booleanFields = [];
         this.jsonFields = [];
         this.identifier = '_id';
@@ -42,7 +42,9 @@ class PadronSqliteRepository extends AbstractSqliteRepository {
             { name: "baja_fecha", type: "TEXT", unique: undefined, primary: false },
             { name: "nro_ref_elect", type: "TEXT", unique: undefined, primary: false },
             { name: "celular", type: "TEXT", unique: undefined, primary: false },
-            { name: "deno_provin", type: "TEXT", unique: undefined, primary: false }
+            { name: "deno_provin", type: "TEXT", unique: undefined, primary: false },
+            { name: "alias", type: "TEXT", unique: undefined, primary: false },
+            { name: "cbu_siro", type: "TEXT", unique: undefined, primary: false }
         ];
     }
 }

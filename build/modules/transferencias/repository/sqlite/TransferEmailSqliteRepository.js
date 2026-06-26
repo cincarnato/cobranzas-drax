@@ -42,11 +42,30 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "aiError", type: "TEXT", unique: undefined, primary: false },
             { name: "humanStatus", type: "TEXT", unique: undefined, primary: false },
             { name: "assignedTo", type: "TEXT", unique: undefined, primary: false },
+            { name: "auditSessionId", type: "TEXT", unique: undefined, primary: false },
+            { name: "assignedAt", type: "TEXT", unique: undefined, primary: false },
+            { name: "assignmentExpiresAt", type: "TEXT", unique: undefined, primary: false },
+            { name: "lastActivityAt", type: "TEXT", unique: undefined, primary: false },
             { name: "auditedBy", type: "TEXT", unique: undefined, primary: false },
             { name: "auditedAt", type: "TEXT", unique: undefined, primary: false },
             { name: "status", type: "TEXT", unique: undefined, primary: false },
             { name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false }
         ];
+    }
+    async assignNextAvailable() {
+        throw new Error('Transfer audit sessions are only supported with MongoDB');
+    }
+    async findAssignedToSession() {
+        throw new Error('Transfer audit sessions are only supported with MongoDB');
+    }
+    async releasePendingAssignments() {
+        throw new Error('Transfer audit sessions are only supported with MongoDB');
+    }
+    async renewAssignments() {
+        throw new Error('Transfer audit sessions are only supported with MongoDB');
+    }
+    async auditAssigned() {
+        throw new Error('Transfer audit sessions are only supported with MongoDB');
     }
 }
 export default TransferEmailSqliteRepository;

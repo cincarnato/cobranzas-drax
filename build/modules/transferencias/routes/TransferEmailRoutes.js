@@ -78,6 +78,51 @@ async function TransferEmailFastifyRoutes(fastify, options) {
             },
         },
     }, (req, rep) => controller.reprocess(req, rep));
+    fastify.post('/api/transfer-emails/:id/audit', {
+        schema: {
+            tags: ["transferencias"],
+            summary: "Audit transfer email human adjustments",
+            params: {
+                type: "object",
+                required: ["id"],
+                properties: {
+                    id: { type: "string" },
+                },
+            },
+            body: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                    amount: { type: ["number", "null"] },
+                    transferDate: { type: ["string", "null"], format: "date-time" },
+                    affiliates: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            additionalProperties: false,
+                            properties: {
+                                name: { type: "string" },
+                                email: { type: "string" },
+                                amount: { type: "number" },
+                                documentNumber: { type: "string" },
+                                month: { type: "string" },
+                                observations: { type: "string" },
+                            },
+                        },
+                    },
+                    humanStatus: { type: "string", enum: ["PENDIENTE", "VALIDADO", "CORREGIDO", "DESCARTADO"] },
+                    auditSessionId: { type: ["string", "null"] }
+                },
+            },
+            response: {
+                200: schemas.jsonEntitySchema,
+                401: schemas.jsonErrorBodyResponse,
+                403: schemas.jsonErrorBodyResponse,
+                422: schemas.jsonValidationErrorBodyResponse,
+                500: schemas.jsonErrorBodyResponse
+            }
+        },
+    }, (req, rep) => controller.audit(req, rep));
     fastify.put('/api/transfer-emails/:id', { schema: schemas.updateSchema }, (req, rep) => controller.update(req, rep));
     fastify.patch('/api/transfer-emails/:id', { schema: schemas.updateSchema }, (req, rep) => controller.updatePartial(req, rep));
     fastify.delete('/api/transfer-emails/:id', { schema: schemas.deleteSchema }, (req, rep) => controller.delete(req, rep));

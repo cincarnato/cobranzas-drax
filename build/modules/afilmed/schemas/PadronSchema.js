@@ -24,7 +24,9 @@ const PadronBaseSchema = z.object({
     baja_fecha: z.coerce.date().nullable().optional(),
     nro_ref_elect: z.string().optional(),
     celular: z.string().optional(),
-    deno_provin: z.string().optional()
+    deno_provin: z.string().optional(),
+    alias: z.string().optional(),
+    cbu_siro: z.string().optional()
 });
 const PadronSchema = PadronBaseSchema
     .extend({

@@ -2,6 +2,8 @@ import TransferEmailServiceFactory from "../factory/services/TransferEmailServic
 import { AbstractFastifyController } from "@drax/crud-back";
 import TransferEmailPermissions from "../permissions/TransferEmailPermissions.js";
 import InboundMailTransferProcessor from "../processors/InboundMailTransferProcessor.js";
+import { BadRequestError, NotFoundError } from "@drax/common-back";
+import TransferAuditSessionServiceFactory from "../factory/services/TransferAuditSessionServiceFactory.js";
 class TransferEmailController extends AbstractFastifyController {
     constructor() {
         super(TransferEmailServiceFactory.instance, TransferEmailPermissions);
@@ -13,14 +15,52 @@ class TransferEmailController extends AbstractFastifyController {
         this.userFilter = false;
         this.userSetter = false;
         this.userAssert = false;
-        this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance;
+    }
+    async audit(request, reply) {
+        this.assertUpdatePermission(request);
+        if (!request.params.id) {
+            reply.statusCode = 400;
+            reply.send({ error: 'BAD REQUEST' });
+        }
+        const id = request.params.id;
+        const payload = (request.body || {});
+        const userId = request.rbac.userId;
+        if (!userId) {
+            throw new BadRequestError('authenticated user id is required');
+        }
+        const auditPayload = {
+            amount: payload.amount,
+            affiliates: payload.affiliates,
+            humanStatus: payload.humanStatus,
+            transferDate: payload.transferDate,
+        };
+        let item;
+        try {
+            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload, userId, payload.auditSessionId);
+        }
+        catch (error) {
+            if (error?.message === 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT') {
+                return reply.status(409).send({
+                    error: 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT',
+                    message: 'La asignación de este registro venció o pertenece a otro operador.'
+                });
+            }
+            throw error;
+        }
+        if (!item) {
+            throw new NotFoundError();
+        }
+        if (payload.auditSessionId) {
+            await TransferAuditSessionServiceFactory.instance.getSessionState(payload.auditSessionId);
+        }
+        return item;
     }
     async processInboundEmails(request, reply) {
         try {
             request?.rbac.assertAuthenticated();
             request?.rbac.assertPermission(TransferEmailPermissions.Manage);
             const body = (request.body || {});
-            const result = await this.inboundMailTransferProcessor.processInboundEmails({
+            const result = await this.getInboundMailTransferProcessor().processInboundEmails({
                 since: body.since,
                 limit: body.limit,
             });
@@ -45,7 +85,7 @@ class TransferEmailController extends AbstractFastifyController {
             request?.rbac.assertAuthenticated();
             request?.rbac.assertPermission(TransferEmailPermissions.Manage);
             const { id } = request.params;
-            const result = await this.inboundMailTransferProcessor.reprocessTransferEmail(id);
+            const result = await this.getInboundMailTransferProcessor().reprocessTransferEmail(id);
             return reply.status(200).send(result);
         }
         catch (error) {
@@ -82,6 +122,12 @@ class TransferEmailController extends AbstractFastifyController {
         catch (e) {
             this.handleError(e, reply);
         }
+    }
+    getInboundMailTransferProcessor() {
+        if (!this.inboundMailTransferProcessor) {
+            this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance;
+        }
+        return this.inboundMailTransferProcessor;
     }
 }
 export default TransferEmailController;

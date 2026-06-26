@@ -26,6 +26,7 @@ import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js";
 import { BankMovementFastifyRoutes } from "../modules/transferencias/routes/BankMovementRoutes.js";
 import { PayerFastifyRoutes } from "../modules/transferencias/routes/PayerRoutes.js";
 import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/TransferEmailRoutes.js";
+import { TransferAuditSessionFastifyRoutes } from "../modules/transferencias/routes/TransferAuditSessionRoutes.js";
 import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js";
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js";
 import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js";
@@ -74,6 +75,7 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(BankMovementFastifyRoutes);
     server.fastifyRegister(PayerFastifyRoutes);
     server.fastifyRegister(TransferEmailFastifyRoutes);
+    server.fastifyRegister(TransferAuditSessionFastifyRoutes);
     server.fastifyRegister(RecoveryFastifyRoutes);
     server.fastifyRegister(BonusFastifyRoutes);
     return server;
