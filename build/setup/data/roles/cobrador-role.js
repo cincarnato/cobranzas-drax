@@ -8,6 +8,7 @@ import CallFailedTypePermissions from "../../../modules/caller/permissions/CallF
 import MultichannelPermissions from "../../../modules/caller/permissions/MultichannelPermissions.js";
 import CallSuccessTypePermissions from "../../../modules/caller/permissions/CallSuccessTypePermissions.js";
 import TransferEmailPermissions from "../../../modules/transferencias/permissions/TransferEmailPermissions.js";
+import TransferAuditSessionPermissions from "../../../modules/transferencias/permissions/TransferAuditSessionPermissions.js";
 import PayerPermissions from "../../../modules/transferencias/permissions/PayerPermissions.js";
 import InboundEmailPermissions from "../../../modules/mail/permissions/InboundEmailPermissions.js";
 const role = {
@@ -35,6 +36,10 @@ const role = {
         TransferEmailPermissions.View,
         TransferEmailPermissions.Manage,
         TransferEmailPermissions.Update,
+        TransferAuditSessionPermissions.Manage,
+        TransferAuditSessionPermissions.Create,
+        TransferAuditSessionPermissions.Update,
+        TransferAuditSessionPermissions.View,
         PayerPermissions.Manage,
         PayerPermissions.View,
         PayerPermissions.Create,
