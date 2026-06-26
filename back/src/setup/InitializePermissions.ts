@@ -30,6 +30,7 @@ import { MailboxPermissions } from "../modules/mail/permissions/MailboxPermissio
 import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
 import { PayerPermissions } from "../modules/transferencias/permissions/PayerPermissions.js";
 import { TransferEmailPermissions } from "../modules/transferencias/permissions/TransferEmailPermissions.js";
+import { TransferAuditSessionPermissions } from "../modules/transferencias/permissions/TransferAuditSessionPermissions.js";
 import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliatePermissions.js";
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
 import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
@@ -72,6 +73,7 @@ function InitializePermissions() {
         ...Object.values(BankMovementPermissions),
         ...Object.values(PayerPermissions),
         ...Object.values(TransferEmailPermissions),
+        ...Object.values(TransferAuditSessionPermissions),
         ...Object.values(RecoveryPermissions),
         ...Object.values(BonusPermissions),
     ]

@@ -155,6 +155,15 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'transferemail:manage'
       },
+
+      {
+        icon: 'mdi-play-circle-outline',
+        text: 'Auditar transferencias',
+        link: { name: "TransferAuditSessionView" },
+        gallery: true,
+        permission: 'transferemail:manage'
+      },
+
     ],
   },
 

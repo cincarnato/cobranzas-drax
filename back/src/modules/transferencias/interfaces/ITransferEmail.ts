@@ -54,6 +54,10 @@ interface ITransferEmailBase {
     aiError?: string
     humanStatus?: TransferEmailHumanStatus
     assignedTo?: any
+    auditSessionId?: any
+    assignedAt?: Date
+    assignmentExpiresAt?: Date
+    lastActivityAt?: Date
     auditedBy?: any
     auditedAt?: Date
     status?: TransferEmailStatus
@@ -99,6 +103,10 @@ interface ITransferEmail {
     aiError?: string
     humanStatus?: TransferEmailHumanStatus
     assignedTo?: any
+    auditSessionId?: any
+    assignedAt?: Date
+    assignmentExpiresAt?: Date
+    lastActivityAt?: Date
     auditedBy?: any
     auditedAt?: Date
     status?: TransferEmailStatus

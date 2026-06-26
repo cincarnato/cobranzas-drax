@@ -41,9 +41,13 @@ interface ITransferEmailBase {
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
     aiError?: string
-    humanStatus?: TransferEmailHumanStatus
-    assignedTo?: any
-    auditedBy?: any
+  humanStatus?: TransferEmailHumanStatus
+  assignedTo?: any
+  auditSessionId?: any
+  assignedAt?: Date
+  assignmentExpiresAt?: Date
+  lastActivityAt?: Date
+  auditedBy?: any
     auditedAt?: Date
     status?: TransferEmailStatus
     needsHumanReview?: boolean
@@ -80,9 +84,13 @@ interface ITransferEmail {
     aiStatus?: TransferEmailAiStatus
     aiProcessedAt?: Date
     aiError?: string
-    humanStatus?: TransferEmailHumanStatus
-    assignedTo?: any
-    auditedBy?: any
+  humanStatus?: TransferEmailHumanStatus
+  assignedTo?: any
+  auditSessionId?: any
+  assignedAt?: Date
+  assignmentExpiresAt?: Date
+  lastActivityAt?: Date
+  auditedBy?: any
     auditedAt?: Date
     status?: TransferEmailStatus
     needsHumanReview?: boolean

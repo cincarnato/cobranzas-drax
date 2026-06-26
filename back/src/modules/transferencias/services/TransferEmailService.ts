@@ -18,10 +18,12 @@ interface ITransferEmailExcelExportResult {
 }
 
 class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmailBase, ITransferEmailBase> {
+    private transferEmailRepository: ITransferEmailRepository;
 
 
     constructor(TransferEmailRepository: ITransferEmailRepository, baseSchema?: ZodObject<ZodRawShape>, fullSchema?: ZodObject<ZodRawShape>) {
         super(TransferEmailRepository, baseSchema, fullSchema);
+        this.transferEmailRepository = TransferEmailRepository;
 
         this._validateOutput = true
 
@@ -111,6 +113,56 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
             fileName: `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
         }
+    }
+
+    async assignAvailableToSession(operatorId: string, sessionId: string, batchSize: number, leaseMs: number): Promise<ITransferEmail[]> {
+        const assignedAt = new Date()
+        const expiresAt = new Date(assignedAt.getTime() + leaseMs)
+        const assigned: ITransferEmail[] = []
+
+        for (let index = 0; index < batchSize; index++) {
+            const item = await this.transferEmailRepository.assignNextAvailable(operatorId, sessionId, assignedAt, expiresAt)
+            if (!item) break
+            assigned.push(item)
+        }
+
+        return assigned
+    }
+
+    async findAssignedToSession(sessionId: string): Promise<ITransferEmail[]> {
+        return this.transferEmailRepository.findAssignedToSession(sessionId)
+    }
+
+    async releasePendingAssignments(sessionId: string, operatorId: string): Promise<number> {
+        return this.transferEmailRepository.releasePendingAssignments(sessionId, operatorId)
+    }
+
+    async renewAssignments(sessionId: string, operatorId: string, leaseMs: number): Promise<number> {
+        const now = new Date()
+        return this.transferEmailRepository.renewAssignments(sessionId, operatorId, now, new Date(now.getTime() + leaseMs))
+    }
+
+    async auditTransferEmail(id: string, data: ITransferEmailBase, userId: string, auditSessionId?: string): Promise<ITransferEmail> {
+        const currentTransferEmail = await this.findById(id)
+        const resolved = this.withResolvedProcessingFields(currentTransferEmail, {
+            ...data,
+            auditedBy: userId,
+            auditedAt: new Date(),
+        })
+
+        if (auditSessionId || currentTransferEmail.auditSessionId) {
+            const updated = await this.transferEmailRepository.auditAssigned(id, userId, auditSessionId || '', new Date(), resolved)
+            if (!updated) {
+                throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT')
+            }
+            return updated
+        }
+
+        if (currentTransferEmail.assignedTo) {
+            throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT')
+        }
+
+        return super.updatePartial(id, resolved)
     }
 
     private withResolvedProcessingFields(

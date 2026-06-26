@@ -5,6 +5,7 @@ import TransferEmailProcessRoute from "./TransferEmailProcessRoute"
 import TransferEmailCrudRoute from "./TransferEmailCrudRoute"
 import TransferEmailViewRoute from "./TransferEmailViewRoute"
 import TransferEmailDashboardRoute from "./TransferEmailDashboardRoute"
+import TransferAuditSessionRoute from "./TransferAuditSessionRoute"
 
 export const routes = [
 ...BankMovementCrudRoute,
@@ -12,7 +13,8 @@ export const routes = [
 ...TransferEmailProcessRoute,
 ...TransferEmailCrudRoute,
 ...TransferEmailViewRoute,
-...TransferEmailDashboardRoute
+...TransferEmailDashboardRoute,
+...TransferAuditSessionRoute
 ]
 
 export default routes

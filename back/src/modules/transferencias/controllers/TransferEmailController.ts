@@ -8,9 +8,10 @@ import {CustomRequest} from "@drax/crud-back/src/controllers/AbstractFastifyCont
 import InboundMailTransferProcessor from "../processors/InboundMailTransferProcessor.js";
 import type {IDraxFieldFilter} from "@drax/crud-share";
 import {BadRequestError, NotFoundError} from "@drax/common-back";
+import TransferAuditSessionServiceFactory from "../factory/services/TransferAuditSessionServiceFactory.js";
 
 class TransferEmailController extends AbstractFastifyController<ITransferEmail, ITransferEmailBase, ITransferEmailBase>   {
-    private inboundMailTransferProcessor: InboundMailTransferProcessor;
+    private inboundMailTransferProcessor?: InboundMailTransferProcessor;
 
     constructor() {
         super(TransferEmailServiceFactory.instance, TransferEmailPermissions)
@@ -25,7 +26,6 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
         this.userSetter = false;
         this.userAssert = false;
 
-        this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance;
     }
 
 
@@ -46,18 +46,31 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
             throw new BadRequestError('authenticated user id is required')
         }
 
-        request.body = {
+        const auditPayload = {
             amount: payload.amount,
             affiliates: payload.affiliates,
             humanStatus: payload.humanStatus,
             transferDate: payload.transferDate,
-            auditedBy: userId,
-            auditedAt: new Date()
         }
 
-        let item = await this.service.updatePartial(id, payload)
+        let item
+        try {
+            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload as ITransferEmailBase, userId, payload.auditSessionId as string | undefined)
+        } catch (error: any) {
+            if (error?.message === 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT') {
+                return reply.status(409).send({
+                    error: 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT',
+                    message: 'La asignación de este registro venció o pertenece a otro operador.'
+                })
+            }
+            throw error
+        }
         if (!item) {
             throw new NotFoundError()
+        }
+
+        if (payload.auditSessionId) {
+            await TransferAuditSessionServiceFactory.instance.getSessionState(payload.auditSessionId as string)
         }
 
         return item
@@ -73,7 +86,7 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
                 limit?: number | string | null;
             };
 
-            const result = await this.inboundMailTransferProcessor.processInboundEmails({
+            const result = await this.getInboundMailTransferProcessor().processInboundEmails({
                 since: body.since,
                 limit: body.limit,
             });
@@ -100,7 +113,7 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
             request?.rbac.assertPermission(TransferEmailPermissions.Manage);
 
             const {id} = request.params as { id: string };
-            const result = await this.inboundMailTransferProcessor.reprocessTransferEmail(id);
+            const result = await this.getInboundMailTransferProcessor().reprocessTransferEmail(id);
 
             return reply.status(200).send(result);
         } catch (error: any) {
@@ -143,6 +156,13 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
         } catch (e) {
             this.handleError(e, reply)
         }
+    }
+
+    private getInboundMailTransferProcessor() {
+        if (!this.inboundMailTransferProcessor) {
+            this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance
+        }
+        return this.inboundMailTransferProcessor
     }
 
 }

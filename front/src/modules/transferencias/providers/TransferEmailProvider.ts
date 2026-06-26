@@ -64,7 +64,7 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
     ) as TransferEmailReprocessResult
   }
 
-  async audit(id: string, payload: Pick<ITransferEmailBase, 'amount' | 'affiliates' | 'humanStatus' | 'transferDate'>): Promise<ITransferEmail> {
+  async audit(id: string, payload: Pick<ITransferEmailBase, 'amount' | 'affiliates' | 'humanStatus' | 'transferDate'> & {auditSessionId?: string | null}): Promise<ITransferEmail> {
     return await this.httpClient.post(
       `/api/transfer-emails/${id}/audit`,
       payload

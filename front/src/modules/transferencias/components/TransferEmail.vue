@@ -22,12 +22,19 @@ interface InboundAttachment {
 
 const props = withDefaults(defineProps<{
   transferEmail: ITransferEmail
+  auditSessionId?: string | null
   readonly?: boolean
 }>(), {
+  auditSessionId: null,
   readonly: false
 })
 const emit = defineEmits<{
   saved: [transferEmail: ITransferEmail]
+  validated: [transferEmail: ITransferEmail]
+  corrected: [transferEmail: ITransferEmail]
+  discarded: [transferEmail: ITransferEmail]
+  close: []
+  'dirty-change': [isDirty: boolean]
 }>()
 
 type TransferEmailPartialForm = Pick<
@@ -136,6 +143,21 @@ const argentinaDateTimeFormatter = new Intl.DateTimeFormat('es-AR', {
   minute: '2-digit'
 })
 
+const isDirty = computed(() => {
+  if (!email.value?._id) return false
+  return JSON.stringify({
+    amount: partialForm.amount || 0,
+    affiliates: buildAffiliatesPayload(),
+    humanStatus: partialForm.humanStatus,
+    transferDate: normalizeDate(partialForm.transferDate)
+  }) !== JSON.stringify({
+    amount: email.value.amount || 0,
+    affiliates: cloneAffiliates(email.value.affiliates || []),
+    humanStatus: resolveInitialHumanStatus(email.value.humanStatus),
+    transferDate: normalizeDate(email.value.transferDate)
+  })
+})
+
 watch(inboundEmailId, () => {
   linkedInboundEmail.value = null
   inboundEmailError.value = ''
@@ -145,6 +167,7 @@ watch(inboundEmailId, () => {
 watch(() => props.transferEmail._id, syncPartialForm, {immediate: true})
 watch(() => partialForm.amount, syncSingleAffiliateAmount)
 watch(() => partialForm.affiliates.length, syncSingleAffiliateAmount)
+watch(isDirty, (value) => emit('dirty-change', value), {immediate: true})
 
 function syncPartialForm() {
   partialForm.amount = email.value.amount || 0
@@ -219,6 +242,13 @@ function setHumanStatus(humanStatus: Required<TransferEmailPartialForm>['humanSt
   partialForm.humanStatus = humanStatus
 }
 
+function normalizeDate(date?: Date | string | null) {
+  if (!date) return null
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toISOString()
+}
+
 async function saveMetadata() {
   if (props.readonly || !email.value._id) return
 
@@ -231,7 +261,8 @@ async function saveMetadata() {
       amount: partialForm.amount || 0,
       affiliates: buildAffiliatesPayload(),
       humanStatus: partialForm.humanStatus,
-      transferDate: partialForm.transferDate
+      transferDate: partialForm.transferDate,
+      auditSessionId: props.auditSessionId
     })
 
     email.value.amount = updated.amount || 0
@@ -248,6 +279,9 @@ async function saveMetadata() {
     email.value.needsHumanReview = Boolean(updated.needsHumanReview)
     syncPartialForm()
     emit('saved', updated)
+    if (updated.humanStatus === 'VALIDADO') emit('validated', updated)
+    if (updated.humanStatus === 'CORREGIDO') emit('corrected', updated)
+    if (updated.humanStatus === 'DESCARTADO') emit('discarded', updated)
     metadataSaveSuccess.value = 'Cambios guardados.'
   } catch (error) {
     console.error('Error updating transfer email metadata:', error)
@@ -256,6 +290,10 @@ async function saveMetadata() {
     savingMetadata.value = false
   }
 }
+
+defineExpose({
+  saveMetadata
+})
 
 async function fetchInboundEmail() {
   if (!inboundEmailId.value) return

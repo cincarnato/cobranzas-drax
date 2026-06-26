@@ -48,11 +48,35 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
 {name: "aiError", type: "TEXT", unique: undefined, primary: false},
 {name: "humanStatus", type: "TEXT", unique: undefined, primary: false},
 {name: "assignedTo", type: "TEXT", unique: undefined, primary: false},
+{name: "auditSessionId", type: "TEXT", unique: undefined, primary: false},
+{name: "assignedAt", type: "TEXT", unique: undefined, primary: false},
+{name: "assignmentExpiresAt", type: "TEXT", unique: undefined, primary: false},
+{name: "lastActivityAt", type: "TEXT", unique: undefined, primary: false},
 {name: "auditedBy", type: "TEXT", unique: undefined, primary: false},
 {name: "auditedAt", type: "TEXT", unique: undefined, primary: false},
 {name: "status", type: "TEXT", unique: undefined, primary: false},
 {name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false}
     ]
+
+    async assignNextAvailable(): Promise<ITransferEmail | null> {
+        throw new Error('Transfer audit sessions are only supported with MongoDB')
+    }
+
+    async findAssignedToSession(): Promise<ITransferEmail[]> {
+        throw new Error('Transfer audit sessions are only supported with MongoDB')
+    }
+
+    async releasePendingAssignments(): Promise<number> {
+        throw new Error('Transfer audit sessions are only supported with MongoDB')
+    }
+
+    async renewAssignments(): Promise<number> {
+        throw new Error('Transfer audit sessions are only supported with MongoDB')
+    }
+
+    async auditAssigned(): Promise<ITransferEmail | null> {
+        throw new Error('Transfer audit sessions are only supported with MongoDB')
+    }
   
 }
 
