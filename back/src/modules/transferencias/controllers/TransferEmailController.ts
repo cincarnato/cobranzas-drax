@@ -7,6 +7,7 @@ import type {FastifyReply} from "fastify";
 import {CustomRequest} from "@drax/crud-back/src/controllers/AbstractFastifyController";
 import InboundMailTransferProcessor from "../processors/InboundMailTransferProcessor.js";
 import type {IDraxFieldFilter} from "@drax/crud-share";
+import {BadRequestError, NotFoundError} from "@drax/common-back";
 
 class TransferEmailController extends AbstractFastifyController<ITransferEmail, ITransferEmailBase, ITransferEmailBase>   {
     private inboundMailTransferProcessor: InboundMailTransferProcessor;
@@ -25,6 +26,41 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
         this.userAssert = false;
 
         this.inboundMailTransferProcessor = InboundMailTransferProcessor.instance;
+    }
+
+
+    async audit(request: CustomRequest, reply: FastifyReply) {
+
+        this.assertUpdatePermission(request)
+        if (!request.params.id) {
+            reply.statusCode = 400
+            reply.send({error: 'BAD REQUEST'})
+        }
+        const id = request.params.id
+
+        const payload = (request.body || {}) as Record<string, unknown>
+
+        const userId = request.rbac.userId
+
+        if (!userId) {
+            throw new BadRequestError('authenticated user id is required')
+        }
+
+        request.body = {
+            amount: payload.amount,
+            affiliates: payload.affiliates,
+            humanStatus: payload.humanStatus,
+            transferDate: payload.transferDate,
+            auditedBy: userId,
+            auditedAt: new Date()
+        }
+
+        let item = await this.service.updatePartial(id, payload)
+        if (!item) {
+            throw new NotFoundError()
+        }
+
+        return item
     }
 
     async processInboundEmails(request: CustomRequest, reply: FastifyReply) {

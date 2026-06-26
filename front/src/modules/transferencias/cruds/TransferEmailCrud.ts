@@ -49,18 +49,17 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'status', key: 'status', align: 'start'},
       {title: 'aiStatus', key: 'aiStatus', align: 'start'},
       {title: 'humanStatus', key: 'humanStatus', align: 'start'},
-      {title: 'needsHumanReview', key: 'needsHumanReview', align: 'start'},
+      // {title: 'needsHumanReview', key: 'needsHumanReview', align: 'start'},
       {title: 'aiProcessedAt', key: 'aiProcessedAt', align: 'start'},
       {title: 'aiError', key: 'aiError', align: 'start'},
       {title: 'assignedTo', key: 'assignedTo', align: 'start'},
       {title: 'auditedBy', key: 'auditedBy', align: 'start'},
       {title: 'auditedAt', key: 'auditedAt', align: 'start'},
       {title: 'transferDate', key: 'transferDate', align: 'start'},
-      {title: 'emailDate', key: 'emailDate', align: 'start'},
+
       {title: 'processDate', key: 'processDate', align: 'start'},
       {title: 'amount', key: 'amount', align: 'end'},
       {title: 'currency', key: 'currency', align: 'start'},
-      {title: 'emailDocumentNumber', key: 'emailDocumentNumber', align: 'start'},
 
       {title: 'affiliateStrategy', key: 'affiliateStrategy', align: 'start'},
       {title: 'affiliates', key: 'affiliates', align: 'start'},
@@ -81,7 +80,10 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'emailSubject', key: 'emailSubject', align: 'start'},
       {title: 'emailFromName', key: 'emailFromName', align: 'start'},
       {title: 'emailFromEmail', key: 'emailFromEmail', align: 'start'},
+      {title: 'emailDate', key: 'emailDate', align: 'start'},
       {title: 'emailMessageId', key: 'emailMessageId', align: 'start'},
+      {title: 'emailDocumentNumber', key: 'emailDocumentNumber', align: 'start'},
+
 
       {title: 'isTransferProof', key: 'isTransferProof', align: 'start'},
       {title: 'inboundEmail', key: 'inboundEmail', align: 'start'},
@@ -91,7 +93,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get selectedHeaders(): string[] {
-    return this.headers.map(header => header.key)
+    return ['status','aiStatus','humanStatus', 'transferDate', 'amount', 'affiliates','emailFromEmail', 'emailDate']
   }
 
   get actionHeaders():IEntityCrudHeader[]{
@@ -183,14 +185,13 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 
   get filters():IEntityCrudFilter[]{
     return [
-      {name: 'transferDate', type: 'date', label: 'Fecha mayor a', default: '', operator: 'gte' },
-      {name: 'transferDate', type: 'date', label: 'Fecha menor a', default: '', operator: 'lte' },
-      {name: 'emailDate', type: 'date', label: 'Fecha email mayor a', default: '', operator: 'gte' },
-      {name: 'emailDate', type: 'date', label: 'Fecha email menor a', default: '', operator: 'lte' },
+      {name: 'transferDate', type: 'date', label: 'Transferencia', default: '', operator: 'range' },
+      {name: 'emailDate', type: 'date', label: 'Email', default: '', operator: 'range' },
       {name: 'emailSubject', type: 'string', label: 'Asunto Mail', default: '', operator: 'like' },
       {name: 'emailFromEmail', type: 'string', label: 'Email Remitente', default: '', operator: 'like' },
       {name: 'emailDocumentNumber', type: 'string', label: 'DNI Email', default: '', operator: 'eq' },
-      {name: 'affiliates', type: 'string', label: 'Afiliados', default: '', operator: 'like' },
+      {name: 'affiliates.name', type: 'string', label: 'Nombre Afiliado', default: '', operator: 'like' },
+      {name: 'affiliates.documentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'like' },
       {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
       {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'] },
       {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },

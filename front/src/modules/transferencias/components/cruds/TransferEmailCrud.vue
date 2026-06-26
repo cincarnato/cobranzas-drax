@@ -227,7 +227,7 @@ async function exportExcel() {
     </template>
 
     <template v-slot:item.emailFromEmail="{value}">
-      <v-chip color="blue-grey" variant="tonal" size="small" prepend-icon="mdi-email-outline">
+      <v-chip color="blue-grey" variant="tonal" size="small" >
         {{ value || '-' }}
       </v-chip>
     </template>

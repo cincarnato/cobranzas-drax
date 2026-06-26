@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from "vue";
 import {DraxImagePreview} from "@drax/common-vue";
+import {VDateInput} from 'vuetify/labs/VDateInput'
 import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {
@@ -34,6 +35,7 @@ type TransferEmailPartialForm = Pick<
   | 'amount'
   | 'affiliates'
   | 'humanStatus'
+  | 'transferDate'
 >
 
 const email = computed(() => props.transferEmail)
@@ -50,7 +52,8 @@ const metadataSaveSuccess = ref('')
 const partialForm = reactive<Required<TransferEmailPartialForm>>({
   amount: 0,
   affiliates: [],
-  humanStatus: 'VALIDADO'
+  humanStatus: 'VALIDADO',
+  transferDate: null
 })
 
 const humanStatusOptions: Array<{title: string; value: TransferEmailHumanStatus; color: string}> = [
@@ -148,6 +151,7 @@ function syncPartialForm() {
   partialForm.amount = email.value.amount || 0
   partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
   partialForm.humanStatus = resolveInitialHumanStatus(email.value.humanStatus)
+  partialForm.transferDate = email.value.transferDate ? new Date(email.value.transferDate) : null
   syncSingleAffiliateAmount()
   metadataSaveError.value = ''
   metadataSaveSuccess.value = ''
@@ -224,14 +228,16 @@ async function saveMetadata() {
   metadataSaveSuccess.value = ''
 
   try {
-    const updated = await TransferEmailProvider.instance.updatePartial(email.value._id, {
+    const updated = await TransferEmailProvider.instance.audit(email.value._id, {
       amount: partialForm.amount || 0,
       affiliates: buildAffiliatesPayload(),
-      humanStatus: partialForm.humanStatus
+      humanStatus: partialForm.humanStatus,
+      transferDate: partialForm.transferDate
     })
 
     email.value.amount = updated.amount || 0
     email.value.affiliates = cloneAffiliates(updated.affiliates || [])
+    email.value.transferDate = updated.transferDate
     email.value.aiStatus = updated.aiStatus
     email.value.aiProcessedAt = updated.aiProcessedAt
     email.value.aiError = updated.aiError
@@ -361,6 +367,24 @@ const humanStatusPresentation = (status?: string) => {
       size="small"
     >
       Auditoría: {{ humanStatusPresentation(email.humanStatus).label }}
+    </v-chip>
+    <v-chip
+      v-if="email.auditedBy"
+      color="primary"
+      prepend-icon="mdi-account-check-outline"
+      variant="tonal"
+      size="small"
+    >
+      {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}
+    </v-chip>
+    <v-chip
+      v-if="email.auditedAt"
+      color="primary"
+      prepend-icon="mdi-calendar-check-outline"
+      variant="tonal"
+      size="small"
+    >
+      {{ formatDate(email.auditedAt) }}
     </v-chip>
     <v-chip
       v-if="showHumanReviewAlert"
@@ -555,16 +579,36 @@ const humanStatusPresentation = (status?: string) => {
           </v-chip>
         </div>
 
-        <v-text-field
-          v-model.number="partialForm.amount"
-          label="Monto comprobante"
-          type="number"
-          variant="outlined"
-          density="compact"
-          hide-details="auto"
-          :readonly="readonly"
-          class="sketch-input mt-3"
-        />
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model.number="partialForm.amount"
+              label="Monto comprobante"
+              type="number"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              :readonly="readonly"
+              class="sketch-input mt-3"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-date-input
+              v-model="partialForm.transferDate"
+              label="Fecha de transferencia"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              :readonly="readonly"
+              clearable
+              class="sketch-input mt-3"
+              prepend-icon=""
+            />
+          </v-col>
+        </v-row>
+
+
+
 
 
         <v-expansion-panels

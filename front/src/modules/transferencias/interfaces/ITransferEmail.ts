@@ -23,7 +23,7 @@ interface ITransferEmailBase {
     isTransferProof?: boolean
     amount?: number
     currency?: string
-    transferDate?: Date
+    transferDate?: Date | null
     emailDate?: Date
     processDate?: Date
     operationNumber?: string
@@ -62,7 +62,7 @@ interface ITransferEmail {
     isTransferProof?: boolean
     amount?: number
     currency?: string
-    transferDate?: Date
+    transferDate?: Date | null
     emailDate?: Date
     processDate?: Date
     operationNumber?: string

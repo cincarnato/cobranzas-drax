@@ -64,6 +64,13 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
     ) as TransferEmailReprocessResult
   }
 
+  async audit(id: string, payload: Pick<ITransferEmailBase, 'amount' | 'affiliates' | 'humanStatus' | 'transferDate'>): Promise<ITransferEmail> {
+    return await this.httpClient.post(
+      `/api/transfer-emails/${id}/audit`,
+      payload
+    ) as ITransferEmail
+  }
+
   async exportExcel({orderBy = "", order = "asc", search = "", filters = []}: IDraxFindOptions): Promise<Response> {
     const authStoreString = localStorage.getItem('AuthStore')
     let accessToken: string | null = null
