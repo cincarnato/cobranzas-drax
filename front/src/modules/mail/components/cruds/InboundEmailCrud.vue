@@ -1,13 +1,22 @@
 
 <script setup lang="ts">
+import {ref} from "vue";
 import InboundEmailCrud from '../../cruds/InboundEmailCrud'
-import {Crud} from "@drax/crud-vue";
+import {Crud, useCrud} from "@drax/crud-vue";
 import {formatDateTime} from "@drax/common-front"
 import InboundEmailView from "@/modules/mail/components/InboundEmailView.vue";
+import InboundEmailReplyDialog from "@/modules/mail/components/InboundEmailReplyDialog.vue";
 import type {
+  IInboundEmail,
   IInboundEmailProcessMark,
   InboundEmailProcessMarkStatus
 } from "@/modules/mail/interfaces/IInboundEmail";
+import type {MailReplyResult} from "@/modules/mail/providers/MailReplyProvider";
+
+const entity = InboundEmailCrud.instance
+const {doPaginate, form} = useCrud(entity)
+const replyDialog = ref(false)
+const selectedReplyEmail = ref<IInboundEmail | null>(null)
 
 const processMarkColor = (status?: InboundEmailProcessMarkStatus | string) => {
   const val = status?.toUpperCase()
@@ -47,10 +56,25 @@ const formatProcessMarkTitle = (mark: IInboundEmailProcessMark) => {
 
   return details.join(' · ')
 }
+
+const openReplyDialog = (item: IInboundEmail) => {
+  selectedReplyEmail.value = item
+  replyDialog.value = true
+}
+
+const onReplySent = async (result: MailReplyResult) => {
+  if (selectedReplyEmail.value?._id === result.inboundEmail._id) {
+    Object.assign(selectedReplyEmail.value, result.inboundEmail)
+  }
+  if (form.value?._id === result.inboundEmail._id) {
+    Object.assign(form.value, result.inboundEmail)
+  }
+  await doPaginate()
+}
 </script>
 
 <template>
-  <crud :entity="InboundEmailCrud.instance">
+  <crud :entity="entity">
     <template v-slot:item.receivedAt="{value}">{{formatDateTime(value)}}</template>
     <template v-slot:item.toEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.ccEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
@@ -90,13 +114,35 @@ const formatProcessMarkTitle = (mark: IInboundEmailProcessMark) => {
       <span v-else class="process-marks-empty">Sin marcas</span>
     </template>
 
-
-    <template v-slot:form="{form, operation}">
-     <inbound-email-view v-if="operation === 'view'" :inbound-email="form" />
+    <template v-slot:item.actions="{item}">
+      <v-tooltip text="Responder" location="top">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="mdi-reply-outline"
+            size="small"
+            variant="text"
+            @click="openReplyDialog(item as IInboundEmail)"
+          />
+        </template>
+      </v-tooltip>
     </template>
 
+    <template v-slot:form="{form, operation}">
+     <inbound-email-view
+       v-if="operation === 'view'"
+       :inbound-email="form"
+       @sent="onReplySent"
+     />
+    </template>
 
   </crud>
+
+  <inbound-email-reply-dialog
+    v-model="replyDialog"
+    :inbound-email="selectedReplyEmail"
+    @sent="onReplySent"
+  />
 </template>
 
 <style scoped>

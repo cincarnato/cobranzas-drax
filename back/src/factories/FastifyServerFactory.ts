@@ -32,6 +32,7 @@ import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneR
 import { InboundEmailFastifyRoutes } from "../modules/mail/routes/InboundEmailRoutes.js"
 import { InboundEmailMailboxRoutes } from "../modules/mail/routes/InboundEmailMailboxRoutes.js"
 import { MailToolsRoutes } from "../modules/mail/routes/MailToolsRoutes.js"
+import { MailReplyRoutes } from "../modules/mail/routes/MailReplyRoutes.js"
 import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js"
 import { OutboundEmailFastifyRoutes } from "../modules/mail/routes/OutboundEmailRoutes.js"
 import { TypificationEmailFastifyRoutes } from "../modules/mail/routes/TypificationEmailRoutes.js"
@@ -88,6 +89,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(InboundEmailFastifyRoutes)
     server.fastifyRegister(InboundEmailMailboxRoutes)
     server.fastifyRegister(MailToolsRoutes)
+    server.fastifyRegister(MailReplyRoutes)
     server.fastifyRegister(MailboxFastifyRoutes)
     server.fastifyRegister(OutboundEmailFastifyRoutes)
     server.fastifyRegister(TypificationEmailFastifyRoutes)
