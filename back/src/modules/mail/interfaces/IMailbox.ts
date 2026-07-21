@@ -15,6 +15,7 @@ interface IMailboxBase {
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
+    aiAnalysisEnabled?: boolean
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean
@@ -57,6 +58,7 @@ interface IMailbox {
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
+    aiAnalysisEnabled?: boolean
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean

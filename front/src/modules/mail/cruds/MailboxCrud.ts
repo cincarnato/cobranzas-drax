@@ -50,6 +50,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       // {title: 'sentiments', key: 'sentiments', align: 'start'},
       // {title: 'priorities', key: 'priorities', align: 'start'},
       // {title: 'tags', key: 'tags', align: 'start'},
+      {title: 'aiAnalysisEnabled', key: 'aiAnalysisEnabled', align: 'start'},
       {title: 'isActive', key: 'isActive', align: 'start'},
       {title: 'autoProcessEnabled', key: 'autoProcessEnabled', align: 'start'},
       {title: 'replyRequiredToClose', key: 'replyRequiredToClose', align: 'start'},
@@ -113,6 +114,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       {name: 'email', type: 'string', label: 'email', default: '', groupTab: 'General'},
       {name: 'username', type: 'string', label: 'username', default: '', groupTab: 'General'},
       {name: 'password', type: 'password', label: 'password', default: '', groupTab: 'General'},
+      {name: 'aiAnalysisEnabled', type: 'boolean', label: 'aiAnalysisEnabled', default: true, groupTab: 'Analisis IA'},
       {
         name: 'categories',
         type: 'array.object',

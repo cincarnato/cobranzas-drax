@@ -583,15 +583,33 @@ class InboundEmailMailboxProvider {
 
                     if (duplicate) {
                         await this.backfillDuplicateImapUid(duplicate, mailbox, fetchMessage.uid);
-                        await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        if (this.isAiAnalysisEnabled(mailbox)) {
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        }
                         result.skipped += 1;
                         continue;
                     }
 
                     const inboundEmail = await this.buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId);
-                    await this.inboundEmailService.create(inboundEmail);
-                    await this.applyAiCategoryFlag(client, fetchMessage.uid, inboundEmail.category, mailbox);
+                    const createdInboundEmail = await this.inboundEmailService.create(inboundEmail);
                     result.created += 1;
+
+                    if (this.isAiAnalysisEnabled(mailbox)) {
+                        try {
+                            const analysis = await this.analyzeAndUpdateInboundEmail(mailbox, createdInboundEmail);
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, analysis.category, mailbox);
+                        } catch (error: any) {
+                            this.logError("Error analyzing inbound email with AI", error, {
+                                mailboxId: mailbox._id,
+                                mailboxName: mailbox.name,
+                                mailboxEmail: mailbox.email,
+                                inboundEmailId: createdInboundEmail._id,
+                                messageId,
+                                uid,
+                            });
+                            result.errors.push(this.formatError(error));
+                        }
+                    }
                 } catch (error: any) {
                     this.logError("Error processing inbound email", error, {
                         mailboxId: mailbox._id,
@@ -742,6 +760,10 @@ class InboundEmailMailboxProvider {
         return Date.now() - state.lastRunAt >= intervalMinutes * 60_000;
     }
 
+    private isAiAnalysisEnabled(mailbox: IMailbox): boolean {
+        return mailbox.aiAnalysisEnabled !== false;
+    }
+
     private async purgeInboundEmailAttachments(
         emails: PurgeableInboundEmail[],
         mailbox: IMailbox
@@ -879,16 +901,6 @@ class InboundEmailMailboxProvider {
         const attachmentResult = await this.processAttachments(mailbox, messageId, parsedAttachments);
         const analysisBodyText = this.normalizeText([textBody, attachmentResult.ocrText].filter(Boolean).join("\n\n"));
         const normalizedText = this.normalizeText([parsedMail.subject, analysisBodyText].filter(Boolean).join("\n\n"));
-        const analysis = await this.analyzeInboundEmail({
-            mailbox,
-            messageId,
-            subject: parsedMail.subject,
-            bodyText: analysisBodyText,
-            normalizedText,
-            attachmentsOcrText: attachmentResult.ocrText,
-            fromEmail: from?.address,
-            fromName: from?.name,
-        });
 
         return {
             messageId,
@@ -911,6 +923,31 @@ class InboundEmailMailboxProvider {
             attachments: attachmentResult.storedAttachments,
             attachmentsOcrText: attachmentResult.ocrText,
             attachmentsOcrError: attachmentResult.ocrError,
+            tags: [],
+            customer: {
+                name: from?.name,
+                email: from?.address,
+            },
+            extractedEntities: [],
+            processingStatus: "PENDING",
+            reviewStatus: "PENDING",
+            isDuplicate: false,
+        };
+    }
+
+    private async analyzeAndUpdateInboundEmail(mailbox: IMailbox, inboundEmail: IInboundEmail): Promise<AnalysisResult> {
+        const analysis = await this.analyzeInboundEmail({
+            mailbox,
+            messageId: inboundEmail.messageId,
+            subject: inboundEmail.subject,
+            bodyText: this.normalizeText([inboundEmail.bodyText, inboundEmail.attachmentsOcrText].filter(Boolean).join("\n\n")),
+            normalizedText: inboundEmail.normalizedText || "",
+            attachmentsOcrText: inboundEmail.attachmentsOcrText,
+            fromEmail: inboundEmail.fromEmail,
+            fromName: inboundEmail.fromName,
+        });
+
+        await this.inboundEmailService.updatePartial(inboundEmail._id, {
             category: analysis.category,
             sentiment: analysis.sentiment,
             priority: analysis.priority,
@@ -921,9 +958,10 @@ class InboundEmailMailboxProvider {
             extractedEntities: analysis.extractedEntities,
             processingStatus: analysis.processingStatus,
             reviewStatus: analysis.reviewStatus,
-            isDuplicate: false,
             processedAt: new Date(),
-        };
+        } as Partial<IInboundEmailBase>);
+
+        return analysis;
     }
 
     private async parseEmail(raw: Buffer): Promise<ParsedMailLike> {

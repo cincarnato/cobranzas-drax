@@ -21,6 +21,7 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             sentiments: [{type: String, required: false}],
             priorities: [{type: String, required: false}],
             tags: [{type: String, required: false}],
+            aiAnalysisEnabled: {type: Boolean, required: false, index: false, unique: false, default: true },
             isActive: {type: Boolean,   required: false, index: false, unique: false },
             autoProcessEnabled: {type: Boolean,   required: false, index: false, unique: false },
             replyRequiredToClose: {type: Boolean, required: false, index: false, unique: false, default: false },

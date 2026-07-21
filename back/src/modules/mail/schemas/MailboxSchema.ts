@@ -17,6 +17,7 @@ const MailboxBaseSchema = z.object({
     sentiments: z.array(z.string()).optional().default([]),
     priorities: z.array(z.string()).optional().default([]),
     tags: z.array(z.string()).optional().default([]),
+    aiAnalysisEnabled: z.boolean().optional().default(true),
     isActive: z.boolean().optional(),
     autoProcessEnabled: z.boolean().optional(),
     replyRequiredToClose: z.boolean().optional().default(false),
