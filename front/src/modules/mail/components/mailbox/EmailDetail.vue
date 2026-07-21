@@ -1,0 +1,159 @@
+<script setup lang="ts">
+import {computed, ref} from "vue";
+import dayjs from "dayjs";
+import type {EmailManagementDetail, EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
+import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
+import EmailStatusBadge from "./EmailStatusBadge.vue";
+import EmailReplyStatus from "./EmailReplyStatus.vue";
+import EmailAssignee from "./EmailAssignee.vue";
+import EmailThread from "./EmailThread.vue";
+import EmailManagementPanel from "./EmailManagementPanel.vue";
+import CloseEmailDialog from "./CloseEmailDialog.vue";
+import AssignEmailButton from "./AssignEmailButton.vue";
+import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
+
+const props = defineProps<{
+  detail: EmailManagementDetail | null
+  loading?: boolean
+  error?: string
+  currentUser: any
+  permissions: EmailManagementPermissions
+  actionLoading?: boolean
+  saving?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: "back"): void
+  (e: "retry"): void
+  (e: "assign"): void
+  (e: "save-classification", value: any): void
+  (e: "reassign", userId: string | null): void
+  (e: "close"): void
+  (e: "reply-sent", value: any): void
+}>()
+
+const showPanel = ref(true)
+const closeDialog = ref(false)
+
+const email = computed(() => props.detail?.inboundEmail || null)
+const canReply = computed(() => props.permissions.canReply && email.value?.attentionStatus !== "CLOSED")
+const assignedToName = computed(() => {
+  const assigned = email.value?.assignedTo
+  if (!assigned || typeof assigned === "string") return ""
+  return assigned.name || assigned.username || assigned.email || ""
+})
+
+function requestClose() {
+  if (!email.value || !props.detail?.mailbox) return
+  if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) return
+  if (props.detail.mailbox.typificationRequiredToClose && !email.value.category) return
+  closeDialog.value = true
+}
+
+function closeValidation() {
+  if (!email.value || !props.detail?.mailbox) return ""
+  if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) {
+    return "Este mailbox requiere una respuesta antes de cerrar la gestión."
+  }
+  if (props.detail.mailbox.typificationRequiredToClose && !email.value.category) {
+    return "Debés seleccionar una categoría antes de cerrar la gestión."
+  }
+  return ""
+}
+</script>
+
+<template>
+  <div class="email-detail h-100 d-flex flex-column">
+    <div v-if="loading" class="pa-4">
+      <v-skeleton-loader type="article, actions" />
+    </div>
+    <v-alert v-else-if="error" type="error" variant="tonal" class="ma-4">
+      {{ error }}
+      <template #append>
+        <v-btn size="small" variant="text" @click="$emit('retry')">Reintentar</v-btn>
+      </template>
+    </v-alert>
+    <v-empty-state v-else-if="!detail || !email" icon="mdi-email-open-outline" text="Seleccioná un correo para ver el detalle." />
+    <template v-else>
+      <div class="pa-4 border-b bg-surface">
+        <div class="d-flex align-start ga-2">
+          <v-btn icon="mdi-arrow-left" variant="text" @click="$emit('back')" />
+          <div class="flex-grow-1 min-w-0">
+            <h2 class="text-h6 text-truncate">{{ email.subject || 'Sin asunto' }}</h2>
+            <div class="d-flex flex-wrap align-center ga-2 mt-2">
+              <span class="text-body-2">{{ email.fromName || email.fromEmail }}</span>
+              <span class="text-caption text-medium-emphasis">Para: {{ (email.toEmails || []).join(', ') }}</span>
+              <span class="text-caption text-medium-emphasis">{{ dayjs(email.receivedAt).format('DD/MM/YYYY HH:mm') }}</span>
+              <EmailStatusBadge :status="email.attentionStatus" />
+              <EmailReplyStatus :email="email" />
+              <v-chip v-if="email.category" size="small" variant="tonal">{{ email.category }}</v-chip>
+              <v-chip v-if="email.priority" size="small" variant="text" prepend-icon="mdi-flag-outline">{{ email.priority }}</v-chip>
+              <EmailAssignee :user="email.assignedTo" />
+            </div>
+            <v-alert v-if="assignedToName && !permissions.canReply" density="compact" variant="tonal" color="info" class="mt-3">
+              {{ assignedToName }} está gestionando este correo.
+            </v-alert>
+            <v-alert v-if="closeValidation()" density="compact" variant="tonal" color="warning" class="mt-3">
+              {{ closeValidation() }}
+            </v-alert>
+          </div>
+          <div class="d-flex flex-wrap justify-end ga-2">
+            <AssignEmailButton
+              v-if="permissions.canAssign && email.attentionStatus === 'PENDING' && !email.assignedTo"
+              :loading="actionLoading"
+              @assign="$emit('assign')"
+            />
+            <v-btn variant="tonal" prepend-icon="mdi-content-save-outline" @click="$emit('save-classification', {category: email.category, priority: email.priority, sentiment: email.sentiment, tags: email.tags || []})">
+              Guardar cambios
+            </v-btn>
+            <v-btn color="success" prepend-icon="mdi-check-circle-outline" :disabled="!!closeValidation() || !permissions.canClose" @click="requestClose">
+              Cerrar gestión
+            </v-btn>
+            <v-btn :icon="showPanel ? 'mdi-dock-right' : 'mdi-dock-window'" variant="text" @click="showPanel = !showPanel" />
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-body d-flex min-h-0">
+        <div class="flex-grow-1 overflow-auto pa-4">
+          <EmailThread :inbound-thread="detail.inboundThread" :outbound-thread="detail.outboundThread" />
+          <InboundEmailReplyComposer v-if="canReply" :inbound-email="email as IInboundEmail" class="mt-4" @sent="$emit('reply-sent', $event)" />
+          <v-alert v-else density="compact" variant="tonal" color="info" class="mt-4">
+            {{ email.attentionStatus === 'CLOSED' ? 'La gestión está cerrada.' : 'Para responder, el correo debe estar asignado a vos o tenés que contar con permisos de supervisión.' }}
+          </v-alert>
+        </div>
+        <aside v-if="showPanel" class="management-panel border-s overflow-auto">
+          <EmailManagementPanel
+            :email="email"
+            :mailbox="detail.mailbox"
+            :permissions="permissions"
+            :saving="saving"
+            @save-classification="$emit('save-classification', $event)"
+            @reassign="$emit('reassign', $event)"
+          />
+        </aside>
+      </div>
+      <CloseEmailDialog v-model="closeDialog" :loading="actionLoading" @confirm="closeDialog = false; emit('close')" />
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.detail-body {
+  flex: 1;
+}
+.management-panel {
+  width: 340px;
+  flex: 0 0 340px;
+}
+@media (max-width: 960px) {
+  .management-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgb(var(--v-theme-surface));
+    z-index: 2;
+  }
+}
+</style>

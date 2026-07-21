@@ -1,7 +1,10 @@
 import {AbstractSqliteRepository} from "@drax/crud-back";
 import type {
     FindInboundEmailsByProcessMarkOptions,
-    IInboundEmailRepository
+    IInboundEmailRepository,
+    InboundEmailClassificationUpdate,
+    InboundEmailManagementListOptions,
+    InboundEmailManagementListResult
 } from '../../interfaces/IInboundEmailRepository'
 import type {IInboundEmail, IInboundEmailBase} from "../../interfaces/IInboundEmail";
 import {SqliteTableField} from "@drax/common-back";
@@ -123,6 +126,65 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         }
 
         return items;
+    }
+
+    async managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult> {
+        const page = Math.max(Number(options.page || 1), 1);
+        const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
+        const filters: any[] = [];
+        if (options.mailboxValues?.length) filters.push({field: "mailbox", operator: "in", value: options.mailboxValues});
+        if (options.attentionStatus) filters.push({field: "attentionStatus", operator: "eq", value: options.attentionStatus});
+        if (options.assignedTo) filters.push({field: "assignedTo", operator: "eq", value: options.assignedTo});
+        if (options.category) filters.push({field: "category", operator: "eq", value: options.category});
+        if (typeof options.hasAttachments === "boolean") filters.push({field: "hasAttachments", operator: "eq", value: options.hasAttachments});
+        if (options.withoutReply) filters.push({field: "replyCount", operator: "eq", value: 0});
+        const result = await this.paginate({
+            page,
+            limit: pageSize,
+            orderBy: options.sortBy || "receivedAt",
+            order: options.sortDirection || "desc",
+            search: options.search || "",
+            filters,
+        });
+        const totalItems = (result as any).total || 0;
+        return {
+            items: (result.items || []) as any,
+            page,
+            pageSize,
+            totalItems,
+            totalPages: Math.max(Math.ceil(totalItems / pageSize), 1),
+        };
+    }
+
+    async findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]> {
+        const filters: any[] = inboundEmail.threadId
+            ? [{field: "threadId", operator: "eq", value: inboundEmail.threadId}]
+            : [{field: "_id", operator: "eq", value: inboundEmail._id}];
+        return await this.find({limit: 100, orderBy: "receivedAt", order: "asc", filters});
+    }
+
+    async assignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
+        const item = await this.findById(id);
+        if (!item || item.attentionStatus !== "PENDING" || item.assignedTo) return null;
+        return await this.update(id, {...item, attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date()});
+    }
+
+    async reassign(id: string, userId: string | null): Promise<IInboundEmail | null> {
+        const item = await this.findById(id);
+        if (!item) return null;
+        return await this.update(id, {...item, attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null});
+    }
+
+    async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
+        const item = await this.findById(id);
+        if (!item) return null;
+        return await this.update(id, {...item, ...data});
+    }
+
+    async closeManagement(id: string): Promise<IInboundEmail | null> {
+        const item = await this.findById(id);
+        if (!item) return null;
+        return await this.update(id, {...item, attentionStatus: "CLOSED"});
     }
 
 }

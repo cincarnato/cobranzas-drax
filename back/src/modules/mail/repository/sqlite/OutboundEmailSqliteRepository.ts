@@ -39,6 +39,16 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
 {name: "attempts", type: "REAL", unique: undefined, primary: false},
 {name: "attempts", type: "TEXT", unique: undefined, primary: false}
     ]
+
+    async findByInboundEmailIds(inboundEmailIds: string[]): Promise<IOutboundEmail[]> {
+        if (!inboundEmailIds.length) return [];
+        const placeholders = inboundEmailIds.map(() => "?").join(",");
+        const items = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE inboundEmail IN (${placeholders}) ORDER BY createdAt ASC`).all(...inboundEmailIds) as IOutboundEmail[];
+        for (const item of items) {
+            await this.decorate(item);
+        }
+        return items;
+    }
   
 }
 

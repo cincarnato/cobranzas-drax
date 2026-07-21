@@ -3,6 +3,7 @@ import type {CustomRequest} from "@drax/crud-back/src/controllers/AbstractFastif
 import {z} from "zod";
 import MailReplyService from "../services/MailReplyService.js";
 import InboundEmailPermissions from "../permissions/InboundEmailPermissions.js";
+import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 
 const MailReplyBodySchema = z.object({
     subject: z.string().optional(),
@@ -25,11 +26,18 @@ class MailReplyController {
     async sendReply(request: CustomRequest, reply: FastifyReply) {
         try {
             request?.rbac.assertAuthenticated();
-            request?.rbac.assertPermission(InboundEmailPermissions.Manage);
+            request?.rbac.assertPermission(InboundEmailPermissions.Update);
 
             const {inboundEmailId} = request.params as {inboundEmailId?: string};
             const payload = MailReplyBodySchema.parse(request.body || {});
             const userId = request.rbac.userId || request.rbac.getAuthUser?.id;
+            const inboundEmailService = InboundEmailServiceFactory.instance;
+            const inboundEmail = await inboundEmailService.findById(inboundEmailId || "");
+            inboundEmailService.assertCanOperate(
+                inboundEmail,
+                userId,
+                request.rbac.hasPermission(InboundEmailPermissions.Manage)
+            );
             const result = await this.service.sendReply(inboundEmailId || "", payload, userId);
 
             return reply.status(200).send(result);
