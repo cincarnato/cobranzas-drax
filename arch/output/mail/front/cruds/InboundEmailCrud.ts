@@ -13,7 +13,7 @@ import type{
 import InboundEmailProvider from "../providers/InboundEmailProvider";
 
 //Import EntityCrud Refs
-
+import {UserCrud} from "@drax/identity-vue"
 
 class InboundEmailCrud extends EntityCrud implements IEntityCrud {
 
@@ -53,6 +53,10 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
 {title: 'subject',key:'subject', align: 'start'},
 {title: 'fromName',key:'fromName', align: 'start'},
 {title: 'fromEmail',key:'fromEmail', align: 'start'},
+{title: 'assignedTo',key:'assignedTo', align: 'start'},
+{title: 'assignedAt',key:'assignedAt', align: 'start'},
+{title: 'attentionStatus',key:'attentionStatus', align: 'start'},
+{title: 'replyCount',key:'replyCount', align: 'start'},
 {title: 'hasAttachments',key:'hasAttachments', align: 'start'},
 {title: 'attachmentCount',key:'attachmentCount', align: 'start'},
 {title: 'category',key:'category', align: 'start'},
@@ -89,7 +93,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
   
   get refs(): IEntityCrudRefs{
     return {
-      
+      User: UserCrud.instance 
     }
   }
 
@@ -98,6 +102,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
       messageId: [(v: any) => !!v || 'validation.required'],
 sourceChannel: [(v: any) => !!v || 'validation.required'],
 receivedAt: [(v: any) => !!v || 'validation.required'],
+attentionStatus: [(v: any) => !!v || 'validation.required'],
 extractedData: [],
 processingStatus: [(v: any) => !!v || 'validation.required']
     }
@@ -116,6 +121,12 @@ processingStatus: [(v: any) => !!v || 'validation.required']
 {name:'toEmails',type:'array.string',label:'toEmails',default:[],groupTab: 'General'},
 {name:'ccEmails',type:'array.string',label:'ccEmails',default:[],groupTab: 'General'},
 {name:'replyToEmail',type:'string',label:'replyToEmail',default:'',groupTab: 'General'},
+{name:'assignedTo',type:'ref',label:'assignedTo',default:null,groupTab: 'General',ref: 'User',refDisplay: 'name'},
+{name:'assignedAt',type:'date',label:'assignedAt',default:null,groupTab: 'General'},
+{name:'attentionStatus',type:'enum',label:'attentionStatus',default:'PENDING',groupTab: 'General',enum: ['PENDING', 'ASSIGNED', 'CLOSED']},
+{name:'replyCount',type:'number',label:'replyCount',default:0,groupTab: 'General'},
+{name:'firstRepliedAt',type:'date',label:'firstRepliedAt',default:null,groupTab: 'General'},
+{name:'lastRepliedAt',type:'date',label:'lastRepliedAt',default:null,groupTab: 'General'},
 {name:'bodyText',type:'longString',label:'bodyText',default:'',groupTab: 'Contenido'},
 {name:'bodyHtml',type:'longString',label:'bodyHtml',default:'',groupTab: 'Contenido'},
 {name:'normalizedText',type:'longString',label:'normalizedText',default:'',groupTab: 'Contenido'},

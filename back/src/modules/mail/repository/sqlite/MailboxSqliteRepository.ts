@@ -9,7 +9,7 @@ class MailboxSqliteRepository extends AbstractSqliteRepository<IMailbox, IMailbo
     protected tableName: string = 'Mailbox';
     protected dataBaseFile: string;
     protected searchFields: string[] = ['name', 'email', 'username', 'imapHost', 'popHost', 'smtpHost'];
-    protected booleanFields: string[] = ['isActive', 'autoProcessEnabled', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
+    protected booleanFields: string[] = ['isActive', 'autoProcessEnabled', 'replyRequiredToClose', 'typificationRequiredToClose', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
     protected jsonFields: string[] = ['categories', 'entities', 'sentiments', 'priorities', 'tags'];
     protected identifier: string = 'email';
     protected populateFields = []
@@ -24,9 +24,11 @@ class MailboxSqliteRepository extends AbstractSqliteRepository<IMailbox, IMailbo
         {name: "sentiments", type: "TEXT", unique: undefined, primary: false},
         {name: "priorities", type: "TEXT", unique: undefined, primary: false},
         {name: "tags", type: "TEXT", unique: undefined, primary: false},
-        {name: "isActive", type: "TEXT", unique: undefined, primary: false},
-        {name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false},
-        {name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false},
+{name: "isActive", type: "TEXT", unique: undefined, primary: false},
+{name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false},
+{name: "replyRequiredToClose", type: "TEXT", unique: undefined, primary: false},
+{name: "typificationRequiredToClose", type: "TEXT", unique: undefined, primary: false},
+{name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false},
         {name: "attachmentOcrEnabled", type: "TEXT", unique: undefined, primary: false},
         {name: "retentionDays", type: "REAL", unique: undefined, primary: false},
         {name: "processingProtocol", type: "TEXT", unique: undefined, primary: false},

@@ -14,7 +14,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'extractedData'];
     protected identifier: string = 'messageId';
     protected populateFields = [
-        
+        { field: 'assignedTo', table: 'assignedTo', identifier: '_id' }
     ]
     protected verbose: boolean = false;
     protected tableFields: SqliteTableField[] = [
@@ -29,11 +29,18 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
 {name: "toEmails", type: "TEXT", unique: undefined, primary: false},
 {name: "ccEmails", type: "TEXT", unique: undefined, primary: false},
 {name: "replyToEmail", type: "TEXT", unique: undefined, primary: false},
+{name: "assignedTo", type: "TEXT", unique: undefined, primary: false},
+{name: "assignedAt", type: "TEXT", unique: undefined, primary: false},
+{name: "attentionStatus", type: "TEXT", unique: undefined, primary: false},
+{name: "replyCount", type: "REAL", unique: undefined, primary: false},
+{name: "replyCount", type: "TEXT", unique: undefined, primary: false},
+{name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
+{name: "lastRepliedAt", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
 {name: "normalizedText", type: "TEXT", unique: undefined, primary: false},
 {name: "hasAttachments", type: "TEXT", unique: undefined, primary: false},
-{name: "attachmentCount", type: "FLOAT", unique: undefined, primary: false},
+{name: "attachmentCount", type: "REAL", unique: undefined, primary: false},
 {name: "attachmentCount", type: "TEXT", unique: undefined, primary: false},
 {name: "attachments", type: "TEXT", unique: undefined, primary: false},
 {name: "category", type: "TEXT", unique: undefined, primary: false},

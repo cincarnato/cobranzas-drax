@@ -11,7 +11,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         super();
         this._model = InboundEmailModel;
         this._searchFields = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'category', 'duplicateOfMessageId'];
-        this._populateFields = [];
+        this._populateFields = ['assignedTo'];
         this._lean = true
     }
 

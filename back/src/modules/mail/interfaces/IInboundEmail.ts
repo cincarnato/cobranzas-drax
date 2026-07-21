@@ -22,6 +22,12 @@ interface IInboundEmailBase {
     toEmails?: Array<string>
     ccEmails?: Array<string>
     replyToEmail?: string
+    assignedTo?: any
+    assignedAt?: Date
+    attentionStatus?: string
+    replyCount?: number
+    firstRepliedAt?: Date
+    lastRepliedAt?: Date
     bodyText?: string
     bodyHtml?: string
     normalizedText?: string
@@ -79,6 +85,12 @@ interface IInboundEmail {
     toEmails?: Array<string>
     ccEmails?: Array<string>
     replyToEmail?: string
+    assignedTo?: any
+    assignedAt?: Date
+    attentionStatus?: string
+    replyCount?: number
+    firstRepliedAt?: Date
+    lastRepliedAt?: Date
     bodyText?: string
     bodyHtml?: string
     normalizedText?: string

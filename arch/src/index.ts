@@ -11,6 +11,8 @@ import CovenantSchema from './schemas/collections/CovenantSchema';
 import GroupZoneSchema from './schemas/collections/GroupZoneSchema';
 import InboundEmailSchema from './schemas/mail/InboundEmailSchema';
 import MailboxSchema from './schemas/mail/MailboxSchema';
+import OutboundEmailSchema from './schemas/mail/OutboundEmailSchema';
+import TypificationEmailSchema from './schemas/mail/TypificationEmailSchema';
 import AffiliateSchema from './schemas/premedic/AffiliateSchema';
 import AffiliateTypeSchema from './schemas/premedic/AffiliateTypeSchema';
 import BonusSchema from './schemas/bajas/BonusSchema';
@@ -37,6 +39,8 @@ const schemas = [
     //Mail
     InboundEmailSchema,
     MailboxSchema,
+    OutboundEmailSchema,
+    TypificationEmailSchema,
 
     //Premedic
     AffiliateSchema,

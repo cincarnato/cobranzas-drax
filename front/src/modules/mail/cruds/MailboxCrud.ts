@@ -52,6 +52,8 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       // {title: 'tags', key: 'tags', align: 'start'},
       {title: 'isActive', key: 'isActive', align: 'start'},
       {title: 'autoProcessEnabled', key: 'autoProcessEnabled', align: 'start'},
+      {title: 'replyRequiredToClose', key: 'replyRequiredToClose', align: 'start'},
+      {title: 'typificationRequiredToClose', key: 'typificationRequiredToClose', align: 'start'},
       {title: 'attachmentStorageEnabled', key: 'attachmentStorageEnabled', align: 'start'},
       {title: 'attachmentOcrEnabled', key: 'attachmentOcrEnabled', align: 'start'},
       {title: 'retentionDays', key: 'retentionDays', align: 'start'},
@@ -141,6 +143,20 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
         name: 'autoProcessEnabled',
         type: 'boolean',
         label: 'autoProcessEnabled',
+        default: false,
+        groupTab: 'Procesamiento'
+      },
+      {
+        name: 'replyRequiredToClose',
+        type: 'boolean',
+        label: 'replyRequiredToClose',
+        default: false,
+        groupTab: 'Procesamiento'
+      },
+      {
+        name: 'typificationRequiredToClose',
+        type: 'boolean',
+        label: 'typificationRequiredToClose',
         default: false,
         groupTab: 'Procesamiento'
       },

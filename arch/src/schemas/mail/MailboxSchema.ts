@@ -61,6 +61,22 @@ const MailboxSchema: IEntitySchema = {
             groupTab: "Procesamiento",
             mdCol: 4,
         },
+        replyRequiredToClose: {
+            type: "boolean",
+            required: false,
+            default: false,
+            header: true,
+            groupTab: "Procesamiento",
+            mdCol: 4,
+        },
+        typificationRequiredToClose: {
+            type: "boolean",
+            required: false,
+            default: false,
+            header: true,
+            groupTab: "Procesamiento",
+            mdCol: 4,
+        },
         processingProtocol: {
             type: "enum",
             enum: MAIL_PROTOCOLS,

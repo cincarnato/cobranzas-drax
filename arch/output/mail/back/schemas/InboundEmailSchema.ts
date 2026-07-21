@@ -14,6 +14,12 @@ const InboundEmailBaseSchema = z.object({
     toEmails: z.array(z.string()).optional(),
     ccEmails: z.array(z.string()).optional(),
     replyToEmail: z.string().optional(),
+    assignedTo: z.coerce.string().optional().nullable(),
+    assignedAt: z.coerce.date().nullable().optional(),
+    attentionStatus: z.enum(['PENDING', 'ASSIGNED', 'CLOSED']).default('PENDING'),
+    replyCount: z.number().nullable().optional(),
+    firstRepliedAt: z.coerce.date().nullable().optional(),
+    lastRepliedAt: z.coerce.date().nullable().optional(),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
     normalizedText: z.string().optional(),
@@ -61,7 +67,7 @@ z.object({    label: z.string().min(1,'validation.required'),
 const InboundEmailSchema = InboundEmailBaseSchema
     .extend({
       _id: z.coerce.string(),
-       
+       assignedTo: z.object({_id: z.coerce.string(), name: z.string()}).nullable().optional()
     })
 
 export default InboundEmailSchema;

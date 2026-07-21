@@ -6,6 +6,8 @@ interface IMailboxBase {
     password: string
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    typificationRequiredToClose?: boolean
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean
@@ -32,6 +34,8 @@ interface IMailbox {
     password: string
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    typificationRequiredToClose?: boolean
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean

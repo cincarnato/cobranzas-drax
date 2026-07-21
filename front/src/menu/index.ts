@@ -192,6 +192,20 @@ const menu: MenuItem[] = [
         permission: 'inboundemail:manage'
       },
       {
+        icon: 'mdi-email-arrow-right-outline',
+        text: 'outboundemail.menu',
+        link: { name: "OutboundEmailCrudPage" },
+        gallery: true,
+        permission: 'outboundemail:manage'
+      },
+      {
+        icon: 'mdi-tag-text-outline',
+        text: 'typificationemail.menu',
+        link: { name: "TypificationEmailCrudPage" },
+        gallery: true,
+        permission: 'typificationemail:manage'
+      },
+      {
         icon: 'mdi-view-dashboard-variant-outline',
         text: 'Dashboard Correos Entrantes',
         link: { name: "InboundEmailDashboardPage" },

@@ -11,7 +11,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     protected db: any;
     protected tableName: string = 'InboundEmail';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'duplicateOfMessageId'];
+    protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'attentionStatus', 'duplicateOfMessageId'];
     protected booleanFields: string[] = ['hasAttachments', 'isDuplicate'];
     protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities', 'processMarks'];
     protected identifier: string = 'messageId';
@@ -30,6 +30,12 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "toEmails", type: "TEXT", unique: undefined, primary: false},
         {name: "ccEmails", type: "TEXT", unique: undefined, primary: false},
         {name: "replyToEmail", type: "TEXT", unique: undefined, primary: false},
+        {name: "assignedTo", type: "TEXT", unique: undefined, primary: false},
+        {name: "assignedAt", type: "TEXT", unique: undefined, primary: false},
+        {name: "attentionStatus", type: "TEXT", unique: undefined, primary: false},
+        {name: "replyCount", type: "REAL", unique: undefined, primary: false},
+        {name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
+        {name: "lastRepliedAt", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
         {name: "normalizedText", type: "TEXT", unique: undefined, primary: false},

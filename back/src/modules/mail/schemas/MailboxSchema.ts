@@ -19,6 +19,8 @@ const MailboxBaseSchema = z.object({
     tags: z.array(z.string()).optional().default([]),
     isActive: z.boolean().optional(),
     autoProcessEnabled: z.boolean().optional(),
+    replyRequiredToClose: z.boolean().optional().default(false),
+    typificationRequiredToClose: z.boolean().optional().default(false),
     attachmentStorageEnabled: z.boolean().optional().default(true),
     attachmentOcrEnabled: z.boolean().optional().default(false),
     retentionDays: z.number().nullable().optional().default(null),

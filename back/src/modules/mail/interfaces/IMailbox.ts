@@ -17,6 +17,8 @@ interface IMailboxBase {
     tags?: Array<string>
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    typificationRequiredToClose?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null
@@ -57,6 +59,8 @@ interface IMailbox {
     tags?: Array<string>
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    typificationRequiredToClose?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null

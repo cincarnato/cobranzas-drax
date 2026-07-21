@@ -12,6 +12,8 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             password: {type: String,   required: true, index: false, unique: false },
             isActive: {type: Boolean,   required: false, index: false, unique: false },
             autoProcessEnabled: {type: Boolean,   required: false, index: false, unique: false },
+            replyRequiredToClose: {type: Boolean,   required: false, index: false, unique: false },
+            typificationRequiredToClose: {type: Boolean,   required: false, index: false, unique: false },
             processingProtocol: {type: String,  enum: ['IMAP', 'POP'], required: false, index: false, unique: false },
             processingIntervalMinutes: {type: Number,   required: false, index: false, unique: false },
             imapEnabled: {type: Boolean,   required: false, index: false, unique: false },

@@ -9,6 +9,8 @@ const MailboxBaseSchema = z.object({
     password: z.string().min(1,'validation.required'),
     isActive: z.boolean().optional(),
     autoProcessEnabled: z.boolean().optional(),
+    replyRequiredToClose: z.boolean().optional(),
+    typificationRequiredToClose: z.boolean().optional(),
     processingProtocol: z.enum(['IMAP', 'POP']).optional().default('IMAP'),
     processingIntervalMinutes: z.number().nullable().optional().default(5),
     imapEnabled: z.boolean().optional(),

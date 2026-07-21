@@ -13,6 +13,7 @@ const PROCESSING_STATUSES = [
     "ERROR",
 ];
 const REVIEW_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CORRECTED"];
+const ATTENTION_STATUSES = ["PENDING", "ASSIGNED", "CLOSED"];
 
 const entitySchema: IEntitySchema = {
     module: "mail",
@@ -116,6 +117,54 @@ const entitySchema: IEntitySchema = {
             type: "string",
             required: false,
             search: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        assignedTo: {
+            type: "ref",
+            ref: "User",
+            refDisplay: "name",
+            required: false,
+            index: true,
+            header: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        assignedAt: {
+            type: "date",
+            required: false,
+            index: true,
+            header: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        attentionStatus: {
+            type: "enum",
+            enum: ATTENTION_STATUSES,
+            required: true,
+            default: "PENDING",
+            index: true,
+            header: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        replyCount: {
+            type: "number",
+            required: false,
+            default: 0,
+            header: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        firstRepliedAt: {
+            type: "date",
+            required: false,
+            groupTab: "General",
+            mdCol: 6,
+        },
+        lastRepliedAt: {
+            type: "date",
+            required: false,
             groupTab: "General",
             mdCol: 6,
         },

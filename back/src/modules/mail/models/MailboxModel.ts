@@ -23,6 +23,8 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             tags: [{type: String, required: false}],
             isActive: {type: Boolean,   required: false, index: false, unique: false },
             autoProcessEnabled: {type: Boolean,   required: false, index: false, unique: false },
+            replyRequiredToClose: {type: Boolean, required: false, index: false, unique: false, default: false },
+            typificationRequiredToClose: {type: Boolean, required: false, index: false, unique: false, default: false },
             attachmentStorageEnabled: {type: Boolean,   required: false, index: false, unique: false, default: true },
             attachmentOcrEnabled: {type: Boolean,   required: false, index: false, unique: false, default: false },
             retentionDays: {type: Number, required: false, index: false, unique: false, default: null },
