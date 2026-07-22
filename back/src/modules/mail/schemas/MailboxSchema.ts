@@ -10,10 +10,16 @@ const MailboxBaseSchema = z.object({
         name: z.string().min(1, 'validation.required'),
         description: z.string().optional()
     })).optional().default([]),
+    closeReasons: z.array(z.object({
+        name: z.string().min(1, 'validation.required'),
+        description: z.string().optional()
+    })).optional().default([]),
     entities: z.array(z.object({
         name: z.string().min(1, 'validation.required'),
         description: z.string().optional()
     })).optional().default([]),
+    operators: z.array(z.coerce.string()).optional().default([]),
+    maxAssignableEmailsPerUser: z.number().nullable().optional().default(null),
     sentiments: z.array(z.string()).optional().default([]),
     priorities: z.array(z.string()).optional().default([]),
     tags: z.array(z.string()).optional().default([]),
@@ -21,7 +27,7 @@ const MailboxBaseSchema = z.object({
     isActive: z.boolean().optional(),
     autoProcessEnabled: z.boolean().optional(),
     replyRequiredToClose: z.boolean().optional().default(false),
-    typificationRequiredToClose: z.boolean().optional().default(false),
+    closeReasonRequired: z.boolean().optional().default(false),
     attachmentStorageEnabled: z.boolean().optional().default(true),
     attachmentOcrEnabled: z.boolean().optional().default(false),
     retentionDays: z.number().nullable().optional().default(null),
@@ -44,6 +50,12 @@ const MailboxBaseSchema = z.object({
 const MailboxSchema = MailboxBaseSchema
     .extend({
         _id: z.coerce.string(),
+        operators: z.array(z.object({
+            _id: z.coerce.string(),
+            name: z.string().optional(),
+            username: z.string().optional(),
+            email: z.string().optional()
+        })).optional().default([]),
 
     })
 

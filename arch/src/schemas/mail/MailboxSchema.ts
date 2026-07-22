@@ -9,7 +9,7 @@ const MailboxSchema: IEntitySchema = {
     apiBasePath: "mailboxes",
     collectionName: "Mailbox",
     apiTag: "mail",
-    tabs: ["General", "IMAP", "POP", "SMTP", "Procesamiento"],
+    tabs: ["General", "Gestion", "IMAP", "POP", "SMTP", "Procesamiento", "Analisis IA"],
     schema: {
         name: {
             type: "string",
@@ -66,15 +66,61 @@ const MailboxSchema: IEntitySchema = {
             required: false,
             default: false,
             header: true,
-            groupTab: "Procesamiento",
+            groupTab: "Gestion",
             mdCol: 4,
         },
-        typificationRequiredToClose: {
+        closeReasonRequired: {
             type: "boolean",
             required: false,
             default: false,
             header: true,
-            groupTab: "Procesamiento",
+            groupTab: "Gestion",
+            mdCol: 4,
+        },
+        categories: {
+            type: "array.object",
+            required: false,
+            header: false,
+            groupTab: "Gestion",
+            schema: {
+                name: { type: "string", required: true },
+                description: { type: "string", required: false },
+            },
+        },
+        closeReasons: {
+            type: "array.object",
+            required: false,
+            header: false,
+            groupTab: "Gestion",
+            schema: {
+                name: { type: "string", required: true },
+                description: { type: "string", required: false },
+            },
+        },
+        entities: {
+            type: "array.object",
+            required: false,
+            header: false,
+            groupTab: "Gestion",
+            schema: {
+                name: { type: "string", required: true },
+                description: { type: "string", required: false },
+            },
+        },
+        operators: {
+            type: "array.ref",
+            ref: "User",
+            refDisplay: "name",
+            required: false,
+            header: false,
+            groupTab: "Gestion",
+        },
+        maxAssignableEmailsPerUser: {
+            type: "number",
+            required: false,
+            default: null,
+            header: false,
+            groupTab: "Gestion",
             mdCol: 4,
         },
         processingProtocol: {

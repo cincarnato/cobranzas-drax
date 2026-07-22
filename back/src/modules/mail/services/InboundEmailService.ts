@@ -90,9 +90,6 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (mailbox.replyRequiredToClose && !(inboundEmail.replyCount && inboundEmail.replyCount > 0)) {
             throw new BadRequestError("Este mailbox requiere una respuesta antes de cerrar la gestión.");
         }
-        if (mailbox.typificationRequiredToClose && !inboundEmail.category) {
-            throw new BadRequestError("Debés seleccionar una categoría antes de cerrar la gestión.");
-        }
         const updated = await this.repository.closeManagement(id);
         if (!updated) throw new NotFoundError();
         return updated;

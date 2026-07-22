@@ -8,10 +8,16 @@ interface IMailboxBase {
         name: string
         description?: string
     }>
+    closeReasons?: Array<{
+        name: string
+        description?: string
+    }>
     entities?: Array<{
         name: string
         description?: string
     }>
+    operators?: Array<string | any>
+    maxAssignableEmailsPerUser?: number | null
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
@@ -19,7 +25,7 @@ interface IMailboxBase {
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean
-    typificationRequiredToClose?: boolean
+    closeReasonRequired?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null
@@ -51,10 +57,16 @@ interface IMailbox {
         name: string
         description?: string
     }>
+    closeReasons?: Array<{
+        name: string
+        description?: string
+    }>
     entities?: Array<{
         name: string
         description?: string
     }>
+    operators?: Array<string | any>
+    maxAssignableEmailsPerUser?: number | null
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
@@ -62,7 +74,7 @@ interface IMailbox {
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean
-    typificationRequiredToClose?: boolean
+    closeReasonRequired?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null

@@ -14,10 +14,16 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
                 name: {type: String, required: true, index: false, unique: false},
                 description: {type: String, required: false, index: false, unique: false}
             }],
+            closeReasons: [{
+                name: {type: String, required: true, index: false, unique: false},
+                description: {type: String, required: false, index: false, unique: false}
+            }],
             entities: [{
                 name: {type: String, required: true, index: false, unique: false},
                 description: {type: String, required: false, index: false, unique: false}
             }],
+            operators: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: false, unique: false }],
+            maxAssignableEmailsPerUser: {type: Number, required: false, index: false, unique: false, default: null },
             sentiments: [{type: String, required: false}],
             priorities: [{type: String, required: false}],
             tags: [{type: String, required: false}],
@@ -25,7 +31,7 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             isActive: {type: Boolean,   required: false, index: false, unique: false },
             autoProcessEnabled: {type: Boolean,   required: false, index: false, unique: false },
             replyRequiredToClose: {type: Boolean, required: false, index: false, unique: false, default: false },
-            typificationRequiredToClose: {type: Boolean, required: false, index: false, unique: false, default: false },
+            closeReasonRequired: {type: Boolean, required: false, index: false, unique: false, default: false },
             attachmentStorageEnabled: {type: Boolean,   required: false, index: false, unique: false, default: true },
             attachmentOcrEnabled: {type: Boolean,   required: false, index: false, unique: false, default: false },
             retentionDays: {type: Number, required: false, index: false, unique: false, default: null },

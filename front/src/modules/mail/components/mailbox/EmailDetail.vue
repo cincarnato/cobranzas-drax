@@ -56,7 +56,6 @@ const assigneeLabel = computed(() => {
 function requestClose() {
   if (!email.value || !props.detail?.mailbox) return
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) return
-  if (props.detail.mailbox.typificationRequiredToClose && !email.value.category) return
   closeDialog.value = true
 }
 
@@ -64,9 +63,6 @@ function closeValidation() {
   if (!email.value || !props.detail?.mailbox) return ""
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) {
     return "Este mailbox requiere una respuesta antes de cerrar la gestión."
-  }
-  if (props.detail.mailbox.typificationRequiredToClose && !email.value.category) {
-    return "Debés seleccionar una categoría antes de cerrar la gestión."
   }
   return ""
 }
