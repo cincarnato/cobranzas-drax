@@ -19,7 +19,7 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="email-list overflow-auto">
+  <div class="email-list">
     <div v-if="loading" class="pa-3">
       <v-skeleton-loader v-for="item in 8" :key="item" type="list-item-two-line" class="mb-2" />
     </div>
@@ -34,7 +34,7 @@ defineEmits<{
       icon="mdi-email-search-outline"
       :text="emptyText"
     />
-    <template v-else>
+    <div v-else class="email-list-content">
       <EmailListItem
         v-for="email in items"
         :key="email._id"
@@ -44,12 +44,17 @@ defineEmits<{
         @open="$emit('open', $event)"
         @toggle-star="$emit('toggle-star', $event)"
       />
-    </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .email-list {
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: auto;
+}
+.email-list-content {
+  min-width: 1120px;
 }
 </style>

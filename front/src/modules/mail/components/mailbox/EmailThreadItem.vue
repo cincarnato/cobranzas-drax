@@ -6,10 +6,23 @@ import EmailAttachments from "./EmailAttachments.vue";
 
 const props = defineProps<{entry: EmailThreadEntry}>()
 const showRemote = ref(false)
+const expanded = ref(true)
 
-const title = computed(() => props.entry.type === "INBOUND"
-  ? (props.entry.inboundEmail?.fromName || props.entry.inboundEmail?.fromEmail || "Entrante")
-  : (props.entry.outboundEmail?.fromEmail || "Saliente"))
+const senderName = computed(() => props.entry.type === "INBOUND"
+  ? (props.entry.inboundEmail?.fromName || "")
+  : "")
+
+const senderEmail = computed(() => props.entry.type === "INBOUND"
+  ? (props.entry.inboundEmail?.fromEmail || "")
+  : (props.entry.outboundEmail?.fromEmail || ""))
+
+const senderLabel = computed(() => {
+  if (senderName.value && senderEmail.value) return `${senderName.value} <${senderEmail.value}>`
+  return senderName.value || senderEmail.value || "-"
+})
+
+const directionColor = computed(() => props.entry.type === "INBOUND" ? "blue-darken-2" : "deep-orange-darken-2")
+const directionClass = computed(() => props.entry.type === "INBOUND" ? "direction-inbound" : "direction-outbound")
 
 const recipients = computed(() => props.entry.type === "INBOUND"
   ? (props.entry.inboundEmail?.toEmails || []).join(", ")
@@ -54,30 +67,61 @@ function escapeHtml(value: string) {
 
 <template>
   <v-card variant="outlined" class="mb-3">
-    <v-card-title class="d-flex align-center ga-2 py-3">
-      <v-icon :icon="entry.type === 'INBOUND' ? 'mdi-email-arrow-left-outline' : 'mdi-email-arrow-right-outline'" />
+    <v-card-title class="d-flex align-center ga-2 py-3 cursor-pointer" @click="expanded = !expanded">
+      <div class="direction-icon" :class="directionClass">
+        <v-icon
+          :icon="entry.type === 'INBOUND' ? 'mdi-email-arrow-left-outline' : 'mdi-email-arrow-right-outline'"
+          :color="directionColor"
+          size="22"
+        />
+      </div>
       <div class="min-w-0">
-        <div class="text-subtitle-2 text-truncate">{{ title }}</div>
+        <div class="text-subtitle-2 text-truncate">De: {{ senderLabel }}</div>
         <div class="text-caption text-medium-emphasis text-truncate">Para: {{ recipients || '-' }}</div>
       </div>
       <v-spacer />
       <div class="text-caption text-medium-emphasis">{{ dayjs(entry.date).format('DD/MM/YYYY HH:mm') }}</div>
+      <v-btn
+        :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        variant="text"
+        density="compact"
+        @click.stop="expanded = !expanded"
+      />
     </v-card-title>
-    <v-divider />
-    <v-card-text>
-      <v-alert v-if="outbound?.status === 'FAILED'" type="error" variant="tonal" density="compact" class="mb-3">
-        Error al enviar. Intentos: {{ outbound.attempts || 0 }}. {{ outbound.lastError }}
-      </v-alert>
-      <v-btn v-if="!showRemote" size="small" variant="text" prepend-icon="mdi-image-off-outline" class="mb-2" @click="showRemote = true">
-        Mostrar contenido remoto
-      </v-btn>
-      <div class="email-body" v-html="bodyHtml" />
-      <EmailAttachments :attachments="entry.inboundEmail?.attachments" />
-    </v-card-text>
+    <template v-if="expanded">
+      <v-divider />
+      <v-card-text>
+        <v-alert v-if="outbound?.status === 'FAILED'" type="error" variant="tonal" density="compact" class="mb-3">
+          Error al enviar. Intentos: {{ outbound.attempts || 0 }}. {{ outbound.lastError }}
+        </v-alert>
+        <v-btn v-if="!showRemote" size="small" variant="text" prepend-icon="mdi-image-off-outline" class="mb-2" @click="showRemote = true">
+          Mostrar contenido remoto
+        </v-btn>
+        <div class="email-body" v-html="bodyHtml" />
+        <EmailAttachments :attachments="entry.inboundEmail?.attachments" />
+      </v-card-text>
+    </template>
   </v-card>
 </template>
 
 <style scoped>
+.direction-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+}
+.direction-inbound {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+}
+.direction-outbound {
+  background: #fbe9e7;
+  border: 1px solid #ffab91;
+}
 .email-body {
   overflow-wrap: anywhere;
 }

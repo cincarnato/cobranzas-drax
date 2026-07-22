@@ -21,6 +21,7 @@ defineEmits<{(e: "update:modelValue", value: string | null): void}>()
     density="compact"
     variant="outlined"
     hide-details
+    class="mailbox-selector"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #item="{props, item}">
@@ -31,13 +32,39 @@ defineEmits<{(e: "update:modelValue", value: string | null): void}>()
       </v-list-item>
     </template>
     <template #selection="{item}">
-      <div class="d-flex align-center ga-2 min-w-0">
+      <div class="mailbox-selection d-flex align-center ga-2">
         <v-badge dot inline :color="item.raw.isActive ? 'success' : 'grey'" />
-        <div class="text-truncate">
-          <div class="text-body-2">{{ item.raw.name }}</div>
-          <div class="text-caption text-medium-emphasis">{{ item.raw.email }}</div>
-        </div>
+        <span class="mailbox-selection-text text-body-2 text-truncate">{{ item.raw.name }}</span>
       </div>
     </template>
   </v-autocomplete>
 </template>
+
+<style scoped>
+.mailbox-selector {
+  flex: 0 0 auto;
+}
+.mailbox-selector :deep(.v-field) {
+  min-height: 40px;
+}
+.mailbox-selector :deep(.v-field__input) {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.mailbox-selector :deep(.v-autocomplete__selection) {
+  min-width: 0;
+  max-width: 100%;
+}
+.mailbox-selection {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mailbox-selection-text {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+</style>

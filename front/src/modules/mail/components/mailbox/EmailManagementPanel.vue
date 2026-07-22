@@ -5,24 +5,28 @@ import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
 import EmailClassificationForm from "./EmailClassificationForm.vue";
-import EmailCustomerPanel from "./EmailCustomerPanel.vue";
 import ExtractedEntitiesPanel from "./ExtractedEntitiesPanel.vue";
 import EmailAssignee from "./EmailAssignee.vue";
 import EmailStatusBadge from "./EmailStatusBadge.vue";
+import AssignEmailButton from "./AssignEmailButton.vue";
 
 const props = defineProps<{
   email: IInboundEmail
   mailbox: IMailbox | null
   permissions: EmailManagementPermissions
   saving?: boolean
+  actionLoading?: boolean
+  closeValidation?: string
 }>()
 
 const emit = defineEmits<{
-  (e: "save-classification", value: {category?: string | null, priority?: string | null, sentiment?: string | null, tags?: string[]}): void
+  (e: "save-classification", value: {category?: string | null, priority?: string | null}): void
   (e: "reassign", userId: string | null): void
+  (e: "assign"): void
+  (e: "close-request"): void
 }>()
 
-const classification = ref({category: props.email.category || null, priority: props.email.priority || null, sentiment: props.email.sentiment || null, tags: props.email.tags || []})
+const classification = ref({category: props.email.category || null, priority: props.email.priority || null})
 const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
@@ -32,8 +36,6 @@ watch(() => props.email._id, () => {
   classification.value = {
     category: props.email.category || null,
     priority: props.email.priority || null,
-    sentiment: props.email.sentiment || null,
-    tags: props.email.tags || [],
   }
   selectedUser.value = typeof props.email.assignedTo === "object" ? props.email.assignedTo?._id : props.email.assignedTo || null
 }, {immediate: true})
@@ -64,12 +66,11 @@ async function loadUsers() {
       </div>
     </div>
 
-    <v-divider />
-
-    <EmailClassificationForm v-model="classification" :mailbox="mailbox" :readonly="!permissions.canClose && !permissions.canReply" />
-    <v-btn color="primary" prepend-icon="mdi-content-save-outline" :loading="saving" @click="emit('save-classification', classification)">
-      Guardar cambios
-    </v-btn>
+    <AssignEmailButton
+      v-if="permissions.canAssign && email.attentionStatus === 'PENDING' && !email.assignedTo"
+      :loading="actionLoading"
+      @assign="emit('assign')"
+    />
 
     <template v-if="permissions.canReassign">
       <v-divider />
@@ -79,18 +80,36 @@ async function loadUsers() {
         :items="users"
         item-title="username"
         item-value="_id"
-        label="Reasignar"
+        label="Asignar a usuario"
         density="compact"
         variant="outlined"
         clearable
       />
       <v-btn variant="tonal" prepend-icon="mdi-account-switch-outline" @click="emit('reassign', selectedUser)">
-        Reasignar
+        Asignar
       </v-btn>
     </template>
 
     <v-divider />
-    <EmailCustomerPanel :customer="email.customer" />
-    <ExtractedEntitiesPanel :entities="email.extractedEntities" />
+
+    <EmailClassificationForm v-model="classification" :mailbox="mailbox" :readonly="!permissions.canClose && !permissions.canReply" />
+    <v-btn color="primary" prepend-icon="mdi-content-save-outline" :loading="saving" @click="emit('save-classification', classification)">
+      Guardar cambios
+    </v-btn>
+    <v-alert v-if="closeValidation" density="compact" variant="tonal" color="warning">
+      {{ closeValidation }}
+    </v-alert>
+    <v-btn
+      color="success"
+      prepend-icon="mdi-check-circle-outline"
+      :loading="actionLoading"
+      :disabled="!!closeValidation || !permissions.canClose"
+      @click="emit('close-request')"
+    >
+      Cerrar gestión
+    </v-btn>
+
+    <v-divider />
+    <ExtractedEntitiesPanel :entities="email.extractedEntities" :sentiment="email.sentiment" :tags="email.tags" />
   </div>
 </template>

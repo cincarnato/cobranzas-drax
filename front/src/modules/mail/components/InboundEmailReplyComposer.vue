@@ -572,7 +572,7 @@ async function sendReply() {
 </script>
 
 <template>
-  <v-card>
+  <v-card class="mail-reply-composer-card" elevation="6">
       <v-card-title class="d-flex align-center ga-2 py-3">
         <v-icon icon="mdi-reply-outline" />
         {{ t('mail.reply.title') }}
@@ -943,6 +943,13 @@ async function sendReply() {
       </v-card-actions>
     </v-card>
 </template>
+
+<style scoped>
+.mail-reply-composer-card {
+  border: 1px solid rgba(var(--v-border-color), 0.18);
+  box-shadow: 0 8px 28px rgba(60, 64, 67, 0.18);
+}
+</style>
 
 <style scoped>
 .mail-editor {

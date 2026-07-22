@@ -261,6 +261,24 @@ function clearFilters() {
   debouncedSearch.value = ""
   filters.value = {priorities: [], tags: []}
   page.value = 1
+  closeDetail()
+}
+
+function selectSidebarView(value: EmailManagementView) {
+  view.value = value
+  page.value = 1
+  closeDetail()
+}
+
+function selectSidebarCategory(value?: string) {
+  filters.value = {...filters.value, category: value}
+  page.value = 1
+  closeDetail()
+}
+
+function closeDetail() {
+  selectedId.value = null
+  detail.value = null
 }
 
 function keepCompatibleFilters() {
@@ -308,12 +326,12 @@ function notify(text: string, color = "info") {
           :counts="counts"
           :loading-mailboxes="loadingMailboxes"
           @update:mailbox-id="mailboxId = $event"
-          @update:view="view = $event; page = 1"
-          @update:category="filters.category = $event; page = 1"
+          @update:view="selectSidebarView"
+          @update:category="selectSidebarCategory"
           @compose="notify('La redacción de correos nuevos queda preparada para una próxima etapa.')"
         />
       </aside>
-      <main class="email-main border-e" :class="{hiddenMobile: selectedId}">
+      <main class="email-main">
         <EmailToolbar
           :search="search"
           :filters="filters"
@@ -329,6 +347,7 @@ function notify(text: string, color = "info") {
           @update:page-size="pageSize = $event; page = 1"
           @update:density="density = $event"
           @clear="clearFilters"
+          @refresh="fetchList(); fetchCounts()"
         />
         <div class="px-3 py-2 text-caption text-medium-emphasis border-b">{{ totalItems }} correos</div>
         <EmailList
@@ -342,25 +361,25 @@ function notify(text: string, color = "info") {
           @toggle-star="toggleStar"
           @retry="fetchList"
         />
+        <section v-if="selectedId" class="email-detail-overlay">
+          <EmailDetail
+            :detail="detail"
+            :loading="loadingDetail"
+            :error="detailError"
+            :current-user="currentUser"
+            :permissions="detailPermissions"
+            :action-loading="actionLoading"
+            :saving="saving"
+            @back="closeDetail"
+            @retry="fetchDetail()"
+            @assign="assignToMe"
+            @save-classification="saveClassification"
+            @reassign="reassign"
+            @close="closeEmail"
+            @reply-sent="fetchDetail(); fetchList(); fetchCounts()"
+          />
+        </section>
       </main>
-      <section class="email-detail-section" :class="{visibleMobile: selectedId}">
-        <EmailDetail
-          :detail="detail"
-          :loading="loadingDetail"
-          :error="detailError"
-          :current-user="currentUser"
-          :permissions="detailPermissions"
-          :action-loading="actionLoading"
-          :saving="saving"
-          @back="selectedId = null; detail = null"
-          @retry="fetchDetail()"
-          @assign="assignToMe"
-          @save-classification="saveClassification"
-          @reassign="reassign"
-          @close="closeEmail"
-          @reply-sent="fetchDetail(); fetchList(); fetchCounts()"
-        />
-      </section>
     </div>
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
       {{ snackbar.text }}
@@ -375,36 +394,29 @@ function notify(text: string, color = "info") {
 }
 .email-shell {
   display: grid;
-  grid-template-columns: 280px minmax(420px, 0.9fr) minmax(520px, 1.25fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   background: rgb(var(--v-theme-surface));
 }
 .email-sidebar,
-.email-main,
-.email-detail-section {
+.email-main {
   min-height: 0;
   overflow: hidden;
 }
-.email-main,
-.email-detail-section {
+.email-main {
+  position: relative;
   display: flex;
   flex-direction: column;
+}
+.email-detail-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgb(var(--v-theme-surface));
+  overflow: hidden;
 }
 @media (max-width: 1260px) {
   .email-shell {
     grid-template-columns: 260px 1fr;
-  }
-  .email-detail-section {
-    display: none;
-  }
-  .email-detail-section.visibleMobile {
-    display: flex;
-    grid-column: 2;
-    grid-row: 1;
-    background: rgb(var(--v-theme-surface));
-    z-index: 1;
-  }
-  .email-main.hiddenMobile {
-    display: none;
   }
 }
 @media (max-width: 760px) {
@@ -413,9 +425,6 @@ function notify(text: string, color = "info") {
   }
   .email-sidebar {
     display: none;
-  }
-  .email-detail-section.visibleMobile {
-    grid-column: 1;
   }
 }
 </style>

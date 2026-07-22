@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{status?: string}>()
+const props = defineProps<{status?: string, labeled?: boolean, color?: string}>()
 
 const labels: Record<string, string> = {
   PENDING: "Pendiente",
@@ -15,7 +15,8 @@ const colors: Record<string, string> = {
 </script>
 
 <template>
-  <v-chip :color="colors[status || ''] || 'default'" size="small" variant="tonal">
-    {{ labels[status || ''] || status || '-' }}
+  <v-chip :color="props.color || colors[status || ''] || 'default'" size="small" variant="tonal">
+    <span v-if="labeled" class="font-weight-semibold">Estado:</span>
+    <span>{{ labels[status || ''] || status || '-' }}</span>
   </v-chip>
 </template>

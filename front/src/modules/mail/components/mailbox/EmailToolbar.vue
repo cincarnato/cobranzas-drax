@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailDensity, EmailManagementFilters} from "@/modules/mail/interfaces/IEmailManagement";
-import EmailSearchInput from "./EmailSearchInput.vue";
 import EmailFilterBar from "./EmailFilterBar.vue";
 
 defineProps<{
@@ -22,21 +21,32 @@ defineEmits<{
   (e: "update:pageSize", value: number): void
   (e: "update:density", value: EmailDensity): void
   (e: "clear"): void
+  (e: "refresh"): void
 }>()
 </script>
 
 <template>
   <div class="pa-3 border-b bg-surface">
-    <div class="d-flex align-center ga-2 mb-3">
-      <EmailSearchInput :model-value="search" :loading="loading" @update:model-value="$emit('update:search', $event)" />
-      <v-btn icon="mdi-filter-remove-outline" variant="text" @click="$emit('clear')" />
+    <EmailFilterBar
+      :model-value="filters"
+      :mailbox="mailbox"
+      :search="search"
+      :loading="loading"
+      @update:model-value="$emit('update:filters', $event)"
+      @update:search="$emit('update:search', $event)"
+      @clear="$emit('clear')"
+    />
+    <div class="d-flex justify-end align-center flex-wrap ga-2 mt-3">
+      <v-btn
+        icon="mdi-refresh"
+        variant="text"
+        :loading="loading"
+        @click="$emit('refresh')"
+      />
       <v-btn-toggle :model-value="density" mandatory density="compact" @update:model-value="$emit('update:density', $event)">
         <v-btn value="comfortable" size="small">Cómodo</v-btn>
         <v-btn value="compact" size="small">Compacto</v-btn>
       </v-btn-toggle>
-    </div>
-    <EmailFilterBar :model-value="filters" :mailbox="mailbox" @update:model-value="$emit('update:filters', $event)" />
-    <div class="d-flex justify-end align-center ga-2 mt-3">
       <v-select
         :model-value="pageSize"
         :items="[10, 25, 50, 100]"

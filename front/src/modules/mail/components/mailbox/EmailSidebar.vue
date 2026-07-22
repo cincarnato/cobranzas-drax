@@ -24,14 +24,14 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="pa-3 d-flex flex-column ga-4 h-100">
+  <div class="pa-3 d-flex flex-column ga-3 h-100">
     <MailboxSelector
       :model-value="mailboxId"
       :mailboxes="mailboxes"
       :loading="loadingMailboxes"
       @update:model-value="$emit('update:mailboxId', $event)"
     />
-    <v-btn color="primary" prepend-icon="mdi-pencil-outline" block @click="$emit('compose')">
+    <v-btn color="primary" prepend-icon="mdi-pencil-outline" block class="compose-button" @click="$emit('compose')">
       Redactar
     </v-btn>
     <EmailSidebarViews :model-value="view" :counts="counts" @update:model-value="$emit('update:view', $event)" />
@@ -39,3 +39,11 @@ defineEmits<{
     <EmailCategoryList :mailbox="mailbox" :model-value="category" @update:model-value="$emit('update:category', $event)" />
   </div>
 </template>
+
+<style scoped>
+.compose-button {
+  flex: 0 0 auto;
+  height: 40px;
+  min-height: 40px;
+}
+</style>

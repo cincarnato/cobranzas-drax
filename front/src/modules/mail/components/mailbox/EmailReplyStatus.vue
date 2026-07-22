@@ -12,6 +12,7 @@ dayjs.locale("es")
 const props = defineProps<{
   email: IInboundEmail
   lastOutbound?: IOutboundEmail | null
+  labeled?: boolean
 }>()
 
 const text = computed(() => {
@@ -31,6 +32,7 @@ const color = computed(() => {
 
 <template>
   <v-chip :color="color" size="x-small" variant="tonal">
-    {{ text }}
+    <span v-if="labeled" class="font-weight-semibold">Respuesta:</span>
+    <span>{{ text }}</span>
   </v-chip>
 </template>
