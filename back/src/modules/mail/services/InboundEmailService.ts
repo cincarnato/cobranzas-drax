@@ -95,16 +95,16 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         };
     }
 
-    async assignToMe(id: string, userId: string): Promise<IInboundEmail> {
+    async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail> {
         const inboundEmail = await this.findById(id);
         if (!inboundEmail) throw new NotFoundError();
-        if (inboundEmail.attentionStatus !== "PENDING" || inboundEmail.assignedTo) {
+        if (inboundEmail.attentionStatus === "CLOSED" || (!force && (inboundEmail.attentionStatus !== "PENDING" || inboundEmail.assignedTo))) {
             throw new Error("INBOUND_EMAIL_ASSIGNMENT_CONFLICT");
         }
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
         this.assertMailboxOperator(mailbox, userId);
         await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
-        const updated = await this.repository.assignToMe(id, userId);
+        const updated = await this.repository.assignToMe(id, userId, force);
         if (!updated) throw new Error("INBOUND_EMAIL_ASSIGNMENT_CONFLICT");
         return updated;
     }

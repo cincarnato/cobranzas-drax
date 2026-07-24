@@ -65,13 +65,13 @@ const baseCanUpdate = computed(() => auth.hasPermission("inboundemail:update") |
 const detailPermissions = computed(() => {
   const email = detail.value?.inboundEmail
   const assignedTo = typeof email?.assignedTo === "object" ? email?.assignedTo?._id : email?.assignedTo
-  const assignedToMe = Boolean(assignedTo && currentUserId.value && assignedTo === currentUserId.value)
+  const assignedToMe = Boolean(assignedTo && currentUserId.value && String(assignedTo) === String(currentUserId.value))
   const openAndAssigned = email?.attentionStatus !== "CLOSED" && (assignedToMe || isSupervisor.value)
   const canManageDetailMailbox = canManageMailbox(detail.value?.mailbox || selectedMailbox.value)
   return {
     canAssign: baseCanUpdate.value && canManageDetailMailbox,
     canReassign: isSupervisor.value && canManageDetailMailbox,
-    canReply: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned),
+    canReply: baseCanUpdate.value && canManageDetailMailbox && email?.attentionStatus !== "CLOSED" && Boolean(assignedToMe),
     canClose: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned),
     canViewTechnicalDetails: isSupervisor.value,
   }
@@ -205,13 +205,16 @@ async function toggleStar(email: EmailManagementListItem) {
 
 async function assignToMe() {
   if (!selectedId.value) return
+  const email = detail.value?.inboundEmail
+  const assignedTo = typeof email?.assignedTo === "object" ? email?.assignedTo?._id : email?.assignedTo
+  if (assignedTo && currentUserId.value && String(assignedTo) === String(currentUserId.value)) return
   actionLoading.value = true
   try {
-    await EmailManagementProvider.instance.assignToMe(selectedId.value)
+    await EmailManagementProvider.instance.assignToMe(selectedId.value, {force: Boolean(assignedTo)})
     await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
     notify("Correo asignado.")
   } catch (error: any) {
-    notify(error?.response?.data?.message || "Este correo acaba de ser asignado a otro operador.", "warning")
+    notify(error?.response?.data?.message || "No se pudo tomar el correo.", "warning")
     await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
   } finally {
     actionLoading.value = false

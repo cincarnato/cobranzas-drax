@@ -19,6 +19,10 @@ const AssignmentSchema = z.object({
     assignedTo: z.string().nullable().optional(),
 });
 
+const AssignToMeSchema = z.object({
+    force: z.boolean().optional(),
+});
+
 const UserStateSchema = z.object({
     isRead: z.boolean().optional(),
     isStarred: z.boolean().optional(),
@@ -91,7 +95,8 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
             request.rbac.assertAuthenticated();
             request.rbac.assertPermission(InboundEmailPermissions.Update);
             const {id} = request.params as {id: string};
-            return reply.send(await InboundEmailServiceFactory.instance.assignToMe(id, request.rbac.userId));
+            const payload = AssignToMeSchema.parse(request.body || {});
+            return reply.send(await InboundEmailServiceFactory.instance.assignToMe(id, request.rbac.userId, Boolean(payload.force)));
         } catch (error: any) {
             if (error?.message === "INBOUND_EMAIL_ASSIGNMENT_CONFLICT") {
                 return reply.status(409).send({error: error.message, message: "Este correo acaba de ser asignado a otro operador."});

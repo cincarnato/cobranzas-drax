@@ -98,9 +98,12 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             .exec() as IInboundEmail[];
     }
 
-    async assignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
+    async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail | null> {
+        const assignmentFilter = force
+            ? {attentionStatus: {$in: ["PENDING", "ASSIGNED"]}}
+            : {attentionStatus: "PENDING", $or: [{assignedTo: {$exists: false}}, {assignedTo: null}]};
         return await this._model.findOneAndUpdate(
-            {_id: id, attentionStatus: "PENDING", $or: [{assignedTo: {$exists: false}}, {assignedTo: null}]},
+            {_id: id, ...assignmentFilter},
             {$set: {attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date()}},
             {new: true}
         ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;

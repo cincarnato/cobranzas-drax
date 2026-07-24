@@ -20,7 +20,7 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     findByProcessMarkStatus(options: FindInboundEmailsByProcessMarkOptions): Promise<IInboundEmail[]>
     managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult>
     findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]>
-    assignToMe(id: string, userId: string): Promise<IInboundEmail | null>
+    assignToMe(id: string, userId: string, force?: boolean): Promise<IInboundEmail | null>
     reassign(id: string, userId: string | null): Promise<IInboundEmail | null>
     countAssignedToUser(mailboxValues: string[], userId: string): Promise<number>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>

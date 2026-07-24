@@ -5,6 +5,6 @@ defineEmits<{(e: "assign"): void}>()
 
 <template>
   <v-btn color="primary" prepend-icon="mdi-account-plus-outline" :loading="loading" :disabled="disabled" @click="$emit('assign')">
-    Tomar correo
+    Tomar Correo
   </v-btn>
 </template>

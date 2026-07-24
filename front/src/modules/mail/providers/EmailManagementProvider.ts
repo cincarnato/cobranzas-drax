@@ -40,8 +40,8 @@ class EmailManagementProvider {
     return await this.httpClient.get(`${this.basePath}/${id}/management-detail`) as EmailManagementDetail
   }
 
-  async assignToMe(id: string): Promise<IInboundEmail> {
-    return await this.httpClient.post(`${this.basePath}/${id}/assign-to-me`, {}) as IInboundEmail
+  async assignToMe(id: string, options: {force?: boolean} = {}): Promise<IInboundEmail> {
+    return await this.httpClient.post(`${this.basePath}/${id}/assign-to-me`, options) as IInboundEmail
   }
 
   async reassign(id: string, assignedTo: string | null): Promise<IInboundEmail> {

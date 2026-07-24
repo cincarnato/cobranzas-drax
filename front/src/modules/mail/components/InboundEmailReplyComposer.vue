@@ -242,6 +242,10 @@ function focusEditor() {
   editorRef.value?.focus()
 }
 
+defineExpose({
+  focusEditor,
+})
+
 function saveEditorSelection() {
   const selection = window.getSelection()
   if (!selection?.rangeCount || !editorRef.value) return
@@ -907,22 +911,20 @@ async function sendReply() {
                 {{ t('validation.required') }}
               </div>
             </v-col>
-
-            <v-col cols="12">
-              <v-checkbox
-                v-model="closeAfterSend"
-                :label="t('mail.reply.closeAfterSend')"
-                density="compact"
-                hide-details
-              />
-            </v-col>
           </v-row>
         </v-form>
       </v-card-text>
 
       <v-divider />
 
-      <v-card-actions class="justify-end">
+      <v-card-actions>
+        <v-checkbox
+          v-model="closeAfterSend"
+          :label="t('mail.reply.closeAfterSend')"
+          density="compact"
+          hide-details
+        />
+        <v-spacer />
         <v-btn
           variant="text"
           :disabled="loading"

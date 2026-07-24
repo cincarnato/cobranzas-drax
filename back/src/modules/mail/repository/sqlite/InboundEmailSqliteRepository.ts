@@ -163,9 +163,9 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return await this.find({limit: 100, orderBy: "receivedAt", order: "asc", filters});
     }
 
-    async assignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
+    async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
-        if (!item || item.attentionStatus !== "PENDING" || item.assignedTo) return null;
+        if (!item || (force ? !["PENDING", "ASSIGNED"].includes(String(item.attentionStatus)) : (item.attentionStatus !== "PENDING" || item.assignedTo))) return null;
         return await this.update(id, {...item, attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date()});
     }
 

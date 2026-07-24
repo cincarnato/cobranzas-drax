@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from "vue";
+import {computed, nextTick, ref, watch} from "vue";
 import dayjs from "dayjs";
 import type {EmailManagementDetail, EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
@@ -8,6 +8,7 @@ import EmailReplyStatus from "./EmailReplyStatus.vue";
 import EmailThread from "./EmailThread.vue";
 import EmailManagementPanel from "./EmailManagementPanel.vue";
 import CloseEmailDialog from "./CloseEmailDialog.vue";
+import AssignEmailButton from "./AssignEmailButton.vue";
 import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
 
 const props = defineProps<{
@@ -32,9 +33,21 @@ const emit = defineEmits<{
 
 const showPanel = ref(true)
 const closeDialog = ref(false)
+const takeDialog = ref(false)
+const replyComposerRef = ref<{focusEditor: () => void} | null>(null)
+const threadPaneRef = ref<HTMLElement | null>(null)
 
 const email = computed(() => props.detail?.inboundEmail || null)
 const canReply = computed(() => props.permissions.canReply && email.value?.attentionStatus !== "CLOSED")
+const currentUserId = computed(() => (props.currentUser as any)?._id || props.currentUser?.id || "")
+const assignedToId = computed(() => {
+  const assigned = email.value?.assignedTo
+  if (!assigned) return ""
+  return String(typeof assigned === "object" ? assigned._id || assigned.id : assigned)
+})
+const assignedToMe = computed(() => Boolean(assignedToId.value && currentUserId.value && assignedToId.value === String(currentUserId.value)))
+const assignedToOther = computed(() => Boolean(assignedToId.value && !assignedToMe.value))
+const canTakeEmail = computed(() => props.permissions.canAssign && email.value?.attentionStatus !== "CLOSED" && !assignedToMe.value)
 const assignedToName = computed(() => {
   const assigned = email.value?.assignedTo
   if (!assigned || typeof assigned === "string") return ""
@@ -53,10 +66,31 @@ const assigneeLabel = computed(() => {
   return assigned.name || assigned.username || assigned.email || assigned._id || "Sin asignar"
 })
 
+watch(canReply, async (value, previous) => {
+  if (!value || previous) return
+  await nextTick()
+  threadPaneRef.value?.scrollTo({top: threadPaneRef.value.scrollHeight, behavior: "smooth"})
+  replyComposerRef.value?.focusEditor()
+})
+
 function requestClose() {
   if (!email.value || !props.detail?.mailbox) return
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) return
   closeDialog.value = true
+}
+
+function requestTakeEmail() {
+  if (!canTakeEmail.value) return
+  if (assignedToOther.value) {
+    takeDialog.value = true
+    return
+  }
+  emit("assign")
+}
+
+function confirmTakeEmail() {
+  takeDialog.value = false
+  emit("assign")
 }
 
 function closeValidation() {
@@ -121,11 +155,37 @@ function closeValidation() {
             </div>
           </div>
 
-          <div class="thread-pane pa-4">
+          <div ref="threadPaneRef" class="thread-pane pa-4">
             <EmailThread :inbound-thread="detail.inboundThread" :outbound-thread="detail.outboundThread" />
-            <InboundEmailReplyComposer v-if="canReply" :inbound-email="email as IInboundEmail" class="mt-4" @sent="$emit('reply-sent', $event)" />
+            <InboundEmailReplyComposer
+              v-if="canReply"
+              ref="replyComposerRef"
+              :inbound-email="email as IInboundEmail"
+              class="mt-4"
+              @sent="$emit('reply-sent', $event)"
+            />
+            <div v-else-if="email.attentionStatus !== 'CLOSED'" class="reply-gate mt-4 pa-4">
+              <v-alert
+                density="compact"
+                variant="tonal"
+                :color="assignedToOther ? 'warning' : 'info'"
+                class="mb-3"
+              >
+                <template v-if="assignedToOther">
+                  Este correo está asignado a {{ assignedToName || 'otro usuario' }}. Para responderlo primero tenés que tomarlo.
+                </template>
+                <template v-else>
+                  Para responder el correo primero tenés que tomarlo.
+                </template>
+              </v-alert>
+              <AssignEmailButton
+                v-if="canTakeEmail"
+                :loading="actionLoading"
+                @assign="requestTakeEmail"
+              />
+            </div>
             <v-alert v-else density="compact" variant="tonal" color="info" class="mt-4">
-              {{ email.attentionStatus === 'CLOSED' ? 'La gestión está cerrada.' : 'Para responder, el correo debe estar asignado a vos o tenés que contar con permisos de supervisión.' }}
+              La gestión está cerrada.
             </v-alert>
           </div>
         </div>
@@ -145,6 +205,19 @@ function closeValidation() {
         </aside>
       </div>
       <CloseEmailDialog v-model="closeDialog" :loading="actionLoading" @confirm="closeDialog = false; emit('close')" />
+      <v-dialog v-model="takeDialog" max-width="460">
+        <v-card>
+          <v-card-title>Tomar correo asignado</v-card-title>
+          <v-card-text>
+            Este correo está asignado a {{ assignedToName || 'otro usuario' }}. Si confirmás, se desasignará de ese usuario y quedará asignado a vos.
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" :disabled="actionLoading" @click="takeDialog = false">Cancelar</v-btn>
+            <v-btn color="primary" :loading="actionLoading" @click="confirmTakeEmail">Tomar Correo</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </template>
   </div>
 </template>
@@ -174,6 +247,11 @@ function closeValidation() {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+.reply-gate {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  background: rgb(var(--v-theme-surface));
 }
 .email-attribute-row :deep(.v-chip__content) {
   gap: 4px;
