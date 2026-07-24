@@ -24,7 +24,7 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     reassign(id: string, userId: string | null): Promise<IInboundEmail | null>
     countAssignedToUser(mailboxValues: string[], userId: string): Promise<number>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>
-    closeManagement(id: string): Promise<IInboundEmail | null>
+    closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null>
 
 }
 
@@ -58,6 +58,7 @@ type InboundEmailManagementListResult = {
 
 type InboundEmailClassificationUpdate = {
     category?: string | null
+    closeReason?: string | null
     priority?: string | null
     sentiment?: string | null
     tags?: string[]

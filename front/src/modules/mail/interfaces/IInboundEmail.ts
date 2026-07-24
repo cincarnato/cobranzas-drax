@@ -42,6 +42,7 @@ interface IInboundEmailBase {
   attachmentsOcrText?: string
   attachmentsOcrError?: string
   category?: string
+  closeReason?: string
   sentiment?: string
   priority?: string
   summary?: string
@@ -104,6 +105,7 @@ interface IInboundEmail {
   attachmentsOcrText?: string
   attachmentsOcrError?: string
   category?: string
+  closeReason?: string
   sentiment?: string
   priority?: string
   summary?: string

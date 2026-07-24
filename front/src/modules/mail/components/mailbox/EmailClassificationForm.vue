@@ -2,7 +2,7 @@
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 
 const props = defineProps<{
-  modelValue: {category?: string | null, priority?: string | null}
+  modelValue: {category?: string | null, closeReason?: string | null, priority?: string | null}
   mailbox: IMailbox | null
   readonly?: boolean
 }>()
@@ -21,6 +21,18 @@ function update(partial: Partial<typeof props.modelValue>) {
     </v-col>
     <v-col cols="12">
       <v-select :model-value="modelValue.priority" :readonly="readonly" :items="mailbox?.priorities || []" label="Prioridad" density="compact" variant="outlined" clearable @update:model-value="update({priority: $event || null})" />
+    </v-col>
+    <v-col v-if="mailbox?.closeReasonRequired || mailbox?.closeReasons?.length" cols="12">
+      <v-select
+        :model-value="modelValue.closeReason"
+        :readonly="readonly"
+        :items="(mailbox?.closeReasons || []).map((item) => item.name)"
+        label="Motivo de cierre"
+        density="compact"
+        variant="outlined"
+        clearable
+        @update:model-value="update({closeReason: $event || null})"
+      />
     </v-col>
   </v-row>
 </template>

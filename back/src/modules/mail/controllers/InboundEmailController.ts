@@ -10,6 +10,7 @@ import EmailUserStateServiceFactory from "../factory/services/EmailUserStateServ
 
 const ClassificationSchema = z.object({
     category: z.string().nullable().optional(),
+    closeReason: z.string().nullable().optional(),
     priority: z.string().nullable().optional(),
     sentiment: z.string().nullable().optional(),
     tags: z.array(z.string()).optional(),
@@ -21,6 +22,10 @@ const AssignmentSchema = z.object({
 
 const AssignToMeSchema = z.object({
     force: z.boolean().optional(),
+});
+
+const CloseManagementSchema = z.object({
+    closeReason: z.string().nullable().optional(),
 });
 
 const UserStateSchema = z.object({
@@ -129,7 +134,8 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         const {id} = request.params as {id: string};
         const current = await InboundEmailServiceFactory.instance.findById(id);
         InboundEmailServiceFactory.instance.assertCanOperate(current, request.rbac.userId, request.rbac.hasPermission(InboundEmailPermissions.Manage));
-        return reply.send(await InboundEmailServiceFactory.instance.closeManagement(id, request.rbac.userId));
+        const payload = CloseManagementSchema.parse(request.body || {});
+        return reply.send(await InboundEmailServiceFactory.instance.closeManagement(id, request.rbac.userId, payload.closeReason || undefined));
     }
 
     async updateUserState(request: CustomRequest, reply: FastifyReply) {

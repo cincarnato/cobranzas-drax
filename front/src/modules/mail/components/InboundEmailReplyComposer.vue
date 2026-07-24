@@ -2,12 +2,14 @@
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
+import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import MailReplyProvider, {type MailReplyResult} from "@/modules/mail/providers/MailReplyProvider";
 
 type EmailField = "to" | "cc" | "bcc"
 
 const props = defineProps<{
   inboundEmail: IInboundEmail | null
+  mailbox?: IMailbox | null
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +30,7 @@ const bccEmailSearch = ref("")
 const bodyHtml = ref("")
 const bodyText = ref("")
 const closeAfterSend = ref(false)
+const closeReason = ref<string | null>(null)
 const editorRef = ref<HTMLElement | null>(null)
 const editorTouched = ref(false)
 const savedSelection = ref<Range | null>(null)
@@ -89,6 +92,8 @@ const allEmailFieldsValid = computed(() =>
   ccEmails.value.every(isValidEmail) &&
   bccEmails.value.every(isValidEmail)
 )
+const closeReasonOptions = computed(() => (props.mailbox?.closeReasons || []).map((item) => item.name))
+const needsCloseReason = computed(() => Boolean(closeAfterSend.value && props.mailbox?.closeReasonRequired))
 
 const canSend = computed(() =>
   Boolean(props.inboundEmail?._id) &&
@@ -96,6 +101,7 @@ const canSend = computed(() =>
   Boolean(bodyText.value.trim()) &&
   toEmails.value.length > 0 &&
   allEmailFieldsValid.value &&
+  (!needsCloseReason.value || Boolean(closeReason.value)) &&
   !loading.value
 )
 
@@ -115,11 +121,19 @@ watch(
     bodyText.value = ""
     editorTouched.value = false
     closeAfterSend.value = false
+    closeReason.value = props.inboundEmail.closeReason || null
     nextTick(() => {
       if (editorRef.value) editorRef.value.innerHTML = ""
     })
   },
   {immediate: true}
+)
+
+watch(
+  () => props.inboundEmail?.closeReason,
+  (value) => {
+    closeReason.value = value || null
+  }
 )
 
 onMounted(() => {
@@ -565,13 +579,19 @@ async function sendReply() {
       ccEmails: ccEmails.value,
       bccEmails: bccEmails.value,
       closeAfterSend: closeAfterSend.value,
+      closeReason: closeAfterSend.value ? closeReason.value || null : null,
     })
     emit('sent', result)
   } catch (e: any) {
-    error.value = e?.message || "No se pudo enviar la respuesta."
+    error.value = e?.response?.data?.message || e?.data?.message || userFriendlyError(e?.message)
   } finally {
     loading.value = false
   }
+}
+
+function userFriendlyError(message?: string) {
+  if (!message || message === "error.bad_request") return "No se pudo enviar la respuesta. Revisá los datos requeridos."
+  return message
 }
 </script>
 
@@ -923,6 +943,17 @@ async function sendReply() {
           :label="t('mail.reply.closeAfterSend')"
           density="compact"
           hide-details
+        />
+        <v-select
+          v-if="closeAfterSend && (mailbox?.closeReasonRequired || closeReasonOptions.length)"
+          v-model="closeReason"
+          :items="closeReasonOptions"
+          label="Motivo de cierre"
+          density="compact"
+          variant="outlined"
+          hide-details
+          clearable
+          width="260"
         />
         <v-spacer />
         <v-btn

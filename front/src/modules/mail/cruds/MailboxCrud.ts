@@ -140,6 +140,20 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
           {name: 'description', type: 'string', label: 'description', default: ''}
         ]
       },
+      {
+        name: 'closeReasonRequired',
+        type: 'boolean',
+        label: 'closeReasonRequired',
+        default: false,
+        groupTab: 'Gestion'
+      },
+      {
+        name: 'replyRequiredToClose',
+        type: 'boolean',
+        label: 'replyRequiredToClose',
+        default: false,
+        groupTab: 'Gestion'
+      },
 
       {
         name: 'operators',
@@ -180,20 +194,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
         default: false,
         groupTab: 'Procesamiento'
       },
-      {
-        name: 'replyRequiredToClose',
-        type: 'boolean',
-        label: 'replyRequiredToClose',
-        default: false,
-        groupTab: 'Gestion'
-      },
-      {
-        name: 'closeReasonRequired',
-        type: 'boolean',
-        label: 'closeReasonRequired',
-        default: false,
-        groupTab: 'Gestion'
-      },
+
       {
         name: 'attachmentStorageEnabled',
         type: 'boolean',

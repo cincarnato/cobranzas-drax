@@ -35,6 +35,7 @@ const InboundEmailBaseSchema = z.object({
     attachmentsOcrText: z.string().optional(),
     attachmentsOcrError: z.string().optional(),
     category: z.string().optional(),
+    closeReason: z.string().optional(),
     sentiment: z.string().optional(),
     priority: z.string().optional(),
     summary: z.string().optional(),

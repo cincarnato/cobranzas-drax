@@ -27,7 +27,7 @@ const emit = defineEmits<{
   (e: "assign"): void
   (e: "save-classification", value: any): void
   (e: "reassign", userId: string | null): void
-  (e: "close"): void
+  (e: "close", closeReason?: string | null): void
   (e: "reply-sent", value: any): void
 }>()
 
@@ -36,6 +36,7 @@ const closeDialog = ref(false)
 const takeDialog = ref(false)
 const replyComposerRef = ref<{focusEditor: () => void} | null>(null)
 const threadPaneRef = ref<HTMLElement | null>(null)
+const pendingCloseReason = ref<string | null>(null)
 
 const email = computed(() => props.detail?.inboundEmail || null)
 const canReply = computed(() => props.permissions.canReply && email.value?.attentionStatus !== "CLOSED")
@@ -73,9 +74,11 @@ watch(canReply, async (value, previous) => {
   replyComposerRef.value?.focusEditor()
 })
 
-function requestClose() {
+function requestClose(closeReason?: string | null) {
   if (!email.value || !props.detail?.mailbox) return
+  if (closeValidation(closeReason)) return
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) return
+  pendingCloseReason.value = closeReason || null
   closeDialog.value = true
 }
 
@@ -93,7 +96,16 @@ function confirmTakeEmail() {
   emit("assign")
 }
 
-function closeValidation() {
+function closeValidation(closeReason?: string | null) {
+  const replyValidation = closeBaseValidation()
+  if (replyValidation) return replyValidation
+  if (props.detail?.mailbox.closeReasonRequired && !(closeReason || email.value?.closeReason)) {
+    return "Este mailbox requiere un motivo de cierre antes de cerrar la gestión."
+  }
+  return ""
+}
+
+function closeBaseValidation() {
   if (!email.value || !props.detail?.mailbox) return ""
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) {
     return "Este mailbox requiere una respuesta antes de cerrar la gestión."
@@ -161,6 +173,7 @@ function closeValidation() {
               v-if="canReply"
               ref="replyComposerRef"
               :inbound-email="email as IInboundEmail"
+              :mailbox="detail.mailbox"
               class="mt-4"
               @sent="$emit('reply-sent', $event)"
             />
@@ -196,7 +209,7 @@ function closeValidation() {
             :permissions="permissions"
             :saving="saving"
             :action-loading="actionLoading"
-            :close-validation="closeValidation()"
+            :close-validation="closeBaseValidation()"
             @assign="$emit('assign')"
             @save-classification="$emit('save-classification', $event)"
             @reassign="$emit('reassign', $event)"
@@ -204,7 +217,7 @@ function closeValidation() {
           />
         </aside>
       </div>
-      <CloseEmailDialog v-model="closeDialog" :loading="actionLoading" @confirm="closeDialog = false; emit('close')" />
+      <CloseEmailDialog v-model="closeDialog" :loading="actionLoading" @confirm="closeDialog = false; emit('close', pendingCloseReason)" />
       <v-dialog v-model="takeDialog" max-width="460">
         <v-card>
           <v-card-title>Tomar correo asignado</v-card-title>

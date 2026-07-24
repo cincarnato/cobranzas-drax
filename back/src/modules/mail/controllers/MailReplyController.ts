@@ -14,6 +14,7 @@ const MailReplyBodySchema = z.object({
     bccEmails: z.array(z.string()).optional(),
     mailboxId: z.string().optional(),
     closeAfterSend: z.boolean().optional(),
+    closeReason: z.string().nullable().optional(),
 });
 
 class MailReplyController {
@@ -47,6 +48,13 @@ class MailReplyController {
                     error: "MAIL_REPLY_INVALID_INPUT",
                     message: "Los datos de la respuesta no son validos.",
                     details: error.issues,
+                });
+            }
+
+            if (error?.statusCode === 400 || error?.name === "BadRequestError") {
+                return reply.status(400).send({
+                    error: "MAIL_REPLY_INVALID_INPUT",
+                    message: error?.message || "No se pudo enviar la respuesta. Revisá los datos requeridos.",
                 });
             }
 

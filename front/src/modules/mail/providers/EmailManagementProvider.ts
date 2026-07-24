@@ -48,12 +48,12 @@ class EmailManagementProvider {
     return await this.httpClient.patch(`${this.basePath}/${id}/assignment`, {assignedTo}) as IInboundEmail
   }
 
-  async updateClassification(id: string, payload: {category?: string | null, priority?: string | null, sentiment?: string | null, tags?: string[]}): Promise<IInboundEmail> {
+  async updateClassification(id: string, payload: {category?: string | null, closeReason?: string | null, priority?: string | null, sentiment?: string | null, tags?: string[]}): Promise<IInboundEmail> {
     return await this.httpClient.patch(`${this.basePath}/${id}/classification`, payload) as IInboundEmail
   }
 
-  async close(id: string): Promise<IInboundEmail> {
-    return await this.httpClient.post(`${this.basePath}/${id}/close`, {}) as IInboundEmail
+  async close(id: string, payload: {closeReason?: string | null} = {}): Promise<IInboundEmail> {
+    return await this.httpClient.post(`${this.basePath}/${id}/close`, payload) as IInboundEmail
   }
 
   async updateUserState(id: string, payload: {isRead?: boolean, isStarred?: boolean}): Promise<IEmailUserState> {

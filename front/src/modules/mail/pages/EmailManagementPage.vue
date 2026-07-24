@@ -249,11 +249,11 @@ async function reassign(userId: string | null) {
   }
 }
 
-async function closeEmail() {
+async function closeEmail(closeReason?: string | null) {
   if (!selectedId.value) return
   actionLoading.value = true
   try {
-    await EmailManagementProvider.instance.close(selectedId.value)
+    await EmailManagementProvider.instance.close(selectedId.value, {closeReason: closeReason || undefined})
     await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
     notify("Gestión cerrada.", "success")
   } catch (error: any) {

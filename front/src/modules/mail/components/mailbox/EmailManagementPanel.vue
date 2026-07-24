@@ -20,13 +20,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: "save-classification", value: {category?: string | null, priority?: string | null}): void
+  (e: "save-classification", value: {category?: string | null, closeReason?: string | null, priority?: string | null}): void
   (e: "reassign", userId: string | null): void
   (e: "assign"): void
-  (e: "close-request"): void
+  (e: "close-request", closeReason?: string | null): void
 }>()
 
-const classification = ref({category: props.email.category || null, priority: props.email.priority || null})
+const classification = ref({category: props.email.category || null, closeReason: props.email.closeReason || null, priority: props.email.priority || null})
 const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
@@ -39,10 +39,16 @@ const selectableUsers = computed(() => {
   if (!search) return mailboxOperators.value
   return mailboxOperators.value.filter((user: any) => userLabel(user).toLowerCase().includes(search))
 })
+const closeReasonValidation = computed(() => {
+  if (!props.mailbox?.closeReasonRequired || classification.value.closeReason) return ""
+  return "Este mailbox requiere un motivo de cierre antes de cerrar la gestión."
+})
+const closeValidationMessage = computed(() => props.closeValidation || closeReasonValidation.value)
 
 watch(() => props.email._id, () => {
   classification.value = {
     category: props.email.category || null,
+    closeReason: props.email.closeReason || null,
     priority: props.email.priority || null,
   }
   selectedUser.value = typeof props.email.assignedTo === "object" ? props.email.assignedTo?._id : props.email.assignedTo || null
@@ -117,15 +123,15 @@ function userId(user?: any) {
     <v-btn color="primary" prepend-icon="mdi-content-save-outline" :loading="saving" @click="emit('save-classification', classification)">
       Guardar cambios
     </v-btn>
-    <v-alert v-if="closeValidation" density="compact" variant="tonal" color="warning">
-      {{ closeValidation }}
+    <v-alert v-if="closeValidationMessage" density="compact" variant="tonal" color="warning">
+      {{ closeValidationMessage }}
     </v-alert>
     <v-btn
       color="success"
       prepend-icon="mdi-check-circle-outline"
       :loading="actionLoading"
-      :disabled="!!closeValidation || !permissions.canClose"
-      @click="emit('close-request')"
+      :disabled="!!closeValidationMessage || !permissions.canClose"
+      @click="emit('close-request', classification.closeReason)"
     >
       Cerrar gestión
     </v-btn>

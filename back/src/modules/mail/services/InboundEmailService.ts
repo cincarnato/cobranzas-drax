@@ -128,7 +128,7 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         return updated;
     }
 
-    async closeManagement(id: string, currentUserId?: string): Promise<IInboundEmail> {
+    async closeManagement(id: string, currentUserId?: string, closeReason?: string | null): Promise<IInboundEmail> {
         const inboundEmail = await this.findById(id);
         if (!inboundEmail) throw new NotFoundError();
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
@@ -136,7 +136,11 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (mailbox.replyRequiredToClose && !(inboundEmail.replyCount && inboundEmail.replyCount > 0)) {
             throw new BadRequestError("Este mailbox requiere una respuesta antes de cerrar la gestión.");
         }
-        const updated = await this.repository.closeManagement(id);
+        const resolvedCloseReason = closeReason || inboundEmail.closeReason || null;
+        if (mailbox.closeReasonRequired && !resolvedCloseReason) {
+            throw new BadRequestError("Este mailbox requiere un motivo de cierre antes de cerrar la gestión.");
+        }
+        const updated = await this.repository.closeManagement(id, resolvedCloseReason);
         if (!updated) throw new NotFoundError();
         return updated;
     }

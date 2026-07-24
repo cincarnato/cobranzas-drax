@@ -10,6 +10,7 @@ export type MailReplyPayload = {
   ccEmails?: string[]
   bccEmails?: string[]
   closeAfterSend?: boolean
+  closeReason?: string | null
 }
 
 export type MailReplyResult = {

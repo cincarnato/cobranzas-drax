@@ -132,8 +132,10 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             .exec() as IInboundEmail | null;
     }
 
-    async closeManagement(id: string): Promise<IInboundEmail | null> {
-        return await this._model.findByIdAndUpdate(id, {$set: {attentionStatus: "CLOSED"}}, {new: true})
+    async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
+        const $set: Record<string, any> = {attentionStatus: "CLOSED"};
+        if (closeReason) $set.closeReason = closeReason;
+        return await this._model.findByIdAndUpdate(id, {$set}, {new: true})
             .populate(this._populateFields)
             .lean(this._lean)
             .exec() as IInboundEmail | null;

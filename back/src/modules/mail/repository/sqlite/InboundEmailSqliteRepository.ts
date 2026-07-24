@@ -14,7 +14,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     protected db: any;
     protected tableName: string = 'InboundEmail';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'attentionStatus', 'duplicateOfMessageId'];
+    protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'closeReason', 'attentionStatus', 'duplicateOfMessageId'];
     protected booleanFields: string[] = ['hasAttachments', 'isDuplicate'];
     protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities', 'processMarks'];
     protected identifier: string = 'messageId';
@@ -48,6 +48,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "attachmentsOcrText", type: "TEXT", unique: undefined, primary: false},
         {name: "attachmentsOcrError", type: "TEXT", unique: undefined, primary: false},
         {name: "category", type: "TEXT", unique: undefined, primary: false},
+        {name: "closeReason", type: "TEXT", unique: undefined, primary: false},
         {name: "sentiment", type: "TEXT", unique: undefined, primary: false},
         {name: "priority", type: "TEXT", unique: undefined, primary: false},
         {name: "summary", type: "TEXT", unique: undefined, primary: false},
@@ -200,10 +201,10 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return await this.update(id, {...item, ...data});
     }
 
-    async closeManagement(id: string): Promise<IInboundEmail | null> {
+    async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;
-        return await this.update(id, {...item, attentionStatus: "CLOSED"});
+        return await this.update(id, {...item, attentionStatus: "CLOSED", closeReason: closeReason || item.closeReason});
     }
 
 }

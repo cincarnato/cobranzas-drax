@@ -16,6 +16,7 @@ type MailReplyPayload = {
     bccEmails?: string[];
     mailboxId?: string;
     closeAfterSend?: boolean;
+    closeReason?: string | null;
 };
 
 type MailReplyResult = {
@@ -45,12 +46,16 @@ class MailReplyService {
         const subject = this.resolveSubject(payload.subject, inboundEmail.subject);
         const bodyText = payload.bodyText?.trim() || "";
         const bodyHtml = payload.bodyHtml?.trim() || "";
+        const closeReason = payload.closeReason || inboundEmail.closeReason || null;
 
         if (!toEmails.length) {
             throw new BadRequestError("at least one recipient is required");
         }
         if (!bodyText && !bodyHtml) {
             throw new BadRequestError("reply body is required");
+        }
+        if (payload.closeAfterSend && mailbox.closeReasonRequired && !closeReason) {
+            throw new BadRequestError("Este mailbox requiere un motivo de cierre antes de cerrar la gestión.");
         }
 
         const fromEmail = mailbox.email;
@@ -93,7 +98,7 @@ class MailReplyService {
                 attempts: 1,
             });
 
-            const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend);
+            const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend, closeReason);
 
             return {
                 inboundEmail: updatedInboundEmail,
@@ -160,14 +165,18 @@ class MailReplyService {
         };
     }
 
-    private async registerInboundReply(inboundEmail: IInboundEmail, sentAt: Date, closeAfterSend?: boolean): Promise<IInboundEmail> {
+    private async registerInboundReply(inboundEmail: IInboundEmail, sentAt: Date, closeAfterSend?: boolean, closeReason?: string | null): Promise<IInboundEmail> {
         const replyCount = (inboundEmail.replyCount || 0) + 1;
-        return await InboundEmailServiceFactory.instance.updatePartial(inboundEmail._id, {
+        const update: Partial<IInboundEmail> = {
             replyCount,
             firstRepliedAt: inboundEmail.firstRepliedAt || sentAt,
             lastRepliedAt: sentAt,
             attentionStatus: closeAfterSend ? "CLOSED" : (inboundEmail.attentionStatus || "ASSIGNED"),
-        });
+        };
+        if (closeAfterSend && (closeReason || inboundEmail.closeReason)) {
+            update.closeReason = closeReason || inboundEmail.closeReason;
+        }
+        return await InboundEmailServiceFactory.instance.updatePartial(inboundEmail._id, update);
     }
 
     private resolveSubject(inputSubject?: string, inboundSubject?: string): string {
