@@ -573,6 +573,14 @@ class InboundEmailMailboxProvider {
                         : null;
 
                     if (!fetchMessage?.raw?.length) {
+                        console.log("[InboundEmailSync] Skipping inbound email without raw source", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid,
+                            fetchedUid: fetched ? fetched.uid : undefined,
+                            internalDate: this.formatDateForLog(fetched ? fetched.internalDate : undefined),
+                        });
                         result.skipped += 1;
                         continue;
                     }
@@ -586,6 +594,16 @@ class InboundEmailMailboxProvider {
                         if (this.isAiAnalysisEnabled(mailbox)) {
                             await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
                         }
+                        console.log("[InboundEmailSync] Skipping duplicate inbound email", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid: fetchMessage.uid,
+                            ...this.formatParsedMailForLog(parsedMail, messageId),
+                            duplicateInboundEmailId: duplicate._id,
+                            duplicateMailboxId: duplicate.mailbox,
+                            duplicateImapUid: duplicate.imapUid,
+                        });
                         result.skipped += 1;
                         continue;
                     }
@@ -689,6 +707,27 @@ class InboundEmailMailboxProvider {
         }
 
         return value instanceof Date ? value.toISOString() : value;
+    }
+
+    private formatParsedMailForLog(parsedMail: ParsedMailLike, messageId: string): Record<string, unknown> {
+        const from = parsedMail.from?.value?.[0];
+
+        return {
+            messageId,
+            subject: this.truncateForLog(parsedMail.subject),
+            fromName: this.truncateForLog(from?.name),
+            fromEmail: from?.address,
+            date: this.formatDateForLog(parsedMail.date),
+        };
+    }
+
+    private truncateForLog(value?: string, maxLength = 300): string | undefined {
+        const normalized = this.normalizeString(value);
+        if (!normalized || normalized.length <= maxLength) {
+            return normalized;
+        }
+
+        return `${normalized.slice(0, maxLength)}...`;
     }
 
     private async applyAiCategoryFlag(

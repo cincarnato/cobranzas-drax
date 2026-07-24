@@ -114,6 +114,14 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;
     }
 
+    async countAssignedToUser(mailboxValues: string[], userId: string): Promise<number> {
+        return await this._model.countDocuments({
+            mailbox: {$in: mailboxValues},
+            assignedTo: userId,
+            attentionStatus: "ASSIGNED",
+        }).exec();
+    }
+
     async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
         return await this._model.findByIdAndUpdate(id, {$set: data}, {new: true})
             .populate(this._populateFields)

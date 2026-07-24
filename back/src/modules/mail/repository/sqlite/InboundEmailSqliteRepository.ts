@@ -175,6 +175,25 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return await this.update(id, {...item, attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null});
     }
 
+    async countAssignedToUser(mailboxValues: string[], userId: string): Promise<number> {
+        if (!mailboxValues.length) return 0;
+        const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {
+            userId,
+        };
+        mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+        const result = this.db
+            .prepare(`SELECT COUNT(*) AS total
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND assignedTo = @userId
+                        AND attentionStatus = 'ASSIGNED'`)
+            .get(params) as {total?: number};
+        return Number(result?.total || 0);
+    }
+
     async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;

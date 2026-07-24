@@ -67,11 +67,12 @@ const detailPermissions = computed(() => {
   const assignedTo = typeof email?.assignedTo === "object" ? email?.assignedTo?._id : email?.assignedTo
   const assignedToMe = Boolean(assignedTo && currentUserId.value && assignedTo === currentUserId.value)
   const openAndAssigned = email?.attentionStatus !== "CLOSED" && (assignedToMe || isSupervisor.value)
+  const canManageDetailMailbox = canManageMailbox(detail.value?.mailbox || selectedMailbox.value)
   return {
-    canAssign: baseCanUpdate.value,
-    canReassign: isSupervisor.value,
-    canReply: baseCanUpdate.value && Boolean(openAndAssigned),
-    canClose: baseCanUpdate.value && Boolean(openAndAssigned),
+    canAssign: baseCanUpdate.value && canManageDetailMailbox,
+    canReassign: isSupervisor.value && canManageDetailMailbox,
+    canReply: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned),
+    canClose: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned),
     canViewTechnicalDetails: isSupervisor.value,
   }
 })
@@ -113,7 +114,10 @@ async function fetchMailboxes() {
   loadingMailboxes.value = true
   try {
     const result = await MailboxProvider.instance.find({limit: 200, orderBy: "name", order: "asc"})
-    mailboxes.value = result || []
+    mailboxes.value = (result || []).filter((mailbox: IMailbox) => canManageMailbox(mailbox))
+    if (mailboxId.value && !mailboxes.value.some((mailbox) => mailbox._id === mailboxId.value)) {
+      mailboxId.value = null
+    }
   } catch {
     notify("No se pudieron cargar los mailboxes.", "error")
   } finally {
@@ -235,8 +239,8 @@ async function reassign(userId: string | null) {
     await EmailManagementProvider.instance.reassign(selectedId.value, userId)
     await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
     notify("Asignación actualizada.")
-  } catch {
-    notify("No se pudo reasignar el correo.", "error")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo reasignar el correo.", "error")
   } finally {
     actionLoading.value = false
   }
@@ -250,7 +254,7 @@ async function closeEmail() {
     await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
     notify("Gestión cerrada.", "success")
   } catch (error: any) {
-    notify(error?.message || "No se pudo cerrar la gestión.", "error")
+    notify(error?.response?.data?.message || error?.message || "No se pudo cerrar la gestión.", "error")
   } finally {
     actionLoading.value = false
   }
@@ -287,12 +291,27 @@ function keepCompatibleFilters() {
   const categories = new Set((mailbox.categories || []).map((item) => item.name))
   const priorities = new Set(mailbox.priorities || [])
   const tags = new Set(mailbox.tags || [])
+  const operators = new Set(mailboxOperatorIds(mailbox))
   filters.value = {
     ...filters.value,
     category: filters.value.category && categories.has(filters.value.category) ? filters.value.category : undefined,
     priorities: filters.value.priorities.filter((item) => priorities.has(item)),
     tags: filters.value.tags.filter((item) => tags.has(item)),
+    assignedTo: filters.value.assignedTo && operators.has(filters.value.assignedTo) ? filters.value.assignedTo : undefined,
   }
+}
+
+function canManageMailbox(mailbox?: IMailbox | null) {
+  if (!mailbox) return false
+  const operators = mailboxOperatorIds(mailbox)
+  return Boolean(operators.length && currentUserId.value && operators.includes(currentUserId.value))
+}
+
+function mailboxOperatorIds(mailbox: IMailbox) {
+  return (mailbox.operators || [])
+    .map((operator: any) => typeof operator === "object" ? operator?._id || operator?.id : operator)
+    .filter(Boolean)
+    .map(String)
 }
 
 function syncRoute() {

@@ -14,6 +14,7 @@ import {BadRequestError, ForbiddenError, NotFoundError} from "@drax/common-back"
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import EmailUserStateServiceFactory from "../factory/services/EmailUserStateServiceFactory.js";
+import type {IMailbox} from "../interfaces/IMailbox";
 
 class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBase, IInboundEmailBase> {
     private repository: IInboundEmailRepository;
@@ -41,9 +42,37 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
 
     async managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult> {
         const mailbox = options.mailboxValues?.[0] ? await this.resolveMailbox(options.mailboxValues[0]) : null;
+        const currentUserId = options.currentUserId || "";
+        let mailboxValues = options.mailboxValues;
+        if (mailbox) {
+            this.assertMailboxOperator(mailbox, currentUserId);
+            this.assertAssignableOperator(mailbox, options.assignedTo || null);
+            mailboxValues = this.getMailboxValues(mailbox);
+        } else {
+            const mailboxes = await MailboxServiceFactory.instance.find({limit: 1000});
+            const accessibleMailboxes = mailboxes.filter((item) => {
+                try {
+                    this.assertMailboxOperator(item, currentUserId);
+                    this.assertAssignableOperator(item, options.assignedTo || null);
+                    return true;
+                } catch {
+                    return false;
+                }
+            });
+            mailboxValues = accessibleMailboxes.flatMap((item) => this.getMailboxValues(item));
+            if (!mailboxValues.length) {
+                return {
+                    items: [],
+                    page: Math.max(Number(options.page || 1), 1),
+                    pageSize: Math.min(Math.max(Number(options.pageSize || 25), 1), 100),
+                    totalItems: 0,
+                    totalPages: 1,
+                };
+            }
+        }
         return await this.repository.managementPaginate({
             ...options,
-            mailboxValues: mailbox ? [mailbox._id?.toString(), mailbox.email].filter(Boolean) : options.mailboxValues,
+            mailboxValues,
         });
     }
 
@@ -51,6 +80,7 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         const inboundEmail = await this.findById(id);
         if (!inboundEmail) throw new NotFoundError();
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        this.assertMailboxOperator(mailbox, currentUserId);
         const inboundThread = await this.repository.findThread(inboundEmail);
         const outboundThread = await OutboundEmailServiceFactory.instance.findByInboundEmailIds(inboundThread.map((item) => item._id));
         const userState = await EmailUserStateServiceFactory.instance.findByEmailAndUser(inboundEmail._id, currentUserId);
@@ -66,27 +96,43 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
     }
 
     async assignToMe(id: string, userId: string): Promise<IInboundEmail> {
+        const inboundEmail = await this.findById(id);
+        if (!inboundEmail) throw new NotFoundError();
+        if (inboundEmail.attentionStatus !== "PENDING" || inboundEmail.assignedTo) {
+            throw new Error("INBOUND_EMAIL_ASSIGNMENT_CONFLICT");
+        }
+        const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        this.assertMailboxOperator(mailbox, userId);
+        await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
         const updated = await this.repository.assignToMe(id, userId);
         if (!updated) throw new Error("INBOUND_EMAIL_ASSIGNMENT_CONFLICT");
         return updated;
     }
 
-    async reassign(id: string, userId: string | null): Promise<IInboundEmail> {
+    async reassign(id: string, userId: string | null, currentUserId?: string): Promise<IInboundEmail> {
+        const inboundEmail = await this.findById(id);
+        if (!inboundEmail) throw new NotFoundError();
+        const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        this.assertMailboxOperator(mailbox, currentUserId || "");
+        this.assertAssignableOperator(mailbox, userId);
+        if (userId) await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
         const updated = await this.repository.reassign(id, userId);
         if (!updated) throw new NotFoundError();
         return updated;
     }
 
-    async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail> {
+    async updateClassification(id: string, data: InboundEmailClassificationUpdate, currentUserId?: string): Promise<IInboundEmail> {
+        if (currentUserId) await this.assertEmailMailboxOperator(id, currentUserId);
         const updated = await this.repository.updateClassification(id, data);
         if (!updated) throw new NotFoundError();
         return updated;
     }
 
-    async closeManagement(id: string): Promise<IInboundEmail> {
+    async closeManagement(id: string, currentUserId?: string): Promise<IInboundEmail> {
         const inboundEmail = await this.findById(id);
         if (!inboundEmail) throw new NotFoundError();
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        if (currentUserId) this.assertMailboxOperator(mailbox, currentUserId);
         if (mailbox.replyRequiredToClose && !(inboundEmail.replyCount && inboundEmail.replyCount > 0)) {
             throw new BadRequestError("Este mailbox requiere una respuesta antes de cerrar la gestión.");
         }
@@ -101,6 +147,50 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (inboundEmail.attentionStatus === "CLOSED" || assignedTo !== userId) {
             throw new ForbiddenError();
         }
+    }
+
+    async assertEmailMailboxOperator(id: string, userId: string): Promise<void> {
+        const inboundEmail = await this.findById(id);
+        if (!inboundEmail) throw new NotFoundError();
+        const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        this.assertMailboxOperator(mailbox, userId);
+    }
+
+    private assertMailboxOperator(mailbox: IMailbox, userId: string): void {
+        const operatorIds = this.getMailboxOperatorIds(mailbox);
+        if (!operatorIds.length || !userId || !operatorIds.includes(userId)) {
+            throw new ForbiddenError();
+        }
+    }
+
+    private assertAssignableOperator(mailbox: IMailbox, userId: string | null): void {
+        if (!userId) return;
+        const operatorIds = this.getMailboxOperatorIds(mailbox);
+        if (!operatorIds.length || !operatorIds.includes(userId)) {
+            throw new BadRequestError("El usuario no está habilitado para gestionar este mailbox.");
+        }
+    }
+
+    private async assertAssignmentLimit(mailbox: IMailbox, userId: string, inboundEmail: IInboundEmail): Promise<void> {
+        const maxAssigned = Number(mailbox.maxAssignableEmailsPerUser || 0);
+        if (!maxAssigned || maxAssigned <= 0) return;
+        const assignedTo = typeof inboundEmail.assignedTo === "object" ? inboundEmail.assignedTo?._id?.toString() : inboundEmail.assignedTo?.toString();
+        if (inboundEmail.attentionStatus === "ASSIGNED" && assignedTo === userId) return;
+        const mailboxValues = this.getMailboxValues(mailbox);
+        const assignedCount = await this.repository.countAssignedToUser(mailboxValues, userId);
+        if (assignedCount >= maxAssigned) {
+            throw new BadRequestError("El operador alcanzó el máximo de correos asignables para este mailbox.");
+        }
+    }
+
+    private getMailboxOperatorIds(mailbox: IMailbox): string[] {
+        return (mailbox.operators || [])
+            .map((operator: any) => typeof operator === "object" ? operator?._id?.toString() || operator?.id?.toString() : operator?.toString())
+            .filter(Boolean);
+    }
+
+    private getMailboxValues(mailbox: IMailbox): string[] {
+        return [mailbox._id?.toString(), mailbox.email].filter(Boolean) as string[];
     }
 
     private async resolveMailbox(mailboxValue?: any) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, ref, watch} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import {useUser} from "@drax/identity-vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
@@ -31,6 +31,14 @@ const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
 const {paginateUser} = useUser()
+const mailboxOperators = computed(() => props.mailbox?.operators || [])
+const selectableUsers = computed(() => {
+  if (!props.mailbox) return users.value
+  if (!mailboxOperators.value.length) return []
+  const search = userSearch.value.trim().toLowerCase()
+  if (!search) return mailboxOperators.value
+  return mailboxOperators.value.filter((user: any) => userLabel(user).toLowerCase().includes(search))
+})
 
 watch(() => props.email._id, () => {
   classification.value = {
@@ -41,12 +49,25 @@ watch(() => props.email._id, () => {
 }, {immediate: true})
 
 watch(userSearch, () => void loadUsers())
+watch(() => props.mailbox?._id, () => void loadUsers())
 onMounted(() => void loadUsers())
 
 async function loadUsers() {
   if (!props.permissions.canReassign) return
+  if (props.mailbox) return
   const result = await paginateUser({page: 1, limit: 20, search: userSearch.value, orderBy: "username", order: "asc"})
   users.value = result?.items || []
+}
+
+function userLabel(user?: any) {
+  if (!user) return ""
+  if (typeof user === "string") return user
+  return user.name || user.username || user.email || user._id || user.id || ""
+}
+
+function userId(user?: any) {
+  if (!user) return ""
+  return String(typeof user === "object" ? user._id || user.id : user)
 }
 </script>
 
@@ -77,9 +98,9 @@ async function loadUsers() {
       <v-autocomplete
         v-model="selectedUser"
         v-model:search="userSearch"
-        :items="users"
-        item-title="username"
-        item-value="_id"
+        :items="selectableUsers"
+        :item-title="userLabel"
+        :item-value="userId"
         label="Asignar a usuario"
         density="compact"
         variant="outlined"

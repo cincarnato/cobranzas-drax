@@ -105,7 +105,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         request.rbac.assertPermission(InboundEmailPermissions.Manage);
         const {id} = request.params as {id: string};
         const payload = AssignmentSchema.parse(request.body || {});
-        return reply.send(await InboundEmailServiceFactory.instance.reassign(id, payload.assignedTo || null));
+        return reply.send(await InboundEmailServiceFactory.instance.reassign(id, payload.assignedTo || null, request.rbac.userId));
     }
 
     async updateClassification(request: CustomRequest, reply: FastifyReply) {
@@ -115,7 +115,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         const current = await InboundEmailServiceFactory.instance.findById(id);
         InboundEmailServiceFactory.instance.assertCanOperate(current, request.rbac.userId, request.rbac.hasPermission(InboundEmailPermissions.Manage));
         const payload = ClassificationSchema.parse(request.body || {});
-        return reply.send(await InboundEmailServiceFactory.instance.updateClassification(id, payload));
+        return reply.send(await InboundEmailServiceFactory.instance.updateClassification(id, payload, request.rbac.userId));
     }
 
     async closeManagement(request: CustomRequest, reply: FastifyReply) {
@@ -124,7 +124,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         const {id} = request.params as {id: string};
         const current = await InboundEmailServiceFactory.instance.findById(id);
         InboundEmailServiceFactory.instance.assertCanOperate(current, request.rbac.userId, request.rbac.hasPermission(InboundEmailPermissions.Manage));
-        return reply.send(await InboundEmailServiceFactory.instance.closeManagement(id));
+        return reply.send(await InboundEmailServiceFactory.instance.closeManagement(id, request.rbac.userId));
     }
 
     async updateUserState(request: CustomRequest, reply: FastifyReply) {
@@ -132,6 +132,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         request.rbac.assertPermission(InboundEmailPermissions.View);
         const {id} = request.params as {id: string};
         const payload = UserStateSchema.parse(request.body || {});
+        await InboundEmailServiceFactory.instance.assertEmailMailboxOperator(id, request.rbac.userId);
         return reply.send(await EmailUserStateServiceFactory.instance.upsertState(id, request.rbac.userId, payload));
     }
 

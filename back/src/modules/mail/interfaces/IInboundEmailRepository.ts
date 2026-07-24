@@ -22,6 +22,7 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]>
     assignToMe(id: string, userId: string): Promise<IInboundEmail | null>
     reassign(id: string, userId: string | null): Promise<IInboundEmail | null>
+    countAssignedToUser(mailboxValues: string[], userId: string): Promise<number>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>
     closeManagement(id: string): Promise<IInboundEmail | null>
 

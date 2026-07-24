@@ -22,7 +22,15 @@ const {paginateUser} = useUser()
 const users = ref<any[]>([])
 const userSearch = ref("")
 
-const selectedAssignedUser = computed(() => users.value.find((user) => user._id === props.modelValue.assignedTo || user.id === props.modelValue.assignedTo))
+const mailboxOperators = computed(() => props.mailbox?.operators || [])
+const selectableUsers = computed(() => {
+  if (!props.mailbox) return users.value
+  if (!mailboxOperators.value.length) return []
+  const search = userSearch.value.trim().toLowerCase()
+  if (!search) return mailboxOperators.value
+  return mailboxOperators.value.filter((user: any) => userLabel(user).toLowerCase().includes(search))
+})
+const selectedAssignedUser = computed(() => selectableUsers.value.find((user) => userId(user) === props.modelValue.assignedTo))
 
 const activeChips = computed(() => {
   const chips: Array<{key: string, label: string, value?: string}> = []
@@ -38,6 +46,7 @@ const activeChips = computed(() => {
 })
 
 watch(userSearch, () => void loadUsers())
+watch(() => props.mailbox?._id, () => void loadUsers())
 onMounted(() => void loadUsers())
 
 function update(partial: Partial<EmailManagementFilters>) {
@@ -51,13 +60,20 @@ function removeChip(chip: {key: string, value?: string}) {
 }
 
 async function loadUsers() {
+  if (props.mailbox) return
   const result = await paginateUser({page: 1, limit: 20, search: userSearch.value, orderBy: "username", order: "asc"})
   users.value = result?.items || []
 }
 
 function userLabel(user?: any) {
   if (!user) return ""
+  if (typeof user === "string") return user
   return user.name || user.username || user.email || user._id || user.id || ""
+}
+
+function userId(user?: any) {
+  if (!user) return ""
+  return String(typeof user === "object" ? user._id || user.id : user)
 }
 </script>
 
@@ -96,9 +112,9 @@ function userLabel(user?: any) {
         <v-autocomplete
           :model-value="modelValue.assignedTo"
           v-model:search="userSearch"
-          :items="users"
+          :items="selectableUsers"
           :item-title="userLabel"
-          item-value="_id"
+          :item-value="userId"
           label="Asignado a"
           density="compact"
           variant="outlined"
