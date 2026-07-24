@@ -62,6 +62,18 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             .exec() as IInboundEmail[];
     }
 
+    async findByMessageIds(messageIds: string[], mailboxValues: string[] = []): Promise<IInboundEmail[]> {
+        if (!messageIds.length) return [];
+        const query: Record<string, any> = {messageId: {$in: messageIds}};
+        if (mailboxValues.length) query.mailbox = {$in: mailboxValues};
+
+        return await this._model.find(query)
+            .populate(this._populateFields)
+            .sort({receivedAt: 1})
+            .lean(this._lean)
+            .exec() as IInboundEmail[];
+    }
+
     async managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult> {
         const page = Math.max(Number(options.page || 1), 1);
         const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
@@ -87,15 +99,39 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
     }
 
     async findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]> {
-        const query: Record<string, any> = inboundEmail.threadId
-            ? {$or: [{_id: inboundEmail._id}, {threadId: inboundEmail.threadId, mailbox: inboundEmail.mailbox}]}
-            : {_id: inboundEmail._id};
+        const parentInboundEmailId = this.resolveEntityId(inboundEmail.parentInboundEmail);
+        const inboundEmailIds = [inboundEmail._id, parentInboundEmailId].filter(Boolean);
+        const threadIds = this.uniqueStrings([
+            inboundEmail.threadId,
+            inboundEmail.messageId,
+            inboundEmail.inReplyTo,
+            ...(inboundEmail.references || []),
+        ]);
+        const query: Record<string, any> = {
+            mailbox: inboundEmail.mailbox,
+            $or: [
+                {_id: {$in: inboundEmailIds}},
+                {parentInboundEmail: {$in: inboundEmailIds}},
+                {threadId: {$in: threadIds}},
+                {messageId: {$in: threadIds}},
+            ],
+        };
 
         return await this._model.find(query)
             .populate(this._populateFields)
             .sort({receivedAt: 1})
             .lean(this._lean)
             .exec() as IInboundEmail[];
+    }
+
+    private resolveEntityId(value: any): string | undefined {
+        if (!value) return undefined;
+        if (typeof value === "object") return value._id?.toString() || value.id?.toString();
+        return value.toString();
+    }
+
+    private uniqueStrings(values: Array<string | undefined | null>): string[] {
+        return [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))];
     }
 
     async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail | null> {

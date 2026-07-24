@@ -5,6 +5,7 @@ import type {IAIProvider} from "@drax/ai-back";
 import {AiProviderFactory} from "@drax/ai-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
+import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import type InboundEmailService from "../services/InboundEmailService.js";
 import type MailboxService from "../services/MailboxService.js";
 import type {IMailbox} from "../interfaces/IMailbox.js";
@@ -940,10 +941,16 @@ class InboundEmailMailboxProvider {
         const attachmentResult = await this.processAttachments(mailbox, messageId, parsedAttachments);
         const analysisBodyText = this.normalizeText([textBody, attachmentResult.ocrText].filter(Boolean).join("\n\n"));
         const normalizedText = this.normalizeText([parsedMail.subject, analysisBodyText].filter(Boolean).join("\n\n"));
+        const inReplyTo = this.resolveInReplyTo(parsedMail);
+        const references = this.resolveReferences(parsedMail);
+        const parentInboundEmail = await this.resolveParentInboundEmail(mailbox, inReplyTo, references);
 
         return {
             messageId,
-            threadId: this.resolveThreadId(parsedMail),
+            threadId: this.resolveThreadId(messageId, inReplyTo, references, parentInboundEmail),
+            inReplyTo,
+            references,
+            parentInboundEmail: parentInboundEmail?._id,
             mailbox: mailbox._id,
             imapUid: fetchMessage.uid,
             sourceChannel: "EMAIL",
@@ -1093,20 +1100,71 @@ class InboundEmailMailboxProvider {
         return `<${mailbox._id}-${uid}@inbound-email.local>`;
     }
 
-    private resolveThreadId(parsedMail: ParsedMailLike): string | undefined {
-        const references = Array.isArray(parsedMail.references)
-            ? parsedMail.references[0]
-            : parsedMail.references;
+    private resolveThreadId(
+        messageId: string,
+        inReplyTo?: string,
+        references: string[] = [],
+        parentInboundEmail?: IInboundEmail | null
+    ): string {
+        return parentInboundEmail?.threadId || parentInboundEmail?.messageId || references[0] || inReplyTo || messageId;
+    }
 
-        if (references) {
-            return references;
+    private resolveInReplyTo(parsedMail: ParsedMailLike): string | undefined {
+        const rawInReplyTo = Array.isArray(parsedMail.inReplyTo)
+            ? parsedMail.inReplyTo[0]
+            : parsedMail.inReplyTo;
+        return this.normalizeMessageId(rawInReplyTo);
+    }
+
+    private resolveReferences(parsedMail: ParsedMailLike): string[] {
+        const rawReferences = Array.isArray(parsedMail.references)
+            ? parsedMail.references
+            : [parsedMail.references];
+        return this.uniqueStrings(rawReferences.flatMap((value) => this.extractMessageIds(value)));
+    }
+
+    private async resolveParentInboundEmail(
+        mailbox: IMailbox,
+        inReplyTo?: string,
+        references: string[] = []
+    ): Promise<IInboundEmail | null> {
+        const messageIds = this.uniqueStrings([...references, inReplyTo]);
+        if (!messageIds.length) return null;
+
+        const inboundMatches = await this.inboundEmailService.findByMessageIds(messageIds, [mailbox._id]);
+        if (inboundMatches.length) {
+            return inboundMatches[0];
         }
 
-        if (Array.isArray(parsedMail.inReplyTo)) {
-            return parsedMail.inReplyTo[0];
-        }
+        const outboundMatches = await OutboundEmailServiceFactory.instance.findByMessageIds(messageIds);
+        const inboundEmailIds = this.uniqueStrings(outboundMatches
+            .map((outboundEmail) => this.resolveEntityId(outboundEmail.inboundEmail)));
+        if (!inboundEmailIds.length) return null;
 
-        return parsedMail.inReplyTo;
+        const parentMatches = await this.inboundEmailService.findByIds(inboundEmailIds);
+        return parentMatches.find((inboundEmail) => inboundEmail.mailbox === mailbox._id) || null;
+    }
+
+    private extractMessageIds(value?: string): string[] {
+        if (!value) return [];
+        return (value.match(/<[^>]+>|[^\s]+/g) || [])
+            .map((item) => this.normalizeMessageId(item))
+            .filter((item): item is string => Boolean(item));
+    }
+
+    private normalizeMessageId(value?: string): string | undefined {
+        const normalized = value?.trim().replace(/\s+/g, "");
+        return normalized || undefined;
+    }
+
+    private uniqueStrings(values: Array<string | undefined | null>): string[] {
+        return [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))];
+    }
+
+    private resolveEntityId(value: any): string | undefined {
+        if (!value) return undefined;
+        if (typeof value === "object") return value._id?.toString() || value.id?.toString();
+        return value.toString();
     }
 
     private extractAddresses(addresses?: ParsedAddress[]): string[] {
@@ -1640,10 +1698,6 @@ class InboundEmailMailboxProvider {
 
     private sanitizePathSegment(segment: string): string {
         return segment.replace(/[^\w.-]+/g, "_");
-    }
-
-    private uniqueStrings(values: string[]): string[] {
-        return Array.from(new Set(values.filter(Boolean)));
     }
 
     private parseAiOutput(output: unknown): InboundEmailAiExtraction {

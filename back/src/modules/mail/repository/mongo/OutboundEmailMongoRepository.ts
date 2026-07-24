@@ -24,6 +24,16 @@ class OutboundEmailMongoRepository extends AbstractMongoRepository<IOutboundEmai
             .exec() as IOutboundEmail[];
     }
 
+    async findByMessageIds(messageIds: string[]): Promise<IOutboundEmail[]> {
+        if (!messageIds.length) return [];
+        return await this._model
+            .find({messageId: {$in: messageIds}})
+            .populate(this._populateFields)
+            .sort({createdAt: 1})
+            .lean(this._lean)
+            .exec() as IOutboundEmail[];
+    }
+
 }
 
 export default OutboundEmailMongoRepository

@@ -4,6 +4,9 @@ import {z} from 'zod';
 const InboundEmailBaseSchema = z.object({
     messageId: z.string().min(1, 'validation.required'),
     threadId: z.string().optional(),
+    inReplyTo: z.string().optional(),
+    references: z.array(z.string()).optional(),
+    parentInboundEmail: z.coerce.string().optional().nullable(),
     mailbox: z.string().optional(),
     imapUid: z.number().optional(),
     sourceChannel: z.enum(['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API']).default('EMAIL'),

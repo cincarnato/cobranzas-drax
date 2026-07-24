@@ -19,6 +19,10 @@ class OutboundEmailService extends AbstractService<IOutboundEmail, IOutboundEmai
         return await this.repository.findByInboundEmailIds(inboundEmailIds);
     }
 
+    async findByMessageIds(messageIds: string[]): Promise<IOutboundEmail[]> {
+        return await this.repository.findByMessageIds(messageIds);
+    }
+
 }
 
 export default OutboundEmailService

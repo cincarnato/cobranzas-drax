@@ -14,15 +14,18 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     protected db: any;
     protected tableName: string = 'InboundEmail';
     protected dataBaseFile: string;
-    protected searchFields: string[] = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'closeReason', 'attentionStatus', 'duplicateOfMessageId'];
+    protected searchFields: string[] = ['messageId', 'threadId', 'inReplyTo', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'attachmentsOcrText', 'attachmentsOcrError', 'category', 'closeReason', 'attentionStatus', 'duplicateOfMessageId'];
     protected booleanFields: string[] = ['hasAttachments', 'isDuplicate'];
-    protected jsonFields: string[] = ['toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities', 'processMarks'];
+    protected jsonFields: string[] = ['references', 'toEmails', 'ccEmails', 'attachments', 'tags', 'customer', 'extractedEntities', 'processMarks'];
     protected identifier: string = 'messageId';
     protected populateFields = []
     protected verbose: boolean = false;
     protected tableFields: SqliteTableField[] = [
         {name: "messageId", type: "TEXT", unique: true, primary: false},
         {name: "threadId", type: "TEXT", unique: undefined, primary: false},
+        {name: "inReplyTo", type: "TEXT", unique: undefined, primary: false},
+        {name: "references", type: "TEXT", unique: undefined, primary: false},
+        {name: "parentInboundEmail", type: "TEXT", unique: undefined, primary: false},
         {name: "mailbox", type: "TEXT", unique: undefined, primary: false},
         {name: "imapUid", type: "REAL", unique: undefined, primary: false},
         {name: "sourceChannel", type: "TEXT", unique: undefined, primary: false},
@@ -129,6 +132,32 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return items;
     }
 
+    async findByMessageIds(messageIds: string[], mailboxValues: string[] = []): Promise<IInboundEmail[]> {
+        if (!messageIds.length) return [];
+        const messagePlaceholders = messageIds.map((_, index) => `@messageId${index}`).join(", ");
+        const params: Record<string, unknown> = {};
+        messageIds.forEach((value, index) => {
+            params[`messageId${index}`] = value;
+        });
+
+        let mailboxCondition = "";
+        if (mailboxValues.length) {
+            const mailboxPlaceholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+            mailboxValues.forEach((value, index) => {
+                params[`mailbox${index}`] = value;
+            });
+            mailboxCondition = ` AND mailbox IN (${mailboxPlaceholders})`;
+        }
+
+        const items = this.db
+            .prepare(`SELECT * FROM ${this.tableName} WHERE messageId IN (${messagePlaceholders})${mailboxCondition} ORDER BY receivedAt ASC`)
+            .all(params) as IInboundEmail[];
+        for (const item of items) {
+            await this.decorate(item);
+        }
+        return items;
+    }
+
     async managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult> {
         const page = Math.max(Number(options.page || 1), 1);
         const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
@@ -158,10 +187,52 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     }
 
     async findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]> {
-        const filters: any[] = inboundEmail.threadId
-            ? [{field: "threadId", operator: "eq", value: inboundEmail.threadId}]
-            : [{field: "_id", operator: "eq", value: inboundEmail._id}];
-        return await this.find({limit: 100, orderBy: "receivedAt", order: "asc", filters});
+        const parentInboundEmailId = this.resolveEntityId(inboundEmail.parentInboundEmail);
+        const inboundEmailIds = this.uniqueStrings([inboundEmail._id, parentInboundEmailId]);
+        const threadIds = this.uniqueStrings([
+            inboundEmail.threadId,
+            inboundEmail.messageId,
+            inboundEmail.inReplyTo,
+            ...(inboundEmail.references || []),
+        ]);
+        const params: Record<string, unknown> = {mailbox: inboundEmail.mailbox};
+        const clauses: string[] = [];
+
+        if (inboundEmailIds.length) {
+            const placeholders = inboundEmailIds.map((_, index) => `@inboundEmailId${index}`).join(", ");
+            inboundEmailIds.forEach((value, index) => {
+                params[`inboundEmailId${index}`] = value;
+            });
+            clauses.push(`_id IN (${placeholders})`);
+            clauses.push(`parentInboundEmail IN (${placeholders})`);
+        }
+
+        if (threadIds.length) {
+            const placeholders = threadIds.map((_, index) => `@threadId${index}`).join(", ");
+            threadIds.forEach((value, index) => {
+                params[`threadId${index}`] = value;
+            });
+            clauses.push(`threadId IN (${placeholders})`);
+            clauses.push(`messageId IN (${placeholders})`);
+        }
+
+        const items = this.db
+            .prepare(`SELECT * FROM ${this.tableName} WHERE mailbox = @mailbox AND (${clauses.join(" OR ")}) ORDER BY receivedAt ASC LIMIT 100`)
+            .all(params) as IInboundEmail[];
+        for (const item of items) {
+            await this.decorate(item);
+        }
+        return items;
+    }
+
+    private resolveEntityId(value: any): string | undefined {
+        if (!value) return undefined;
+        if (typeof value === "object") return value._id?.toString() || value.id?.toString();
+        return value.toString();
+    }
+
+    private uniqueStrings(values: Array<string | undefined | null>): string[] {
+        return [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))];
     }
 
     async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail | null> {

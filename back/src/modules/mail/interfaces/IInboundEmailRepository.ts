@@ -18,6 +18,7 @@ type FindInboundEmailsByProcessMarkOptions = {
 
 interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IInboundEmailBase, IInboundEmailBase>{
     findByProcessMarkStatus(options: FindInboundEmailsByProcessMarkOptions): Promise<IInboundEmail[]>
+    findByMessageIds(messageIds: string[], mailboxValues?: string[]): Promise<IInboundEmail[]>
     managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult>
     findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]>
     assignToMe(id: string, userId: string, force?: boolean): Promise<IInboundEmail | null>

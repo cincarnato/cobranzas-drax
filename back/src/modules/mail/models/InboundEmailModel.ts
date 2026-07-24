@@ -8,6 +8,9 @@ import type {IInboundEmail} from '../interfaces/IInboundEmail'
 const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
             messageId: {type: String,   required: true, index: true, unique: true },
             threadId: {type: String,   required: false, index: true, unique: false },
+            inReplyTo: {type: String,   required: false, index: true, unique: false },
+            references: [{type: String,   required: false, index: false, unique: false }],
+            parentInboundEmail: {type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail', required: false, index: true, unique: false },
             mailbox: {type: String,   required: false, index: false, unique: false },
             imapUid: {type: Number,   required: false, index: true, unique: false },
             sourceChannel: {type: String,  enum: ['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API'], required: true, index: false, unique: false },

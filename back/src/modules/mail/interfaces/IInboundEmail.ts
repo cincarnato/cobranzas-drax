@@ -12,6 +12,9 @@ interface IInboundEmailProcessMark {
 interface IInboundEmailBase {
     messageId: string
     threadId?: string
+    inReplyTo?: string
+    references?: Array<string>
+    parentInboundEmail?: any
     mailbox?: string
     imapUid?: number
     sourceChannel: string
@@ -76,6 +79,9 @@ interface IInboundEmail {
     _id: string
     messageId: string
     threadId?: string
+    inReplyTo?: string
+    references?: Array<string>
+    parentInboundEmail?: any
     mailbox?: string
     imapUid?: number
     sourceChannel: string

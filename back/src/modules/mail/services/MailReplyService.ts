@@ -60,6 +60,7 @@ class MailReplyService {
 
         const fromEmail = mailbox.email;
         const sentAt = new Date();
+        const references = this.buildReplyReferences(inboundEmail);
         let outboundEmail = await OutboundEmailServiceFactory.instance.create({
             inboundEmail: inboundEmail._id,
             mailbox: mailbox._id,
@@ -73,7 +74,7 @@ class MailReplyService {
             bodyHtml,
             status: "SENDING",
             inReplyTo: inboundEmail.messageId,
-            references: inboundEmail.messageId ? [inboundEmail.messageId] : [],
+            references,
             attempts: 1,
         });
 
@@ -88,7 +89,7 @@ class MailReplyService {
                 text: bodyText || undefined,
                 html: bodyHtml || undefined,
                 inReplyTo: inboundEmail.messageId || undefined,
-                references: inboundEmail.messageId ? [inboundEmail.messageId] : undefined,
+                references: references.length ? references : undefined,
             });
 
             outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
@@ -182,6 +183,15 @@ class MailReplyService {
     private resolveSubject(inputSubject?: string, inboundSubject?: string): string {
         const subject = inputSubject?.trim() || inboundSubject?.trim() || "Sin asunto";
         return /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+    }
+
+    private buildReplyReferences(inboundEmail: IInboundEmail): string[] {
+        const references = [
+            ...(inboundEmail.references || []),
+            inboundEmail.inReplyTo,
+            inboundEmail.messageId,
+        ];
+        return [...new Set(references.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))];
     }
 
     private normalizeEmails(emails: string[]): string[] {
