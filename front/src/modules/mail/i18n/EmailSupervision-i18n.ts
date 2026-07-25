@@ -1,0 +1,126 @@
+const messages = {
+  en: {
+    mail: {
+      supervision: {
+        menu: 'Email Supervision',
+        title: 'Live operation',
+        subtitle: 'Current mailbox status and operator attention sessions.',
+        refresh: 'Refresh',
+        now: 'now',
+        secondsAgo: '{count} sec ago',
+        minutesAgo: '{count} min ago',
+        hoursAgo: '{count} h ago',
+        noActivity: 'No activity',
+        inactive: 'No recent activity',
+        assigned: 'Assigned',
+        noSubject: 'No subject',
+        summary: {
+          activeOperators: 'Active operators',
+          pausedOperators: 'Paused',
+          pendingEmails: 'Pending emails',
+          assignedEmails: 'Assigned emails',
+          closedToday: 'Closed today',
+        },
+        filters: {
+          all: 'All',
+          status: 'Status',
+          operator: 'Operator',
+          includeWithoutSession: 'Show operators without session',
+        },
+        status: {
+          ACTIVE: 'Active',
+          PAUSED: 'Paused',
+          OUT_OF_SESSION: 'Out of session',
+        },
+        table: {
+          operator: 'Operator',
+          status: 'Status',
+          session: 'Session',
+          current: 'In progress',
+          assigned: 'Session assigned',
+          replied: 'Replied',
+          closed: 'Closed',
+          lastActivity: 'Last activity',
+        },
+        detail: {
+          startedAt: 'Session start',
+          duration: 'Duration',
+          lastActivity: 'Last activity',
+          capacity: 'Capacity',
+          currentCases: 'Current cases',
+          noCases: 'No current assigned cases',
+        },
+        empty: {
+          default: 'There are no operators in attention right now.',
+          withoutSession: 'No operators to show.',
+        },
+        errors: {
+          refresh: 'Could not update information. Retrying...',
+        },
+      },
+    },
+  },
+  es: {
+    mail: {
+      supervision: {
+        menu: 'Supervisión de Correos',
+        title: 'Operación en vivo',
+        subtitle: 'Estado actual de la mailbox y de las sesiones de atención.',
+        refresh: 'Actualizar',
+        now: 'ahora',
+        secondsAgo: 'hace {count} seg',
+        minutesAgo: 'hace {count} min',
+        hoursAgo: 'hace {count} h',
+        noActivity: 'Sin actividad',
+        inactive: 'Sin actividad reciente',
+        assigned: 'Asignado',
+        noSubject: 'Sin asunto',
+        summary: {
+          activeOperators: 'Operadores activos',
+          pausedOperators: 'Pausados',
+          pendingEmails: 'Correos pendientes',
+          assignedEmails: 'Correos asignados',
+          closedToday: 'Cerrados hoy',
+        },
+        filters: {
+          all: 'Todos',
+          status: 'Estado',
+          operator: 'Operador',
+          includeWithoutSession: 'Mostrar operadores sin sesión',
+        },
+        status: {
+          ACTIVE: 'Activo',
+          PAUSED: 'Pausado',
+          OUT_OF_SESSION: 'Fuera de sesión',
+        },
+        table: {
+          operator: 'Operador',
+          status: 'Estado',
+          session: 'Sesión',
+          current: 'En curso',
+          assigned: 'Asignados sesión',
+          replied: 'Respondidos',
+          closed: 'Cerrados',
+          lastActivity: 'Última actividad',
+        },
+        detail: {
+          startedAt: 'Inicio de SessionEmail',
+          duration: 'Duración',
+          lastActivity: 'Última actividad',
+          capacity: 'Capacidad',
+          currentCases: 'Casos actuales',
+          noCases: 'Sin casos asignados actualmente',
+        },
+        empty: {
+          default: 'No hay operadores en atención en este momento.',
+          withoutSession: 'No hay operadores para mostrar.',
+        },
+        errors: {
+          refresh: 'No se pudo actualizar la información. Reintentando...',
+        },
+      },
+    },
+  },
+};
+
+export default messages;
