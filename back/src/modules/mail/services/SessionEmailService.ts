@@ -54,6 +54,10 @@ class SessionEmailService extends AbstractService<ISessionEmail, ISessionEmailBa
         return await this.buildState(await this.findById(session._id), mailbox, assignedEmails)
     }
 
+    async findOpenByMailbox(mailboxId: string): Promise<ISessionEmail[]> {
+        return await this.repository.findOpenByMailbox(mailboxId)
+    }
+
     async pause(sessionId: string, userId: string): Promise<SessionEmailState> {
         const session = await this.assertOwnedSession(sessionId, userId)
         const mailbox = await this.resolveMailbox(session.mailbox)

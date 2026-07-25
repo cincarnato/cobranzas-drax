@@ -7,9 +7,11 @@ import MailboxCrudRoute from "./MailboxCrudRoute"
 import InboundEmailDashboardRoute from "./InboundEmailDashboardRoute"
 import OutboundEmailCrudRoute from "./OutboundEmailCrudRoute"
 import EmailManagementRoute from "./EmailManagementRoute"
+import EmailSupervisionRoute from "./EmailSupervisionRoute"
 
 export const routes = [
     ...EmailManagementRoute,
+    ...EmailSupervisionRoute,
     ...InboundEmailCrudRoute,
     ...OCRTestRoute,
     ...InboundEmailSyncRoute,

@@ -36,6 +36,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
 {name: "replyCount", type: "TEXT", unique: undefined, primary: false},
 {name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
 {name: "lastRepliedAt", type: "TEXT", unique: undefined, primary: false},
+{name: "closedAt", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
 {name: "normalizedText", type: "TEXT", unique: undefined, primary: false},

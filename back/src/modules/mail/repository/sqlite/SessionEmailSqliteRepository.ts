@@ -41,8 +41,16 @@ class SessionEmailSqliteRepository extends AbstractSqliteRepository<ISessionEmai
         return item || null
     }
 
+    async findOpenByMailbox(mailboxId: string): Promise<ISessionEmail[]> {
+        const items = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE mailbox = @mailboxId AND status IN ('ACTIVE', 'PAUSED')`).all({mailboxId}) as ISessionEmail[]
+        for (const item of items) {
+            await this.decorate(item)
+        }
+        return items
+    }
+
     async createOpenSession(data: ISessionEmailBase): Promise<ISessionEmail> {
-        if (await this.findUserOpenSession(String(data.mailbox), String(data.user))) throw new Error('OPERATOR_SESSION_ALREADY_OPEN')
+        if (await this.findUserOpenSession(String(data.mailbox), String(data.user))) throw new Error('SESSION_EMAIL_ALREADY_OPEN')
         return await this.create(data)
     }
 

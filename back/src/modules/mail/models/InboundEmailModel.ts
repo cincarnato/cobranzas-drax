@@ -29,6 +29,7 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
             replyCount: {type: Number, required: false, index: false, unique: false, default: 0 },
             firstRepliedAt: {type: Date, required: false, index: false, unique: false },
             lastRepliedAt: {type: Date, required: false, index: false, unique: false },
+            closedAt: {type: Date, required: false, index: true, unique: false },
             bodyText: {type: String,   required: false, index: false, unique: false },
             bodyHtml: {type: String,   required: false, index: false, unique: false },
             normalizedText: {type: String,   required: false, index: false, unique: false },
@@ -86,6 +87,7 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
 
 InboundEmailSchema.index({mailbox: 1, attentionStatus: 1, receivedAt: 1});
 InboundEmailSchema.index({mailbox: 1, assignedTo: 1, attentionStatus: 1});
+InboundEmailSchema.index({mailbox: 1, attentionStatus: 1, closedAt: 1});
 
 InboundEmailSchema.plugin(uniqueValidator, {message: 'validation.unique'});
 InboundEmailSchema.plugin(mongoosePaginate);

@@ -29,6 +29,13 @@ class SessionEmailMongoRepository extends AbstractMongoRepository<ISessionEmail,
         }).populate(this._populateFields).lean() as ISessionEmail | null
     }
 
+    async findOpenByMailbox(mailboxId: string): Promise<ISessionEmail[]> {
+        return await SessionEmailModel.find({
+            mailbox: mailboxId,
+            status: {$in: ['ACTIVE', 'PAUSED']},
+        }).populate(this._populateFields).lean() as ISessionEmail[]
+    }
+
     async createOpenSession(data: ISessionEmailBase): Promise<ISessionEmail> {
         return await SessionEmailModel.create(data) as ISessionEmail
     }

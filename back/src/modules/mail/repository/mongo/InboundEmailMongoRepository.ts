@@ -207,6 +207,78 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         }).exec();
     }
 
+    async countAssignedByUser(mailboxValues: string[]): Promise<Record<string, number>> {
+        if (!mailboxValues.length) return {};
+        const rows = await this._model.aggregate([
+            {
+                $match: {
+                    mailbox: {$in: mailboxValues},
+                    attentionStatus: "ASSIGNED",
+                    assignedTo: {$ne: null},
+                },
+            },
+            {
+                $group: {
+                    _id: "$assignedTo",
+                    count: {$sum: 1},
+                },
+            },
+        ]).exec() as Array<{_id: any, count: number}>;
+        return rows.reduce((acc, row) => {
+            const key = row._id?.toString();
+            if (key) acc[key] = row.count;
+            return acc;
+        }, {} as Record<string, number>);
+    }
+
+    async supervisionCounts(mailboxValues: string[], closedFrom: Date, closedTo: Date) {
+        if (!mailboxValues.length) {
+            return {pendingEmails: 0, assignedEmails: 0, closedToday: 0};
+        }
+
+        const [statusRows, closedToday] = await Promise.all([
+            this._model.aggregate([
+                {
+                    $match: {
+                        mailbox: {$in: mailboxValues},
+                        attentionStatus: {$in: ["PENDING", "ASSIGNED"]},
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$attentionStatus",
+                        count: {$sum: 1},
+                    },
+                },
+            ]).exec() as Promise<Array<{_id: string, count: number}>>,
+            this._model.countDocuments({
+                mailbox: {$in: mailboxValues},
+                attentionStatus: "CLOSED",
+                closedAt: {$gte: closedFrom, $lt: closedTo},
+            }).exec(),
+        ]);
+
+        const byStatus = new Map(statusRows.map((row) => [row._id, row.count]));
+        return {
+            pendingEmails: byStatus.get("PENDING") || 0,
+            assignedEmails: byStatus.get("ASSIGNED") || 0,
+            closedToday,
+        };
+    }
+
+    async findAssignedLiteByUser(mailboxValues: string[], userId: string): Promise<any[]> {
+        if (!mailboxValues.length || !userId) return [];
+        return await this._model.find({
+            mailbox: {$in: mailboxValues},
+            assignedTo: userId,
+            attentionStatus: "ASSIGNED",
+        })
+            .select("_id subject fromName fromEmail receivedAt assignedAt category priority attentionStatus")
+            .sort({assignedAt: 1, receivedAt: 1})
+            .lean(this._lean)
+            .exec() as any[];
+    }
+
     async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
         return await this._model.findByIdAndUpdate(id, {$set: data}, {new: true})
             .populate(this._populateFields)
@@ -215,7 +287,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
     }
 
     async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
-        const $set: Record<string, any> = {attentionStatus: "CLOSED"};
+        const $set: Record<string, any> = {attentionStatus: "CLOSED", closedAt: new Date()};
         if (closeReason) $set.closeReason = closeReason;
         return await this._model.findByIdAndUpdate(id, {$set}, {new: true})
             .populate(this._populateFields)

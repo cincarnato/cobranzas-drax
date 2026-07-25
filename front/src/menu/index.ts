@@ -185,6 +185,13 @@ const menu: MenuItem[] = [
         permission: 'inboundemail:view'
       },
       {
+        icon: 'mdi-monitor-dashboard',
+        text: 'mail.supervision.menu',
+        link: { name: "EmailSupervisionPage" },
+        gallery: true,
+        permission: 'inboundemail:manage'
+      },
+      {
         icon: 'mdi-card-account-mail',
         text: 'mailbox.menu',
         link: { name: "MailboxCrudPage" },

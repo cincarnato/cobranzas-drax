@@ -4,6 +4,7 @@ import type {ISessionEmail, ISessionEmailBase, SessionEmailStatus} from "./ISess
 interface ISessionEmailRepository extends IDraxCrudRepository<ISessionEmail, ISessionEmailBase, ISessionEmailBase> {
     findUserOpenSession(mailboxId: string, userId: string): Promise<ISessionEmail | null>
     findUserActiveSession(mailboxId: string, userId: string): Promise<ISessionEmail | null>
+    findOpenByMailbox(mailboxId: string): Promise<ISessionEmail[]>
     createOpenSession(data: ISessionEmailBase): Promise<ISessionEmail>
     updateStatus(sessionId: string, userId: string, status: SessionEmailStatus, patch?: Partial<ISessionEmailBase>): Promise<ISessionEmail | null>
     updateActivity(sessionId: string): Promise<ISessionEmail | null>

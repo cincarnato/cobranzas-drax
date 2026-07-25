@@ -3,9 +3,11 @@ import type{
     FindInboundEmailsByProcessMarkOptions,
     IInboundEmailRepository,
     InboundEmailClassificationUpdate,
+    InboundEmailAssignedLite,
     InboundEmailManagementDetail,
     InboundEmailManagementListOptions,
-    InboundEmailManagementListResult
+    InboundEmailManagementListResult,
+    InboundEmailSupervisionCounts
 } from "../interfaces/IInboundEmailRepository";
 import type {IInboundEmailBase, IInboundEmail} from "../interfaces/IInboundEmail";
 import {AbstractService} from "@drax/crud-back";
@@ -128,6 +130,18 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
 
     async countAssignedToUser(mailboxValues: string[], userId: string): Promise<number> {
         return await this.repository.countAssignedToUser(mailboxValues, userId);
+    }
+
+    async countAssignedByUser(mailboxValues: string[]): Promise<Record<string, number>> {
+        return await this.repository.countAssignedByUser(mailboxValues);
+    }
+
+    async supervisionCounts(mailboxValues: string[], closedFrom: Date, closedTo: Date): Promise<InboundEmailSupervisionCounts> {
+        return await this.repository.supervisionCounts(mailboxValues, closedFrom, closedTo);
+    }
+
+    async findAssignedLiteByUser(mailboxValues: string[], userId: string): Promise<InboundEmailAssignedLite[]> {
+        return await this.repository.findAssignedLiteByUser(mailboxValues, userId);
     }
 
     async releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number> {

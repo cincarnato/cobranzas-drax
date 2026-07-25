@@ -26,6 +26,9 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number>
     reassign(id: string, userId: string | null): Promise<IInboundEmail | null>
     countAssignedToUser(mailboxValues: string[], userId: string): Promise<number>
+    countAssignedByUser(mailboxValues: string[]): Promise<Record<string, number>>
+    supervisionCounts(mailboxValues: string[], closedFrom: Date, closedTo: Date): Promise<InboundEmailSupervisionCounts>
+    findAssignedLiteByUser(mailboxValues: string[], userId: string): Promise<InboundEmailAssignedLite[]>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>
     closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null>
 
@@ -77,11 +80,31 @@ type InboundEmailManagementDetail = {
     outboundThread: IOutboundEmail[]
 }
 
+type InboundEmailSupervisionCounts = {
+    pendingEmails: number
+    assignedEmails: number
+    closedToday: number
+}
+
+type InboundEmailAssignedLite = {
+    _id: string
+    subject?: string
+    fromName?: string
+    fromEmail?: string
+    receivedAt: Date
+    assignedAt?: Date
+    category?: string
+    priority?: string
+    attentionStatus?: string
+}
+
 export type {
     FindInboundEmailsByProcessMarkOptions,
     InboundEmailManagementListOptions,
     InboundEmailManagementListResult,
     InboundEmailClassificationUpdate,
-    InboundEmailManagementDetail
+    InboundEmailManagementDetail,
+    InboundEmailSupervisionCounts,
+    InboundEmailAssignedLite
 }
 export {IInboundEmailRepository}

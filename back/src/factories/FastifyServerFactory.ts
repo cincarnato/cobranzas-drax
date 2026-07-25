@@ -34,6 +34,7 @@ import { InboundEmailMailboxRoutes } from "../modules/mail/routes/InboundEmailMa
 import { MailToolsRoutes } from "../modules/mail/routes/MailToolsRoutes.js"
 import { MailReplyRoutes } from "../modules/mail/routes/MailReplyRoutes.js"
 import { SessionEmailFastifyRoutes } from "../modules/mail/routes/SessionEmailRoutes.js"
+import { EmailSupervisionFastifyRoutes } from "../modules/mail/routes/EmailSupervisionRoutes.js"
 import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js"
 import { OutboundEmailFastifyRoutes } from "../modules/mail/routes/OutboundEmailRoutes.js"
 import { BankMovementFastifyRoutes } from "../modules/transferencias/routes/BankMovementRoutes.js"
@@ -91,6 +92,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(MailToolsRoutes)
     server.fastifyRegister(MailReplyRoutes)
     server.fastifyRegister(SessionEmailFastifyRoutes)
+    server.fastifyRegister(EmailSupervisionFastifyRoutes)
     server.fastifyRegister(MailboxFastifyRoutes)
     server.fastifyRegister(OutboundEmailFastifyRoutes)
     server.fastifyRegister(AffiliateFastifyRoutes)

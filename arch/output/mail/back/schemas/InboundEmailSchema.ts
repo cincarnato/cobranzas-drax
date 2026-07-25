@@ -20,6 +20,7 @@ const InboundEmailBaseSchema = z.object({
     replyCount: z.number().nullable().optional(),
     firstRepliedAt: z.coerce.date().nullable().optional(),
     lastRepliedAt: z.coerce.date().nullable().optional(),
+    closedAt: z.coerce.date().nullable().optional(),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
     normalizedText: z.string().optional(),

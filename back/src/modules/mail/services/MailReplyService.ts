@@ -179,6 +179,9 @@ class MailReplyService {
             lastRepliedAt: sentAt,
             attentionStatus: closeAfterSend ? "CLOSED" : (inboundEmail.attentionStatus || "ASSIGNED"),
         };
+        if (closeAfterSend) {
+            update.closedAt = sentAt;
+        }
         if (closeAfterSend && (closeReason || inboundEmail.closeReason)) {
             update.closeReason = closeReason || inboundEmail.closeReason;
         }

@@ -127,6 +127,7 @@ processingStatus: [(v: any) => !!v || 'validation.required']
 {name:'replyCount',type:'number',label:'replyCount',default:0,groupTab: 'General'},
 {name:'firstRepliedAt',type:'date',label:'firstRepliedAt',default:null,groupTab: 'General'},
 {name:'lastRepliedAt',type:'date',label:'lastRepliedAt',default:null,groupTab: 'General'},
+{name:'closedAt',type:'date',label:'closedAt',default:null,groupTab: 'General'},
 {name:'bodyText',type:'longString',label:'bodyText',default:'',groupTab: 'Contenido'},
 {name:'bodyHtml',type:'longString',label:'bodyHtml',default:'',groupTab: 'Contenido'},
 {name:'normalizedText',type:'longString',label:'normalizedText',default:'',groupTab: 'Contenido'},

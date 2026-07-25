@@ -80,12 +80,12 @@ class SessionEmailController extends AbstractFastifyController<ISessionEmail, IS
     }
 
     private handleSessionEmailError(error: any, reply: FastifyReply) {
-        const message = error?.message || 'OPERATOR_SESSION_ERROR'
-        if (error?.statusCode === 403 || error?.name === 'ForbiddenError') return reply.status(403).send({error: 'OPERATOR_SESSION_FORBIDDEN', message})
-        if (error?.statusCode === 404 || error?.name === 'NotFoundError') return reply.status(404).send({error: 'OPERATOR_SESSION_NOT_FOUND', message})
-        if (error?.statusCode === 400 || error?.name === 'BadRequestError' || message.includes('ALREADY')) return reply.status(409).send({error: 'OPERATOR_SESSION_CONFLICT', message})
+        const message = error?.message || 'SESSION_EMAIL_ERROR'
+        if (error?.statusCode === 403 || error?.name === 'ForbiddenError') return reply.status(403).send({error: 'SESSION_EMAIL_FORBIDDEN', message})
+        if (error?.statusCode === 404 || error?.name === 'NotFoundError') return reply.status(404).send({error: 'SESSION_EMAIL_NOT_FOUND', message})
+        if (error?.statusCode === 400 || error?.name === 'BadRequestError' || message.includes('ALREADY')) return reply.status(409).send({error: 'SESSION_EMAIL_CONFLICT', message})
         console.error(error)
-        return reply.status(500).send({error: 'OPERATOR_SESSION_ERROR', message})
+        return reply.status(500).send({error: 'SESSION_EMAIL_ERROR', message})
     }
 }
 

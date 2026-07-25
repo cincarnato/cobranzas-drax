@@ -168,6 +168,13 @@ const entitySchema: IEntitySchema = {
             groupTab: "General",
             mdCol: 6,
         },
+        closedAt: {
+            type: "date",
+            required: false,
+            index: true,
+            groupTab: "General",
+            mdCol: 6,
+        },
         bodyText: {
             type: "longString",
             required: false,

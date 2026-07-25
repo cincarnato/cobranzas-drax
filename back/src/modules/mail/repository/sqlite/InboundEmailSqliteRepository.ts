@@ -3,8 +3,10 @@ import type {
     FindInboundEmailsByProcessMarkOptions,
     IInboundEmailRepository,
     InboundEmailClassificationUpdate,
+    InboundEmailAssignedLite,
     InboundEmailManagementListOptions,
-    InboundEmailManagementListResult
+    InboundEmailManagementListResult,
+    InboundEmailSupervisionCounts
 } from '../../interfaces/IInboundEmailRepository'
 import type {IInboundEmail, IInboundEmailBase} from "../../interfaces/IInboundEmail";
 import {SqliteTableField} from "@drax/common-back";
@@ -44,6 +46,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "replyCount", type: "REAL", unique: undefined, primary: false},
         {name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
         {name: "lastRepliedAt", type: "TEXT", unique: undefined, primary: false},
+        {name: "closedAt", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
         {name: "normalizedText", type: "TEXT", unique: undefined, primary: false},
@@ -305,6 +308,78 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return Number(result?.total || 0);
     }
 
+    async countAssignedByUser(mailboxValues: string[]): Promise<Record<string, number>> {
+        if (!mailboxValues.length) return {};
+        const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {};
+        mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+        const rows = this.db
+            .prepare(`SELECT assignedTo AS userId, COUNT(*) AS total
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus = 'ASSIGNED'
+                        AND assignedTo IS NOT NULL
+                        AND assignedTo != ''
+                      GROUP BY assignedTo`)
+            .all(params) as Array<{userId?: string, total?: number}>;
+        return rows.reduce((acc, row) => {
+            if (row.userId) acc[row.userId] = Number(row.total || 0);
+            return acc;
+        }, {} as Record<string, number>);
+    }
+
+    async supervisionCounts(mailboxValues: string[], closedFrom: Date, closedTo: Date): Promise<InboundEmailSupervisionCounts> {
+        if (!mailboxValues.length) return {pendingEmails: 0, assignedEmails: 0, closedToday: 0};
+        const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {
+            closedFrom: closedFrom.toISOString(),
+            closedTo: closedTo.toISOString(),
+        };
+        mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+        const rows = this.db
+            .prepare(`SELECT attentionStatus AS status, COUNT(*) AS total
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus IN ('PENDING', 'ASSIGNED')
+                      GROUP BY attentionStatus`)
+            .all(params) as Array<{status?: string, total?: number}>;
+        const closed = this.db
+            .prepare(`SELECT COUNT(*) AS total
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus = 'CLOSED'
+                        AND closedAt >= @closedFrom
+                        AND closedAt < @closedTo`)
+            .get(params) as {total?: number};
+        const byStatus = new Map(rows.map((row) => [row.status, Number(row.total || 0)]));
+        return {
+            pendingEmails: byStatus.get("PENDING") || 0,
+            assignedEmails: byStatus.get("ASSIGNED") || 0,
+            closedToday: Number(closed?.total || 0),
+        };
+    }
+
+    async findAssignedLiteByUser(mailboxValues: string[], userId: string): Promise<InboundEmailAssignedLite[]> {
+        if (!mailboxValues.length || !userId) return [];
+        const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {userId};
+        mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+        return this.db
+            .prepare(`SELECT _id, subject, fromName, fromEmail, receivedAt, assignedAt, category, priority, attentionStatus
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND assignedTo = @userId
+                        AND attentionStatus = 'ASSIGNED'
+                      ORDER BY assignedAt ASC, receivedAt ASC`)
+            .all(params) as InboundEmailAssignedLite[];
+    }
+
     async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;
@@ -314,7 +389,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;
-        return await this.update(id, {...item, attentionStatus: "CLOSED", closeReason: closeReason || item.closeReason});
+        return await this.update(id, {...item, attentionStatus: "CLOSED", closedAt: new Date(), closeReason: closeReason || item.closeReason});
     }
 
 }

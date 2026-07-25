@@ -23,6 +23,7 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
             replyCount: {type: Number,   required: false, index: false, unique: false },
             firstRepliedAt: {type: Date,   required: false, index: false, unique: false },
             lastRepliedAt: {type: Date,   required: false, index: false, unique: false },
+            closedAt: {type: Date,   required: false, index: true, unique: false },
             bodyText: {type: String,   required: false, index: false, unique: false },
             bodyHtml: {type: String,   required: false, index: false, unique: false },
             normalizedText: {type: String,   required: false, index: false, unique: false },
