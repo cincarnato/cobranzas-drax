@@ -3,6 +3,7 @@ import {EmailTransportService, type TransportSmtpConfig} from "@drax/email-back"
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
+import SessionEmailServiceFactory from "../factory/services/SessionEmailServiceFactory.js";
 import type {IInboundEmail} from "../interfaces/IInboundEmail";
 import type {IMailbox} from "../interfaces/IMailbox";
 import type {IOutboundEmail} from "../interfaces/IOutboundEmail";
@@ -100,6 +101,10 @@ class MailReplyService {
             });
 
             const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend, closeReason);
+            await SessionEmailServiceFactory.instance.onInboundEmailReplied(inboundEmail);
+            if (payload.closeAfterSend) {
+                await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, userId);
+            }
 
             return {
                 inboundEmail: updatedInboundEmail,

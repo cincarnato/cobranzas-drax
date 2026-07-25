@@ -19,6 +19,8 @@ const InboundEmailBaseSchema = z.object({
     replyToEmail: z.string().optional(),
     assignedTo: z.coerce.string().optional().nullable(),
     assignedAt: z.coerce.date().nullable().optional(),
+    assignedSession: z.coerce.string().optional().nullable(),
+    assignmentMode: z.enum(['MANUAL', 'AUTO']).optional().nullable(),
     attentionStatus: z.enum(['PENDING', 'ASSIGNED', 'CLOSED']).default('PENDING'),
     replyCount: z.number().nullable().optional().default(0),
     firstRepliedAt: z.coerce.date().nullable().optional(),
@@ -78,6 +80,7 @@ const InboundEmailSchema = InboundEmailBaseSchema
     .extend({
         _id: z.coerce.string(),
         assignedTo: z.object({_id: z.coerce.string(), name: z.string()}).nullable().optional(),
+        assignedSession: z.any().nullable().optional(),
 
     })
 

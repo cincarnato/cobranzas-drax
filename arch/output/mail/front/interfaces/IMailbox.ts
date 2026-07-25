@@ -7,7 +7,21 @@ interface IMailboxBase {
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean
-    typificationRequiredToClose?: boolean
+    closeReasonRequired?: boolean
+    categories?: Array<{
+    name: string
+    description?: string
+    }>
+    closeReasons?: Array<{
+    name: string
+    description?: string
+    }>
+    entities?: Array<{
+    name: string
+    description?: string
+    }>
+    operators?: Array<any>
+    maxAssignableEmailsPerUser?: number
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean
@@ -35,7 +49,21 @@ interface IMailbox {
     isActive?: boolean
     autoProcessEnabled?: boolean
     replyRequiredToClose?: boolean
-    typificationRequiredToClose?: boolean
+    closeReasonRequired?: boolean
+    categories?: Array<{
+    name: string
+    description?: string
+    }>
+    closeReasons?: Array<{
+    name: string
+    description?: string
+    }>
+    entities?: Array<{
+    name: string
+    description?: string
+    }>
+    operators?: Array<any>
+    maxAssignableEmailsPerUser?: number
     processingProtocol?: string
     processingIntervalMinutes?: number
     imapEnabled?: boolean

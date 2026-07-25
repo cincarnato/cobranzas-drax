@@ -4,6 +4,8 @@ import type {EmailManagementView} from "@/modules/mail/interfaces/IEmailManageme
 import MailboxSelector from "./MailboxSelector.vue";
 import EmailSidebarViews from "./EmailSidebarViews.vue";
 import EmailCategoryList from "./EmailCategoryList.vue";
+import SessionEmailPanel from "./SessionEmailPanel.vue";
+import type {SessionEmailState} from "@/modules/mail/interfaces/ISessionEmail";
 
 defineProps<{
   mailboxId: string | null
@@ -12,6 +14,8 @@ defineProps<{
   view: EmailManagementView
   category?: string
   counts: Record<string, number>
+  sessionEmailState?: SessionEmailState | null
+  sessionEmailLoading?: boolean
   loadingMailboxes?: boolean
 }>()
 
@@ -20,6 +24,10 @@ defineEmits<{
   (e: "update:view", value: EmailManagementView): void
   (e: "update:category", value?: string): void
   (e: "compose"): void
+  (e: "session-email:start"): void
+  (e: "session-email:pause"): void
+  (e: "session-email:resume"): void
+  (e: "session-email:close"): void
 }>()
 </script>
 
@@ -34,6 +42,15 @@ defineEmits<{
     <v-btn color="primary" prepend-icon="mdi-pencil-outline" block class="compose-button" @click="$emit('compose')">
       Redactar
     </v-btn>
+    <SessionEmailPanel
+      :state="sessionEmailState || null"
+      :loading="sessionEmailLoading"
+      :disabled="!mailboxId"
+      @start="$emit('session-email:start')"
+      @pause="$emit('session-email:pause')"
+      @resume="$emit('session-email:resume')"
+      @close="$emit('session-email:close')"
+    />
     <EmailSidebarViews :model-value="view" :counts="counts" @update:model-value="$emit('update:view', $event)" />
     <v-divider />
     <EmailCategoryList :mailbox="mailbox" :model-value="category" @update:model-value="$emit('update:category', $event)" />

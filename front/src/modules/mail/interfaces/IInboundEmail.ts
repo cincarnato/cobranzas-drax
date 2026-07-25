@@ -26,6 +26,8 @@ interface IInboundEmailBase {
   replyToEmail?: string
   assignedTo?: any
   assignedAt?: Date
+  assignedSession?: any
+  assignmentMode?: "MANUAL" | "AUTO" | null
   attentionStatus?: string
   replyCount?: number
   firstRepliedAt?: Date
@@ -92,6 +94,8 @@ interface IInboundEmail {
   replyToEmail?: string
   assignedTo?: any
   assignedAt?: Date
+  assignedSession?: any
+  assignmentMode?: "MANUAL" | "AUTO" | null
   attentionStatus?: string
   replyCount?: number
   firstRepliedAt?: Date

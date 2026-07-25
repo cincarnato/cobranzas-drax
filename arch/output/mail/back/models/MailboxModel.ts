@@ -13,7 +13,21 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             isActive: {type: Boolean,   required: false, index: false, unique: false },
             autoProcessEnabled: {type: Boolean,   required: false, index: false, unique: false },
             replyRequiredToClose: {type: Boolean,   required: false, index: false, unique: false },
-            typificationRequiredToClose: {type: Boolean,   required: false, index: false, unique: false },
+            closeReasonRequired: {type: Boolean,   required: false, index: false, unique: false },
+            categories: [{ 
+                        name: {type: String,   required: true, index: false, unique: false },
+            description: {type: String,   required: false, index: false, unique: false } 
+            }],
+            closeReasons: [{ 
+                        name: {type: String,   required: true, index: false, unique: false },
+            description: {type: String,   required: false, index: false, unique: false } 
+            }],
+            entities: [{ 
+                        name: {type: String,   required: true, index: false, unique: false },
+            description: {type: String,   required: false, index: false, unique: false } 
+            }],
+            operators: [{type: mongoose.Schema.Types.ObjectId, ref: 'User',  required: false, index: false, unique: false }],
+            maxAssignableEmailsPerUser: {type: Number,   required: false, index: false, unique: false },
             processingProtocol: {type: String,  enum: ['IMAP', 'POP'], required: false, index: false, unique: false },
             processingIntervalMinutes: {type: Number,   required: false, index: false, unique: false },
             imapEnabled: {type: Boolean,   required: false, index: false, unique: false },

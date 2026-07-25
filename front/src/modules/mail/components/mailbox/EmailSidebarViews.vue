@@ -12,6 +12,7 @@ const views: Array<{value: EmailManagementView, label: string, icon: string, cou
   {value: "ALL", label: "Todos", icon: "mdi-email-multiple-outline"},
   {value: "PENDING", label: "Pendientes", icon: "mdi-inbox-outline", count: "PENDING"},
   {value: "ASSIGNED_TO_ME", label: "Asignados a mí", icon: "mdi-account-check-outline", count: "ASSIGNED_TO_ME"},
+  {value: "ASSIGNED_IN_ATTENTION", label: "Asignados en atención", icon: "mdi-headset", count: "ASSIGNED_IN_ATTENTION"},
   {value: "ASSIGNED", label: "Asignados", icon: "mdi-account-multiple-outline", count: "ASSIGNED"},
   {value: "CLOSED", label: "Cerrados", icon: "mdi-archive-check-outline"},
   {value: "STARRED", label: "Destacados", icon: "mdi-star-outline"},

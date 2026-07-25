@@ -24,7 +24,8 @@ class BonusSqliteRepository extends AbstractSqliteRepository<IBonus, IBonusBase,
 {name: "appliedMonth", type: "TEXT", unique: undefined, primary: false},
 {name: "paymentMethod", type: "TEXT", unique: undefined, primary: false},
 {name: "bonus", type: "TEXT", unique: undefined, primary: false},
-{name: "bonifiedNetValue", type: "REAL", unique: undefined, primary: false},
+{name: "bonifiedNetValue", type: "FLOAT", unique: undefined, primary: false},
+{name: "bonifiedNetValue", type: "TEXT", unique: undefined, primary: false},
 {name: "status", type: "TEXT", unique: undefined, primary: false},
 {name: "observation", type: "TEXT", unique: undefined, primary: false},
 {name: "createdBy", type: "TEXT", unique: undefined, primary: false}
@@ -34,3 +35,4 @@ class BonusSqliteRepository extends AbstractSqliteRepository<IBonus, IBonusBase,
 
 export default BonusSqliteRepository
 export {BonusSqliteRepository}
+

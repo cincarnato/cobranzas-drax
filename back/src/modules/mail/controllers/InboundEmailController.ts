@@ -57,15 +57,17 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
             const userId = request.rbac.userId;
             const isSupervisor = request.rbac.hasPermission(InboundEmailPermissions.Manage);
             const view = query.view || "PENDING";
-            const assignedTo = view === "ASSIGNED_TO_ME"
+            const assignedTo = view === "ASSIGNED_TO_ME" || view === "ASSIGNED_IN_ATTENTION"
                 ? userId
                 : (!isSupervisor && view === "ASSIGNED" ? userId : query.assignedTo);
             const attentionStatus = this.resolveAttentionStatus(view, query.attentionStatus);
+            const assignmentMode = this.resolveAssignmentMode(view, query.assignmentMode);
 
             const result = await InboundEmailServiceFactory.instance.managementPaginate({
                 mailboxValues: query.mailboxId ? [query.mailboxId] : undefined,
                 attentionStatus,
                 assignedTo,
+                assignmentMode,
                 category: query.category,
                 priorities: this.arrayQuery(query.priorities || query.priority),
                 tags: this.arrayQuery(query.tags),
@@ -149,10 +151,16 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
 
     private resolveAttentionStatus(view?: string, fallback?: string) {
         if (view === "PENDING") return "PENDING";
-        if (view === "ASSIGNED_TO_ME" || view === "ASSIGNED") return "ASSIGNED";
+        if (view === "ASSIGNED_TO_ME" || view === "ASSIGNED_IN_ATTENTION" || view === "ASSIGNED") return "ASSIGNED";
         if (view === "CLOSED") return "CLOSED";
         if (view === "ALL" || view === "STARRED") return undefined;
         return fallback;
+    }
+
+    private resolveAssignmentMode(view?: string, fallback?: string) {
+        if (view === "ASSIGNED_IN_ATTENTION") return "AUTO";
+        if (view === "ASSIGNED_TO_ME") return "MANUAL";
+        return fallback === "AUTO" || fallback === "MANUAL" ? fallback : undefined;
     }
 
     private arrayQuery(value: any): string[] | undefined {

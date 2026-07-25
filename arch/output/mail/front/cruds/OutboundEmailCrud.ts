@@ -1,5 +1,5 @@
 
-import {EntityCrud} from "@drax/crud-vue";
+import {EntityCrud, useCrudStore} from "@drax/crud-vue";
 import type{
   IDraxCrudProvider,
   IEntityCrud,
@@ -20,10 +20,12 @@ import {UserCrud} from "@drax/identity-vue"
 class OutboundEmailCrud extends EntityCrud implements IEntityCrud {
 
   static singleton: OutboundEmailCrud
+  private store
 
   constructor() {
     super();
     this.name = 'OutboundEmail'
+    this.store = useCrudStore(this.name)
   }
   
   static get instance(): OutboundEmailCrud {
@@ -201,3 +203,4 @@ status: [(v: any) => !!v || 'validation.required']
 }
 
 export default OutboundEmailCrud
+

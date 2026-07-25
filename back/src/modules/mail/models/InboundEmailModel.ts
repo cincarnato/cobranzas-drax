@@ -23,6 +23,8 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
             replyToEmail: {type: String,   required: false, index: false, unique: false },
             assignedTo: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
             assignedAt: {type: Date, required: false, index: true, unique: false },
+            assignedSession: {type: mongoose.Schema.Types.ObjectId, ref: 'SessionEmail', required: false, index: true, unique: false },
+            assignmentMode: {type: String, enum: ['MANUAL', 'AUTO'], required: false, index: true, unique: false },
             attentionStatus: {type: String, enum: ['PENDING', 'ASSIGNED', 'CLOSED'], required: true, index: true, unique: false, default: 'PENDING' },
             replyCount: {type: Number, required: false, index: false, unique: false, default: 0 },
             firstRepliedAt: {type: Date, required: false, index: false, unique: false },
@@ -81,6 +83,9 @@ const InboundEmailSchema = new mongoose.Schema<IInboundEmail>({
 
             processedAt: {type: Date,   required: false, index: false, unique: false },
 }, {timestamps: true});
+
+InboundEmailSchema.index({mailbox: 1, attentionStatus: 1, receivedAt: 1});
+InboundEmailSchema.index({mailbox: 1, assignedTo: 1, attentionStatus: 1});
 
 InboundEmailSchema.plugin(uniqueValidator, {message: 'validation.unique'});
 InboundEmailSchema.plugin(mongoosePaginate);

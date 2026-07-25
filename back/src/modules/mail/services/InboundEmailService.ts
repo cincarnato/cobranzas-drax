@@ -10,10 +10,11 @@ import type{
 import type {IInboundEmailBase, IInboundEmail} from "../interfaces/IInboundEmail";
 import {AbstractService} from "@drax/crud-back";
 import type {ZodObject, ZodRawShape} from "zod";
-import {BadRequestError, ForbiddenError, NotFoundError} from "@drax/common-back";
+import {BadRequestError, ForbiddenError, mongoose, NotFoundError} from "@drax/common-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import EmailUserStateServiceFactory from "../factory/services/EmailUserStateServiceFactory.js";
+import SessionEmailServiceFactory from "../factory/services/SessionEmailServiceFactory.js";
 import type {IMailbox} from "../interfaces/IMailbox";
 
 class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBase, IInboundEmailBase> {
@@ -121,6 +122,18 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         return updated;
     }
 
+    async assignNextPendingAuto(mailboxValues: string[], userId: string, sessionId: string): Promise<IInboundEmail | null> {
+        return await this.repository.assignNextPendingAuto(mailboxValues, userId, sessionId);
+    }
+
+    async countAssignedToUser(mailboxValues: string[], userId: string): Promise<number> {
+        return await this.repository.countAssignedToUser(mailboxValues, userId);
+    }
+
+    async releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number> {
+        return await this.repository.releaseAutoAssignedBySession(sessionId, userId);
+    }
+
     async reassign(id: string, userId: string | null, currentUserId?: string): Promise<IInboundEmail> {
         const inboundEmail = await this.findById(id);
         if (!inboundEmail) throw new NotFoundError();
@@ -154,6 +167,7 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         }
         const updated = await this.repository.closeManagement(id, resolvedCloseReason);
         if (!updated) throw new NotFoundError();
+        await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, currentUserId);
         return updated;
     }
 
@@ -213,6 +227,7 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (!mailboxValue) throw new NotFoundError("mailbox not found");
         const raw = typeof mailboxValue === "object" ? mailboxValue._id?.toString() || mailboxValue.email : mailboxValue.toString();
         try {
+            if (!mongoose.Types.ObjectId.isValid(raw)) throw new Error("mailbox is not an ObjectId");
             const byId = await MailboxServiceFactory.instance.findById(raw);
             if (byId) return byId;
         } catch {

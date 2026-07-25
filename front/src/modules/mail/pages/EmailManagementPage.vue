@@ -12,6 +12,8 @@ import type {
 } from "@/modules/mail/interfaces/IEmailManagement";
 import MailboxProvider from "@/modules/mail/providers/MailboxProvider";
 import EmailManagementProvider from "@/modules/mail/providers/EmailManagementProvider";
+import SessionEmailProvider from "@/modules/mail/providers/SessionEmailProvider";
+import type {SessionEmailState} from "@/modules/mail/interfaces/ISessionEmail";
 import EmailSidebar from "@/modules/mail/components/mailbox/EmailSidebar.vue";
 import EmailToolbar from "@/modules/mail/components/mailbox/EmailToolbar.vue";
 import EmailList from "@/modules/mail/components/mailbox/EmailList.vue";
@@ -52,6 +54,9 @@ const loadingList = ref(false)
 const loadingDetail = ref(false)
 const actionLoading = ref(false)
 const saving = ref(false)
+const sessionEmailState = ref<SessionEmailState | null>(null)
+const sessionEmailLoading = ref(false)
+const closeSessionEmailDialog = ref(false)
 const listError = ref("")
 const detailError = ref("")
 const snackbar = ref({show: false, text: "", color: "info"})
@@ -100,12 +105,14 @@ watch(mailboxId, () => {
   selectedId.value = null
   detail.value = null
   keepCompatibleFilters()
+  void fetchSessionEmail()
   void fetchCounts()
 })
 
 onMounted(async () => {
   await fetchMailboxes()
   if (!mailboxId.value && mailboxes.value[0]) mailboxId.value = mailboxes.value[0]._id
+  await fetchSessionEmail()
   await fetchList()
   await fetchCounts()
 })
@@ -122,6 +129,18 @@ async function fetchMailboxes() {
     notify("No se pudieron cargar los mailboxes.", "error")
   } finally {
     loadingMailboxes.value = false
+  }
+}
+
+async function fetchSessionEmail() {
+  if (!mailboxId.value) {
+    sessionEmailState.value = null
+    return
+  }
+  try {
+    sessionEmailState.value = await SessionEmailProvider.instance.current(mailboxId.value)
+  } catch {
+    sessionEmailState.value = null
   }
 }
 
@@ -155,7 +174,7 @@ async function fetchList() {
 
 async function fetchCounts() {
   if (!mailboxId.value) return
-  const views: EmailManagementView[] = ["PENDING", "ASSIGNED_TO_ME", "ASSIGNED"]
+  const views: EmailManagementView[] = ["PENDING", "ASSIGNED_TO_ME", "ASSIGNED_IN_ATTENTION", "ASSIGNED"]
   const nextCounts: Record<string, number> = {}
   await Promise.all(views.map(async (countView) => {
     const result = await EmailManagementProvider.instance.list({
@@ -211,11 +230,11 @@ async function assignToMe() {
   actionLoading.value = true
   try {
     await EmailManagementProvider.instance.assignToMe(selectedId.value, {force: Boolean(assignedTo)})
-    await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
     notify("Correo asignado.")
   } catch (error: any) {
     notify(error?.response?.data?.message || "No se pudo tomar el correo.", "warning")
-    await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
   } finally {
     actionLoading.value = false
   }
@@ -240,7 +259,7 @@ async function reassign(userId: string | null) {
   actionLoading.value = true
   try {
     await EmailManagementProvider.instance.reassign(selectedId.value, userId)
-    await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
     notify("Asignación actualizada.")
   } catch (error: any) {
     notify(error?.response?.data?.message || "No se pudo reasignar el correo.", "error")
@@ -254,12 +273,90 @@ async function closeEmail(closeReason?: string | null) {
   actionLoading.value = true
   try {
     await EmailManagementProvider.instance.close(selectedId.value, {closeReason: closeReason || undefined})
-    await Promise.all([fetchDetail(), fetchList(), fetchCounts()])
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
     notify("Gestión cerrada.", "success")
   } catch (error: any) {
     notify(error?.response?.data?.message || error?.message || "No se pudo cerrar la gestión.", "error")
   } finally {
     actionLoading.value = false
+  }
+}
+
+async function startSessionEmail() {
+  if (!mailboxId.value || sessionEmailLoading.value) return
+  sessionEmailLoading.value = true
+  try {
+    sessionEmailState.value = await SessionEmailProvider.instance.start(mailboxId.value)
+    view.value = "ASSIGNED_IN_ATTENTION"
+    page.value = 1
+    closeDetail()
+    await Promise.all([fetchList(), fetchCounts(), fetchSessionEmail()])
+    notify("Atención iniciada.", "success")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo iniciar la atención.", "error")
+    await fetchSessionEmail()
+  } finally {
+    sessionEmailLoading.value = false
+  }
+}
+
+async function pauseSessionEmail() {
+  const sessionId = sessionEmailState.value?.session?._id
+  if (!sessionId || sessionEmailLoading.value) return
+  sessionEmailLoading.value = true
+  try {
+    sessionEmailState.value = await SessionEmailProvider.instance.pause(sessionId)
+    await Promise.all([fetchList(), fetchCounts()])
+    notify("Atención pausada.", "info")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo pausar la atención.", "error")
+    await fetchSessionEmail()
+  } finally {
+    sessionEmailLoading.value = false
+  }
+}
+
+async function resumeSessionEmail() {
+  const sessionId = sessionEmailState.value?.session?._id
+  if (!sessionId || sessionEmailLoading.value) return
+  sessionEmailLoading.value = true
+  try {
+    sessionEmailState.value = await SessionEmailProvider.instance.resume(sessionId)
+    view.value = "ASSIGNED_IN_ATTENTION"
+    page.value = 1
+    closeDetail()
+    await Promise.all([fetchList(), fetchCounts(), fetchSessionEmail()])
+    notify("Atención reanudada.", "success")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo reanudar la atención.", "error")
+    await fetchSessionEmail()
+  } finally {
+    sessionEmailLoading.value = false
+  }
+}
+
+function requestCloseSessionEmail() {
+  if ((sessionEmailState.value?.currentAssignedCount || 0) > 0) {
+    closeSessionEmailDialog.value = true
+    return
+  }
+  void closeSessionEmail()
+}
+
+async function closeSessionEmail() {
+  const sessionId = sessionEmailState.value?.session?._id
+  if (!sessionId || sessionEmailLoading.value) return
+  closeSessionEmailDialog.value = false
+  sessionEmailLoading.value = true
+  try {
+    sessionEmailState.value = await SessionEmailProvider.instance.close(sessionId)
+    await Promise.all([fetchList(), fetchCounts(), fetchSessionEmail()])
+    notify("Atención finalizada.", "success")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo finalizar la atención.", "error")
+    await fetchSessionEmail()
+  } finally {
+    sessionEmailLoading.value = false
   }
 }
 
@@ -346,11 +443,17 @@ function notify(text: string, color = "info") {
           :view="view"
           :category="filters.category"
           :counts="counts"
+          :session-email-state="sessionEmailState"
+          :session-email-loading="sessionEmailLoading"
           :loading-mailboxes="loadingMailboxes"
           @update:mailbox-id="mailboxId = $event"
           @update:view="selectSidebarView"
           @update:category="selectSidebarCategory"
           @compose="notify('La redacción de correos nuevos queda preparada para una próxima etapa.')"
+          @session-email:start="startSessionEmail"
+          @session-email:pause="pauseSessionEmail"
+          @session-email:resume="resumeSessionEmail"
+          @session-email:close="requestCloseSessionEmail"
         />
       </aside>
       <main class="email-main">
@@ -398,11 +501,25 @@ function notify(text: string, color = "info") {
             @save-classification="saveClassification"
             @reassign="reassign"
             @close="closeEmail"
-            @reply-sent="fetchDetail(); fetchList(); fetchCounts()"
+            @reply-sent="fetchDetail(); fetchList(); fetchCounts(); fetchSessionEmail()"
           />
         </section>
       </main>
     </div>
+    <v-dialog v-model="closeSessionEmailDialog" max-width="480">
+      <v-card>
+        <v-card-title>Finalizar atención</v-card-title>
+        <v-card-text>
+          Tenés {{ sessionEmailState?.currentAssignedCount || 0 }} casos actualmente asignados.
+          Los casos continuarán asignados a vos, pero dejarás de recibir nuevas asignaciones automáticas.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" :disabled="sessionEmailLoading" @click="closeSessionEmailDialog = false">Cancelar</v-btn>
+          <v-btn color="error" :loading="sessionEmailLoading" @click="closeSessionEmail">Finalizar atención</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
       {{ snackbar.text }}
     </v-snackbar>

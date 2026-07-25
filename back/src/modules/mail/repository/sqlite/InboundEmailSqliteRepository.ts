@@ -38,6 +38,8 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "replyToEmail", type: "TEXT", unique: undefined, primary: false},
         {name: "assignedTo", type: "TEXT", unique: undefined, primary: false},
         {name: "assignedAt", type: "TEXT", unique: undefined, primary: false},
+        {name: "assignedSession", type: "TEXT", unique: undefined, primary: false},
+        {name: "assignmentMode", type: "TEXT", unique: undefined, primary: false},
         {name: "attentionStatus", type: "TEXT", unique: undefined, primary: false},
         {name: "replyCount", type: "REAL", unique: undefined, primary: false},
         {name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
@@ -165,6 +167,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         if (options.mailboxValues?.length) filters.push({field: "mailbox", operator: "in", value: options.mailboxValues});
         if (options.attentionStatus) filters.push({field: "attentionStatus", operator: "eq", value: options.attentionStatus});
         if (options.assignedTo) filters.push({field: "assignedTo", operator: "eq", value: options.assignedTo});
+        if (options.assignmentMode) filters.push({field: "assignmentMode", operator: "eq", value: options.assignmentMode});
         if (options.category) filters.push({field: "category", operator: "eq", value: options.category});
         if (typeof options.hasAttachments === "boolean") filters.push({field: "hasAttachments", operator: "eq", value: options.hasAttachments});
         if (options.withoutReply) filters.push({field: "replyCount", operator: "eq", value: 0});
@@ -238,13 +241,49 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     async assignToMe(id: string, userId: string, force = false): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item || (force ? !["PENDING", "ASSIGNED"].includes(String(item.attentionStatus)) : (item.attentionStatus !== "PENDING" || item.assignedTo))) return null;
-        return await this.update(id, {...item, attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date()});
+        return await this.update(id, {...item, attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date(), assignedSession: null, assignmentMode: "MANUAL"});
+    }
+
+    async assignNextPendingAuto(mailboxValues: string[], userId: string, sessionId: string): Promise<IInboundEmail | null> {
+        if (!mailboxValues.length) return null;
+        const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {};
+        mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+        const item = this.db
+            .prepare(`SELECT * FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus = 'PENDING'
+                        AND (assignedTo IS NULL OR assignedTo = '')
+                      ORDER BY receivedAt ASC
+                      LIMIT 1`)
+            .get(params) as IInboundEmail | undefined;
+        if (!item) return null;
+        await this.decorate(item);
+        return await this.update(item._id, {...item, attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date(), assignedSession: sessionId, assignmentMode: "AUTO"});
+    }
+
+    async releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number> {
+        const result = this.db
+            .prepare(`UPDATE ${this.tableName}
+                      SET attentionStatus = 'PENDING',
+                          assignedTo = NULL,
+                          assignedAt = NULL,
+                          assignedSession = NULL,
+                          assignmentMode = NULL
+                      WHERE assignedSession = @sessionId
+                        AND assignedTo = @userId
+                        AND attentionStatus = 'ASSIGNED'
+                        AND assignmentMode = 'AUTO'`)
+            .run({sessionId, userId});
+        return Number(result?.changes || 0);
     }
 
     async reassign(id: string, userId: string | null): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;
-        return await this.update(id, {...item, attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null});
+        return await this.update(id, {...item, attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null, assignedSession: null, assignmentMode: userId ? "MANUAL" : null});
     }
 
     async countAssignedToUser(mailboxValues: string[], userId: string): Promise<number> {

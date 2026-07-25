@@ -18,7 +18,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         super();
         this._model = InboundEmailModel;
         this._searchFields = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'category', 'attentionStatus', 'duplicateOfMessageId'];
-        this._populateFields = ['assignedTo'];
+        this._populateFields = ['assignedTo', 'assignedSession'];
         this._lean = true
     }
 
@@ -140,15 +140,61 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             : {attentionStatus: "PENDING", $or: [{assignedTo: {$exists: false}}, {assignedTo: null}]};
         return await this._model.findOneAndUpdate(
             {_id: id, ...assignmentFilter},
-            {$set: {attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date()}},
+            {$set: {attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date(), assignmentMode: "MANUAL"}, $unset: {assignedSession: ""}},
             {new: true}
         ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;
+    }
+
+    async assignNextPendingAuto(mailboxValues: string[], userId: string, sessionId: string): Promise<IInboundEmail | null> {
+        if (!mailboxValues.length) return null;
+        const now = new Date();
+        return await this._model.findOneAndUpdate(
+            {
+                mailbox: {$in: mailboxValues},
+                attentionStatus: "PENDING",
+                $or: [{assignedTo: {$exists: false}}, {assignedTo: null}],
+            },
+            {
+                $set: {
+                    attentionStatus: "ASSIGNED",
+                    assignedTo: userId,
+                    assignedAt: now,
+                    assignedSession: sessionId,
+                    assignmentMode: "AUTO",
+                },
+            },
+            {sort: {receivedAt: 1}, new: true}
+        ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;
+    }
+
+    async releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number> {
+        const result = await this._model.updateMany(
+            {
+                assignedSession: sessionId,
+                assignedTo: userId,
+                attentionStatus: "ASSIGNED",
+                assignmentMode: "AUTO",
+            },
+            {
+                $set: {
+                    attentionStatus: "PENDING",
+                    assignedTo: null,
+                    assignedAt: null,
+                    assignmentMode: null,
+                },
+                $unset: {assignedSession: ""},
+            }
+        ).exec();
+        return result.modifiedCount || 0;
     }
 
     async reassign(id: string, userId: string | null): Promise<IInboundEmail | null> {
         return await this._model.findByIdAndUpdate(
             id,
-            {$set: {attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null}},
+            {
+                $set: {attentionStatus: userId ? "ASSIGNED" : "PENDING", assignedTo: userId, assignedAt: userId ? new Date() : null, assignmentMode: userId ? "MANUAL" : null},
+                $unset: {assignedSession: ""}
+            },
             {new: true}
         ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;
     }
@@ -182,6 +228,13 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         if (options.mailboxValues?.length) query.mailbox = {$in: options.mailboxValues};
         if (options.attentionStatus) query.attentionStatus = options.attentionStatus;
         if (options.assignedTo) query.assignedTo = options.assignedTo;
+        if (options.assignmentMode === "AUTO") query.assignmentMode = "AUTO";
+        if (options.assignmentMode === "MANUAL") {
+            query.$and = [
+                ...(query.$and || []),
+                {$or: [{assignmentMode: "MANUAL"}, {assignmentMode: null}, {assignmentMode: {$exists: false}}]},
+            ];
+        }
         if (options.category) query.category = options.category;
         if (options.priorities?.length) query.priority = {$in: options.priorities};
         if (options.tags?.length) query.tags = {$all: options.tags};

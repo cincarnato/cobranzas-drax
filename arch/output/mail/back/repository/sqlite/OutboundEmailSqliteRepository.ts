@@ -36,7 +36,7 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
 {name: "references", type: "TEXT", unique: undefined, primary: false},
 {name: "sentAt", type: "TEXT", unique: undefined, primary: false},
 {name: "lastError", type: "TEXT", unique: undefined, primary: false},
-{name: "attempts", type: "REAL", unique: undefined, primary: false},
+{name: "attempts", type: "FLOAT", unique: undefined, primary: false},
 {name: "attempts", type: "TEXT", unique: undefined, primary: false}
     ]
   
@@ -44,3 +44,4 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
 
 export default OutboundEmailSqliteRepository
 export {OutboundEmailSqliteRepository}
+

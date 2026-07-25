@@ -22,6 +22,8 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult>
     findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]>
     assignToMe(id: string, userId: string, force?: boolean): Promise<IInboundEmail | null>
+    assignNextPendingAuto(mailboxValues: string[], userId: string, sessionId: string): Promise<IInboundEmail | null>
+    releaseAutoAssignedBySession(sessionId: string, userId: string): Promise<number>
     reassign(id: string, userId: string | null): Promise<IInboundEmail | null>
     countAssignedToUser(mailboxValues: string[], userId: string): Promise<number>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>
@@ -33,6 +35,7 @@ type InboundEmailManagementListOptions = {
     mailboxValues?: string[]
     attentionStatus?: string
     assignedTo?: string
+    assignmentMode?: 'AUTO' | 'MANUAL'
     category?: string
     priorities?: string[]
     tags?: string[]

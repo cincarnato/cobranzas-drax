@@ -3,14 +3,14 @@ const messages = {
   en: {
   
     whatsappmessage: {
-          entity: 'WhatsApp message',
-          menu: 'WhatsApp messages',
-          crud: 'Manage WhatsApp messages',
+          entity: 'WhatsappMessage',
+          menu: 'WhatsappMessage',
+          crud: 'Manage WhatsappMessage',
           field:{
-                       sentAt:'Sent at',
-           user:'User',
-           destinationNumber:'Destination number',
-           template:'Template'
+                       sentAt:'sentAt',
+           user:'user',
+           destinationNumber:'destinationNumber',
+           template:'template'
           }
       },
       permission: {
@@ -23,14 +23,14 @@ const messages = {
   },
   es: {
      whatsappmessage: {
-          entity: 'Mensaje de WhatsApp',
-          menu: 'Mensajes de WhatsApp',
-          crud: 'Gestionar mensajes de WhatsApp',
+          entity: 'WhatsappMessage',
+          menu: 'WhatsappMessage',
+          crud: 'Gestionar WhatsappMessage',
           field:{
-                       sentAt:'Fecha y hora',
-           user:'Usuario',
-           destinationNumber:'Número de destino',
-           template:'Template'
+                       sentAt:'sentAt',
+           user:'user',
+           destinationNumber:'destinationNumber',
+           template:'template'
           }
       },
      permission: {
