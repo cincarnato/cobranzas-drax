@@ -1,4 +1,4 @@
-import {BadRequestError, NotFoundError} from "@drax/common-back";
+import {BadRequestError, ForbiddenError, NotFoundError} from "@drax/common-back";
 import {EmailTransportService, type TransportSmtpConfig} from "@drax/email-back";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
@@ -22,6 +22,10 @@ type MailReplyPayload = {
 
 type MailReplyResult = {
     inboundEmail: IInboundEmail;
+    outboundEmail: IOutboundEmail;
+};
+
+type MailSendResult = {
     outboundEmail: IOutboundEmail;
 };
 
@@ -100,7 +104,7 @@ class MailReplyService {
                 attempts: 1,
             });
 
-            const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend, closeReason);
+            const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend, closeReason, userId);
             await SessionEmailServiceFactory.instance.onInboundEmailReplied(inboundEmail);
             if (payload.closeAfterSend) {
                 await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, userId);
@@ -110,6 +114,83 @@ class MailReplyService {
                 inboundEmail: updatedInboundEmail,
                 outboundEmail,
             };
+        } catch (error: any) {
+            outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
+                status: "FAILED",
+                lastError: error?.message || "No se pudo enviar el correo.",
+                attempts: 1,
+            });
+
+            throw Object.assign(error, {outboundEmail});
+        }
+    }
+
+    async sendNew(payload: MailReplyPayload, userId?: string): Promise<MailSendResult> {
+        if (!payload.mailboxId) {
+            throw new BadRequestError("mailbox id is required");
+        }
+
+        const mailbox = await MailboxServiceFactory.instance.findById(payload.mailboxId);
+        if (!mailbox) {
+            throw new NotFoundError("mailbox not found");
+        }
+
+        this.assertMailboxOperator(mailbox, userId);
+        this.assertMailboxCanSend(mailbox);
+
+        const toEmails = this.normalizeEmails(payload.toEmails || []);
+        const ccEmails = this.normalizeEmails(payload.ccEmails || []);
+        const bccEmails = this.normalizeEmails(payload.bccEmails || []);
+        const subject = payload.subject?.trim() || "";
+        const bodyText = payload.bodyText?.trim() || "";
+        const bodyHtml = payload.bodyHtml?.trim() || "";
+
+        if (!toEmails.length) {
+            throw new BadRequestError("at least one recipient is required");
+        }
+        if (!subject) {
+            throw new BadRequestError("subject is required");
+        }
+        if (!bodyText && !bodyHtml) {
+            throw new BadRequestError("mail body is required");
+        }
+
+        const fromEmail = mailbox.email;
+        const sentAt = new Date();
+        let outboundEmail = await OutboundEmailServiceFactory.instance.create({
+            mailbox: mailbox._id,
+            user: userId,
+            fromEmail,
+            toEmails,
+            ccEmails,
+            bccEmails,
+            subject,
+            bodyText,
+            bodyHtml,
+            status: "SENDING",
+            attempts: 1,
+        });
+
+        try {
+            const emailTransport = new EmailTransportService("smtp", this.getSmtpConfig(mailbox));
+            const sendResult = await emailTransport.sendEmail({
+                from: fromEmail,
+                to: toEmails,
+                cc: ccEmails.length ? ccEmails : undefined,
+                bcc: bccEmails.length ? bccEmails : undefined,
+                subject,
+                text: bodyText || undefined,
+                html: bodyHtml || undefined,
+            });
+
+            outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
+                status: "SENT",
+                messageId: sendResult?.messageId,
+                sentAt,
+                attempts: 1,
+            });
+
+            return {outboundEmail};
         } catch (error: any) {
             outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
                 status: "FAILED",
@@ -157,6 +238,15 @@ class MailReplyService {
         }
     }
 
+    private assertMailboxOperator(mailbox: IMailbox, userId?: string) {
+        const operatorIds = (mailbox.operators || [])
+            .map((operator: any) => typeof operator === "object" ? operator?._id?.toString() || operator?.id?.toString() : operator?.toString())
+            .filter(Boolean);
+        if (!operatorIds.length || !userId || !operatorIds.includes(userId)) {
+            throw new ForbiddenError();
+        }
+    }
+
     private getSmtpConfig(mailbox: IMailbox): TransportSmtpConfig {
         return {
             host: mailbox.smtpHost as string,
@@ -171,7 +261,7 @@ class MailReplyService {
         };
     }
 
-    private async registerInboundReply(inboundEmail: IInboundEmail, sentAt: Date, closeAfterSend?: boolean, closeReason?: string | null): Promise<IInboundEmail> {
+    private async registerInboundReply(inboundEmail: IInboundEmail, sentAt: Date, closeAfterSend?: boolean, closeReason?: string | null, userId?: string): Promise<IInboundEmail> {
         const replyCount = (inboundEmail.replyCount || 0) + 1;
         const update: Partial<IInboundEmail> = {
             replyCount,
@@ -181,6 +271,8 @@ class MailReplyService {
         };
         if (closeAfterSend) {
             update.closedAt = sentAt;
+            update.closedBy = userId;
+            update.assignedTo = userId;
         }
         if (closeAfterSend && (closeReason || inboundEmail.closeReason)) {
             update.closeReason = closeReason || inboundEmail.closeReason;
@@ -211,4 +303,4 @@ class MailReplyService {
 
 export default MailReplyService;
 export {MailReplyService};
-export type {MailReplyPayload, MailReplyResult};
+export type {MailReplyPayload, MailReplyResult, MailSendResult};

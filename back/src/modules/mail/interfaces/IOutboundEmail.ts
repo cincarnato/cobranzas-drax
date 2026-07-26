@@ -1,6 +1,6 @@
 
 interface IOutboundEmailBase {
-    inboundEmail: any
+    inboundEmail?: any
     mailbox: any
     user?: any
     fromEmail: string
@@ -23,7 +23,7 @@ interface IOutboundEmailBase {
 
 interface IOutboundEmail {
     _id: string
-    inboundEmail: any
+    inboundEmail?: any
     mailbox: any
     user?: any
     fromEmail: string

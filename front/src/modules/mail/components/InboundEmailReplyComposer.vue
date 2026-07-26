@@ -3,17 +3,18 @@ import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
-import MailReplyProvider, {type MailReplyResult} from "@/modules/mail/providers/MailReplyProvider";
+import MailReplyProvider, {type MailReplyResult, type MailSendResult} from "@/modules/mail/providers/MailReplyProvider";
 
 type EmailField = "to" | "cc" | "bcc"
 
 const props = defineProps<{
   inboundEmail: IInboundEmail | null
   mailbox?: IMailbox | null
+  mode?: "reply" | "new"
 }>()
 
 const emit = defineEmits<{
-  (e: 'sent', value: MailReplyResult): void
+  (e: 'sent', value: MailReplyResult | MailSendResult): void
   (e: 'cancel'): void
 }>()
 
@@ -39,6 +40,8 @@ const selectedFontSize = ref("3")
 const selectedTextColor = ref("#202124")
 
 const {t} = useI18n()
+const composerMode = computed(() => props.mode || "reply")
+const isNewEmail = computed(() => composerMode.value === "new")
 
 const fontFamilies = ["Sans Serif", "Serif", "Monospace", "Arial", "Verdana", "Tahoma", "Trebuchet MS", "Georgia"]
 const fontSizes = [
@@ -96,7 +99,7 @@ const closeReasonOptions = computed(() => (props.mailbox?.closeReasons || []).ma
 const needsCloseReason = computed(() => Boolean(closeAfterSend.value && props.mailbox?.closeReasonRequired))
 
 const canSend = computed(() =>
-  Boolean(props.inboundEmail?._id) &&
+  Boolean(isNewEmail.value ? props.mailbox?._id : props.inboundEmail?._id) &&
   Boolean(subject.value.trim()) &&
   Boolean(bodyText.value.trim()) &&
   toEmails.value.length > 0 &&
@@ -106,12 +109,11 @@ const canSend = computed(() =>
 )
 
 watch(
-  () => props.inboundEmail?._id,
+  () => [props.inboundEmail?._id, composerMode.value, props.mailbox?._id],
   () => {
-    if (!props.inboundEmail) return
     error.value = ""
-    subject.value = resolveSubject(props.inboundEmail.subject)
-    toEmails.value = normalizeEmailList([props.inboundEmail.replyToEmail || props.inboundEmail.fromEmail || ""])
+    subject.value = isNewEmail.value ? "" : resolveSubject(props.inboundEmail?.subject)
+    toEmails.value = isNewEmail.value ? [] : normalizeEmailList([props.inboundEmail?.replyToEmail || props.inboundEmail?.fromEmail || ""])
     ccEmails.value = []
     bccEmails.value = []
     toEmailSearch.value = ""
@@ -121,7 +123,7 @@ watch(
     bodyText.value = ""
     editorTouched.value = false
     closeAfterSend.value = false
-    closeReason.value = props.inboundEmail.closeReason || null
+    closeReason.value = props.inboundEmail?.closeReason || null
     nextTick(() => {
       if (editorRef.value) editorRef.value.innerHTML = ""
     })
@@ -565,13 +567,13 @@ function sanitizeStyleAttribute(element: HTMLElement) {
 
 async function sendReply() {
   commitAllPendingEmails()
-  if (!props.inboundEmail?._id || !canSend.value) return
+  if (!canSend.value) return
 
   updateBodyFromEditor()
   loading.value = true
   error.value = ""
   try {
-    const result = await MailReplyProvider.instance.sendReply(props.inboundEmail._id, {
+    const payload = {
       subject: subject.value.trim(),
       bodyText: bodyText.value.trim(),
       bodyHtml: bodyHtml.value || escapeHtml(bodyText.value).replace(/\n/g, "<br>"),
@@ -580,7 +582,10 @@ async function sendReply() {
       bccEmails: bccEmails.value,
       closeAfterSend: closeAfterSend.value,
       closeReason: closeAfterSend.value ? closeReason.value || null : null,
-    })
+    }
+    const result = isNewEmail.value
+      ? await MailReplyProvider.instance.sendNew({...payload, mailboxId: props.mailbox?._id || ""})
+      : await MailReplyProvider.instance.sendReply(props.inboundEmail?._id || "", payload)
     emit('sent', result)
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.data?.message || userFriendlyError(e?.message)
@@ -598,8 +603,8 @@ function userFriendlyError(message?: string) {
 <template>
   <v-card class="mail-reply-composer-card" elevation="6">
       <v-card-title class="d-flex align-center ga-2 py-3">
-        <v-icon icon="mdi-reply-outline" />
-        {{ t('mail.reply.title') }}
+        <v-icon :icon="isNewEmail ? 'mdi-pencil-outline' : 'mdi-reply-outline'" />
+        {{ isNewEmail ? t('mail.reply.composeTitle') : t('mail.reply.title') }}
       </v-card-title>
 
       <v-divider />
@@ -939,6 +944,7 @@ function userFriendlyError(message?: string) {
 
       <v-card-actions>
         <v-checkbox
+          v-if="!isNewEmail"
           v-model="closeAfterSend"
           :label="t('mail.reply.closeAfterSend')"
           density="compact"

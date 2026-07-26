@@ -3,7 +3,7 @@ import type {IMailbox} from "./IMailbox";
 import type {IOutboundEmail} from "./IOutboundEmail";
 import type {IEmailUserState} from "./IEmailUserState";
 
-type EmailManagementView = "PENDING" | "ASSIGNED_TO_ME" | "ASSIGNED_IN_ATTENTION" | "ASSIGNED" | "CLOSED" | "STARRED" | "ALL"
+type EmailManagementView = "PENDING" | "ASSIGNED_TO_ME" | "ASSIGNED_IN_ATTENTION" | "ASSIGNED" | "CLOSED" | "STARRED" | "SENT" | "ALL"
 type EmailDensity = "comfortable" | "compact"
 
 type EmailManagementPermissions = {

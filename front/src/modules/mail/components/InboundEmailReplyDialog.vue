@@ -2,7 +2,7 @@
 import {computed} from "vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
-import type {MailReplyResult} from "@/modules/mail/providers/MailReplyProvider";
+import type {MailReplyResult, MailSendResult} from "@/modules/mail/providers/MailReplyProvider";
 
 const props = defineProps<{
   modelValue: boolean
@@ -20,7 +20,8 @@ const dialog = computed({
   set: (value: boolean) => emit('update:modelValue', value),
 })
 
-function onSent(result: MailReplyResult) {
+function onSent(result: MailReplyResult | MailSendResult) {
+  if (!('inboundEmail' in result)) return
   emit('sent', result)
   dialog.value = false
 }

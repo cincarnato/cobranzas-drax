@@ -59,6 +59,20 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
         }
         return items;
     }
+
+    async standalonePaginate(options: {mailboxId: string, page: number, pageSize: number}): Promise<{items: IOutboundEmail[], totalItems: number}> {
+        const page = Math.max(Number(options.page || 1), 1);
+        const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
+        const offset = (page - 1) * pageSize;
+        const params = {mailboxId: options.mailboxId, limit: pageSize, offset};
+        const where = "mailbox = @mailboxId AND (inboundEmail IS NULL OR inboundEmail = '')";
+        const items = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE ${where} ORDER BY COALESCE(sentAt, createdAt) DESC LIMIT @limit OFFSET @offset`).all(params) as IOutboundEmail[];
+        for (const item of items) {
+            await this.decorate(item);
+        }
+        const total = this.db.prepare(`SELECT COUNT(*) as total FROM ${this.tableName} WHERE ${where}`).get(params) as {total: number};
+        return {items, totalItems: total?.total || 0};
+    }
   
 }
 

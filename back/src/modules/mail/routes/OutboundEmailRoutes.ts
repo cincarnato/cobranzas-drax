@@ -13,6 +13,8 @@ async function OutboundEmailFastifyRoutes(fastify, options) {
     fastify.get('/api/outbound-emails/find', {schema: schemas.findSchema}, (req,rep) => controller.find(req,rep))
     
     fastify.get('/api/outbound-emails/search', {schema: schemas.searchSchema}, (req,rep) => controller.search(req,rep))
+
+    fastify.get('/api/outbound-emails/standalone', (req,rep) => controller.standalone(req as any,rep))
     
     fastify.get('/api/outbound-emails/:id', {schema: schemas.findByIdSchema}, (req,rep) => controller.findById(req,rep))
     

@@ -34,6 +34,29 @@ class OutboundEmailMongoRepository extends AbstractMongoRepository<IOutboundEmai
             .exec() as IOutboundEmail[];
     }
 
+    async standalonePaginate(options: {mailboxId: string, page: number, pageSize: number}): Promise<{items: IOutboundEmail[], totalItems: number}> {
+        const page = Math.max(Number(options.page || 1), 1);
+        const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
+        const query = {
+            mailbox: options.mailboxId,
+            $or: [
+                {inboundEmail: {$exists: false}},
+                {inboundEmail: null},
+            ],
+        };
+        const [items, totalItems] = await Promise.all([
+            this._model.find(query)
+                .populate(this._populateFields)
+                .sort({sentAt: -1, createdAt: -1})
+                .skip((page - 1) * pageSize)
+                .limit(pageSize)
+                .lean(this._lean)
+                .exec() as Promise<IOutboundEmail[]>,
+            this._model.countDocuments(query),
+        ]);
+        return {items, totalItems};
+    }
+
 }
 
 export default OutboundEmailMongoRepository

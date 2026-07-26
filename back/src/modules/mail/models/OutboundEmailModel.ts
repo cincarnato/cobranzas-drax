@@ -6,7 +6,7 @@ import mongoosePaginate from 'mongoose-paginate-v2'
 import type {IOutboundEmail} from '../interfaces/IOutboundEmail'
 
 const OutboundEmailSchema = new mongoose.Schema<IOutboundEmail>({
-            inboundEmail: {type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail',  required: true, index: true, unique: false },
+            inboundEmail: {type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail',  required: false, index: true, unique: false },
             mailbox: {type: mongoose.Schema.Types.ObjectId, ref: 'Mailbox',  required: true, index: true, unique: false },
             user: {type: mongoose.Schema.Types.ObjectId, ref: 'User',  required: false, index: true, unique: false },
             fromEmail: {type: String,   required: true, index: true, unique: false },

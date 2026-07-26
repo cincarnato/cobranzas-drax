@@ -18,6 +18,10 @@ export type MailReplyResult = {
   outboundEmail: IOutboundEmail
 }
 
+export type MailSendResult = {
+  outboundEmail: IOutboundEmail
+}
+
 class MailReplyProvider {
   static singleton: MailReplyProvider
 
@@ -41,6 +45,14 @@ class MailReplyProvider {
       payload,
       {timeout: 120000}
     ) as MailReplyResult
+  }
+
+  async sendNew(payload: MailReplyPayload & {mailboxId: string}): Promise<MailSendResult> {
+    return await this.httpClient.post(
+      `${this.basePath}/send`,
+      payload,
+      {timeout: 120000}
+    ) as MailSendResult
   }
 }
 

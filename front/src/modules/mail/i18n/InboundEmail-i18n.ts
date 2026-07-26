@@ -67,6 +67,7 @@ const messages = {
     mail: {
       reply: {
         title: 'Reply email',
+        composeTitle: 'New email',
         to: 'To',
         cc: 'CC',
         bcc: 'BCC',
@@ -182,6 +183,7 @@ const messages = {
     mail: {
       reply: {
         title: 'Responder correo',
+        composeTitle: 'Nuevo correo',
         to: 'Para',
         cc: 'CC',
         bcc: 'BCC',

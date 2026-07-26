@@ -15,6 +15,7 @@ const views: Array<{value: EmailManagementView, label: string, icon: string, cou
   {value: "ASSIGNED_IN_ATTENTION", label: "Asignados en atención", icon: "mdi-headset", count: "ASSIGNED_IN_ATTENTION"},
   {value: "ASSIGNED", label: "Asignados", icon: "mdi-account-multiple-outline", count: "ASSIGNED"},
   {value: "CLOSED", label: "Cerrados", icon: "mdi-archive-check-outline"},
+  {value: "SENT", label: "Enviados", icon: "mdi-send-outline"},
   {value: "STARRED", label: "Destacados", icon: "mdi-star-outline"},
 ]
 </script>

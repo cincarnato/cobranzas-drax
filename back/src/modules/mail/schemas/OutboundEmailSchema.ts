@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 
 const OutboundEmailBaseSchema = z.object({
-      inboundEmail: z.coerce.string().min(1,'validation.required'),
+      inboundEmail: z.coerce.string().optional().nullable(),
     mailbox: z.coerce.string().min(1,'validation.required'),
     user: z.coerce.string().optional().nullable(),
     fromEmail: z.string().min(1,'validation.required'),
@@ -25,9 +25,14 @@ const OutboundEmailBaseSchema = z.object({
 const OutboundEmailSchema = OutboundEmailBaseSchema
     .extend({
       _id: z.coerce.string(),
-       inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}),
+       inboundEmail: z.object({_id: z.coerce.string(), messageId: z.string()}).nullable().optional(),
 mailbox: z.object({_id: z.coerce.string(), email: z.string()}),
-user: z.object({_id: z.coerce.string(), name: z.string()}).nullable().optional()
+user: z.object({
+    _id: z.coerce.string(),
+    name: z.string().optional(),
+    username: z.string().optional(),
+    email: z.string().optional()
+}).nullable().optional()
     })
 
 export default OutboundEmailSchema;

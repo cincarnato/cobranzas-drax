@@ -4,6 +4,29 @@ async function MailReplyRoutes(fastify, options) {
     const controller = new MailReplyController();
 
     fastify.post(
+        "/api/mail-replies/send",
+        {
+            schema: {
+                tags: ["mail"],
+                summary: "Send a standalone email",
+                body: {
+                    type: "object",
+                    properties: {
+                        subject: {type: "string"},
+                        bodyText: {type: "string"},
+                        bodyHtml: {type: "string"},
+                        toEmails: {type: "array", items: {type: "string"}},
+                        ccEmails: {type: "array", items: {type: "string"}},
+                        bccEmails: {type: "array", items: {type: "string"}},
+                        mailboxId: {type: "string"},
+                    },
+                },
+            },
+        },
+        (req, rep) => controller.sendNew(req as any, rep)
+    );
+
+    fastify.post(
         "/api/mail-replies/:inboundEmailId/send",
         {
             schema: {

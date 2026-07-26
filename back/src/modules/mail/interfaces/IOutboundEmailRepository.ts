@@ -5,6 +5,7 @@ import {IDraxCrudRepository} from "@drax/crud-share";
 interface IOutboundEmailRepository extends IDraxCrudRepository<IOutboundEmail, IOutboundEmailBase, IOutboundEmailBase>{
     findByInboundEmailIds(inboundEmailIds: string[]): Promise<IOutboundEmail[]>
     findByMessageIds(messageIds: string[]): Promise<IOutboundEmail[]>
+    standalonePaginate(options: {mailboxId: string, page: number, pageSize: number}): Promise<{items: IOutboundEmail[], totalItems: number}>
 
 }
 

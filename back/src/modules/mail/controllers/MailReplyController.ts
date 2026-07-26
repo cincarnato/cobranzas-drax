@@ -4,6 +4,7 @@ import {z} from "zod";
 import MailReplyService from "../services/MailReplyService.js";
 import InboundEmailPermissions from "../permissions/InboundEmailPermissions.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
+import OutboundEmailPermissions from "../permissions/OutboundEmailPermissions.js";
 
 const MailReplyBodySchema = z.object({
     subject: z.string().optional(),
@@ -61,6 +62,44 @@ class MailReplyController {
             if (error?.outboundEmail) {
                 return reply.status(500).send({
                     error: "MAIL_REPLY_SEND_ERROR",
+                    message: error?.message || "No se pudo enviar el correo.",
+                    outboundEmail: error.outboundEmail,
+                });
+            }
+
+            throw error;
+        }
+    }
+
+    async sendNew(request: CustomRequest, reply: FastifyReply) {
+        try {
+            request?.rbac.assertAuthenticated();
+            request?.rbac.assertPermission(OutboundEmailPermissions.Create);
+
+            const payload = MailReplyBodySchema.parse(request.body || {});
+            const userId = request.rbac.userId || request.rbac.getAuthUser?.id;
+            const result = await this.service.sendNew(payload, userId);
+
+            return reply.status(200).send(result);
+        } catch (error: any) {
+            if (error?.name === "ZodError") {
+                return reply.status(400).send({
+                    error: "MAIL_SEND_INVALID_INPUT",
+                    message: "Los datos del correo no son validos.",
+                    details: error.issues,
+                });
+            }
+
+            if (error?.statusCode === 400 || error?.name === "BadRequestError") {
+                return reply.status(400).send({
+                    error: "MAIL_SEND_INVALID_INPUT",
+                    message: error?.message || "No se pudo enviar el correo. Revisá los datos requeridos.",
+                });
+            }
+
+            if (error?.outboundEmail) {
+                return reply.status(500).send({
+                    error: "MAIL_SEND_ERROR",
                     message: error?.message || "No se pudo enviar el correo.",
                     outboundEmail: error.outboundEmail,
                 });

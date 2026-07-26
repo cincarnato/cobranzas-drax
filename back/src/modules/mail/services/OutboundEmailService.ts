@@ -23,6 +23,19 @@ class OutboundEmailService extends AbstractService<IOutboundEmail, IOutboundEmai
         return await this.repository.findByMessageIds(messageIds);
     }
 
+    async standalonePaginate(options: {mailboxId: string, page: number, pageSize: number}) {
+        const page = Math.max(Number(options.page || 1), 1);
+        const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
+        const result = await this.repository.standalonePaginate({mailboxId: options.mailboxId, page, pageSize});
+        return {
+            items: result.items,
+            page,
+            pageSize,
+            totalItems: result.totalItems,
+            totalPages: Math.max(Math.ceil(result.totalItems / pageSize), 1),
+        };
+    }
+
 }
 
 export default OutboundEmailService

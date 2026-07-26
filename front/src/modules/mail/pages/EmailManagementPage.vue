@@ -3,6 +3,7 @@ import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {useAuth, useAuthStore} from "@drax/identity-vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
+import type {IOutboundEmail} from "@/modules/mail/interfaces/IOutboundEmail";
 import type {
   EmailDensity,
   EmailManagementDetail,
@@ -12,12 +13,16 @@ import type {
 } from "@/modules/mail/interfaces/IEmailManagement";
 import MailboxProvider from "@/modules/mail/providers/MailboxProvider";
 import EmailManagementProvider from "@/modules/mail/providers/EmailManagementProvider";
+import OutboundEmailProvider from "@/modules/mail/providers/OutboundEmailProvider";
 import SessionEmailProvider from "@/modules/mail/providers/SessionEmailProvider";
 import type {SessionEmailState} from "@/modules/mail/interfaces/ISessionEmail";
 import EmailSidebar from "@/modules/mail/components/mailbox/EmailSidebar.vue";
 import EmailToolbar from "@/modules/mail/components/mailbox/EmailToolbar.vue";
 import EmailList from "@/modules/mail/components/mailbox/EmailList.vue";
+import OutboundEmailList from "@/modules/mail/components/mailbox/OutboundEmailList.vue";
+import OutboundEmailDetail from "@/modules/mail/components/mailbox/OutboundEmailDetail.vue";
 import EmailDetail from "@/modules/mail/components/mailbox/EmailDetail.vue";
+import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +49,8 @@ const filters = ref<EmailManagementFilters>({
 })
 
 const items = ref<EmailManagementListItem[]>([])
+const outboundItems = ref<IOutboundEmail[]>([])
+const selectedOutboundEmail = ref<IOutboundEmail | null>(null)
 const totalPages = ref(1)
 const totalItems = ref(0)
 const selectedId = ref<string | null>(null)
@@ -57,6 +64,7 @@ const saving = ref(false)
 const sessionEmailState = ref<SessionEmailState | null>(null)
 const sessionEmailLoading = ref(false)
 const closeSessionEmailDialog = ref(false)
+const composeOpen = ref(false)
 const listError = ref("")
 const detailError = ref("")
 const snackbar = ref({show: false, text: "", color: "info"})
@@ -87,6 +95,7 @@ const detailPermissions = computed(() => {
   }
 })
 const emptyText = computed(() => {
+  if (view.value === "SENT") return "No hay correos enviados."
   if (view.value === "PENDING") return "No hay correos pendientes."
   if (search.value || filters.value.category || filters.value.priorities.length || filters.value.tags.length) return "No encontramos correos con estos filtros."
   return "No hay correos para mostrar."
@@ -117,6 +126,7 @@ watch(mailboxId, () => {
   page.value = 1
   selectedId.value = null
   detail.value = null
+  closeCompose()
   keepCompatibleFilters()
   void fetchSessionEmail()
   void fetchCounts()
@@ -165,6 +175,16 @@ async function fetchList() {
   loadingList.value = true
   listError.value = ""
   try {
+    if (view.value === "SENT") {
+      items.value = []
+      selectedOutboundEmail.value = null
+      const result = await OutboundEmailProvider.instance.standalone(mailboxId.value, page.value, pageSize.value)
+      outboundItems.value = result.items || []
+      totalItems.value = result.totalItems || 0
+      totalPages.value = result.totalPages || 1
+      return
+    }
+    outboundItems.value = []
     const result = await EmailManagementProvider.instance.list({
       mailboxId: mailboxId.value,
       view: view.value,
@@ -182,6 +202,7 @@ async function fetchList() {
     }
   } catch {
     items.value = []
+    outboundItems.value = []
     listError.value = "No se pudo cargar el listado de correos."
   } finally {
     loadingList.value = false
@@ -429,6 +450,8 @@ function selectSidebarView(value: EmailManagementView) {
   view.value = value
   page.value = 1
   closeDetail()
+  closeOutboundDetail()
+  closeCompose()
 }
 
 function selectSidebarCategory(value?: string) {
@@ -444,6 +467,38 @@ function closeDetail() {
     routeInboundEmailId.value = null
     syncRoute()
   }
+}
+
+function openOutboundEmail(email: IOutboundEmail) {
+  selectedOutboundEmail.value = email
+}
+
+function closeOutboundDetail() {
+  selectedOutboundEmail.value = null
+}
+
+function openCompose() {
+  if (!selectedMailbox.value) {
+    notify("Seleccioná un mailbox para redactar.", "warning")
+    return
+  }
+  closeDetail()
+  closeOutboundDetail()
+  composeOpen.value = true
+}
+
+function closeCompose() {
+  composeOpen.value = false
+}
+
+async function onStandaloneEmailSent() {
+  closeCompose()
+  closeDetail()
+  view.value = "SENT"
+  page.value = 1
+  notify("Correo enviado.", "success")
+  await nextTick()
+  await fetchList()
 }
 
 function keepCompatibleFilters() {
@@ -516,7 +571,7 @@ function notify(text: string, color = "info") {
           @update:mailbox-id="mailboxId = $event"
           @update:view="selectSidebarView"
           @update:category="selectSidebarCategory"
-          @compose="notify('La redacción de correos nuevos queda preparada para una próxima etapa.')"
+          @compose="openCompose"
           @session-email:start="startSessionEmail"
           @session-email:pause="pauseSessionEmail"
           @session-email:resume="resumeSessionEmail"
@@ -542,7 +597,18 @@ function notify(text: string, color = "info") {
           @refresh="fetchList(); fetchCounts()"
         />
         <div class="px-3 py-2 text-caption text-medium-emphasis border-b">{{ totalItems }} correos</div>
+        <OutboundEmailList
+          v-if="view === 'SENT'"
+          :items="outboundItems"
+          :loading="loadingList"
+          :error="listError"
+          :density="density"
+          :empty-text="emptyText"
+          @open="openOutboundEmail"
+          @retry="fetchList"
+        />
         <EmailList
+          v-else
           :items="items"
           :selected-id="selectedId"
           :loading="loadingList"
@@ -571,6 +637,23 @@ function notify(text: string, color = "info") {
             @close="closeEmail"
             @reply-sent="fetchDetail(); fetchList(); fetchCounts(); fetchSessionEmail()"
           />
+        </section>
+        <section v-if="selectedOutboundEmail" class="email-detail-overlay">
+          <OutboundEmailDetail
+            :email="selectedOutboundEmail"
+            @back="closeOutboundDetail"
+          />
+        </section>
+        <section v-if="composeOpen" class="email-compose-overlay">
+          <div class="compose-panel border-s">
+            <InboundEmailReplyComposer
+              mode="new"
+              :inbound-email="null"
+              :mailbox="selectedMailbox"
+              @cancel="closeCompose"
+              @sent="onStandaloneEmailSent"
+            />
+          </div>
         </section>
       </main>
     </div>
@@ -620,6 +703,19 @@ function notify(text: string, color = "info") {
   z-index: 5;
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
+}
+.email-compose-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: rgba(var(--v-theme-surface), 0.52);
+}
+.compose-panel {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgb(var(--v-theme-surface));
+  padding: 16px;
 }
 @media (max-width: 1260px) {
   .email-shell {
