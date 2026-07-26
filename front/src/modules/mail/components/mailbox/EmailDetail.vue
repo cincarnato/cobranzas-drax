@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {computed, nextTick, ref, watch} from "vue";
+import {useI18n} from "vue-i18n";
 import dayjs from "dayjs";
 import type {EmailManagementDetail, EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
@@ -20,6 +21,8 @@ const props = defineProps<{
   actionLoading?: boolean
   saving?: boolean
 }>()
+
+const {t} = useI18n()
 
 const emit = defineEmits<{
   (e: "back"): void
@@ -66,6 +69,17 @@ const assigneeLabel = computed(() => {
   if (!assigned) return "Sin asignar"
   if (typeof assigned === "string") return assigned
   return assigned.name || assigned.username || assigned.email || assigned._id || "Sin asignar"
+})
+const selectedCategory = computed(() => {
+  const categoryName = email.value?.category
+  if (!categoryName) return null
+  return (props.detail?.mailbox?.categories || []).find((category) => category.name === categoryName) || null
+})
+const managementUrl = computed(() => {
+  const url = selectedCategory.value?.managementUrl?.trim()
+  const inboundEmailId = email.value?._id
+  if (!url || !inboundEmailId) return ""
+  return buildManagementUrl(url, inboundEmailId)
 })
 
 watch(canReply, async (value, previous) => {
@@ -115,6 +129,24 @@ function closeBaseValidation() {
     return "Este mailbox requiere una respuesta antes de cerrar la gestión."
   }
   return ""
+}
+
+function buildManagementUrl(url: string, inboundEmailId: string) {
+  try {
+    const parsed = new URL(url, window.location.origin)
+    parsed.searchParams.set("inboundEmail", inboundEmailId)
+    if (isAbsoluteUrl(url)) return parsed.toString()
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    const [pathAndQuery, hash = ""] = url.split("#")
+    const separator = pathAndQuery.includes("?") ? "&" : "?"
+    const nextUrl = `${pathAndQuery}${separator}inboundEmail=${encodeURIComponent(inboundEmailId)}`
+    return hash ? `${nextUrl}#${hash}` : nextUrl
+  }
+}
+
+function isAbsoluteUrl(url: string) {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(url)
 }
 </script>
 
@@ -173,12 +205,24 @@ function closeBaseValidation() {
 
           <div ref="threadPaneRef" class="thread-pane pa-4">
             <EmailThread :inbound-thread="detail.inboundThread" :outbound-thread="detail.outboundThread" />
+            <div v-if="canReply && managementUrl && selectedCategory" class="d-flex justify-center mt-4">
+              <v-btn
+                :href="managementUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                color="primary"
+                variant="tonal"
+                prepend-icon="mdi-open-in-new"
+              >
+                {{ t('mailbox.action.manageCategory', {category: selectedCategory.name}) }}
+              </v-btn>
+            </div>
             <InboundEmailReplyComposer
               v-if="canReply"
               ref="replyComposerRef"
               :inbound-email="email as IInboundEmail"
               :mailbox="detail.mailbox"
-              class="mt-4"
+              class="mt-3"
               @sent="$emit('reply-sent', $event)"
             />
             <div v-else-if="email.attentionStatus !== 'CLOSED'" class="reply-gate mt-4 pa-4">
@@ -225,6 +269,8 @@ function closeBaseValidation() {
             :saving="saving"
             :action-loading="actionLoading"
             :close-validation="closeBaseValidation()"
+            :management-url="managementUrl"
+            :management-category-name="selectedCategory?.name"
             @assign="$emit('assign')"
             @reopen-and-assign="$emit('reopen-and-assign')"
             @save-classification="$emit('save-classification', $event)"

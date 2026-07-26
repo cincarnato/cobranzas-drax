@@ -7,6 +7,7 @@ interface IMailboxBase {
     categories?: Array<{
         name: string
         description?: string
+        managementUrl?: string
     }>
     closeReasons?: Array<{
         name: string
@@ -56,6 +57,7 @@ interface IMailbox {
     categories?: Array<{
         name: string
         description?: string
+        managementUrl?: string
     }>
     closeReasons?: Array<{
         name: string

@@ -8,7 +8,8 @@ const MailboxBaseSchema = z.object({
     password: z.string().min(1, 'validation.required'),
     categories: z.array(z.object({
         name: z.string().min(1, 'validation.required'),
-        description: z.string().optional()
+        description: z.string().optional().default(''),
+        managementUrl: z.string().optional().default('')
     })).optional().default([]),
     closeReasons: z.array(z.object({
         name: z.string().min(1, 'validation.required'),

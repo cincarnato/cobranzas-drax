@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from "vue";
+import {useI18n} from "vue-i18n";
 import {useUser} from "@drax/identity-vue";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
@@ -17,6 +18,8 @@ const props = defineProps<{
   saving?: boolean
   actionLoading?: boolean
   closeValidation?: string
+  managementUrl?: string
+  managementCategoryName?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +37,7 @@ const userSearch = ref("")
 const saveState = ref<"idle" | "saving" | "saved" | "error">("idle")
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 let suppressAutoSave = false
+const {t} = useI18n()
 const {paginateUser} = useUser()
 const mailboxOperators = computed(() => props.mailbox?.operators || [])
 const canEditClassification = computed(() => props.permissions.canClose || props.permissions.canReply)
@@ -174,6 +178,17 @@ function sameClassification(value: typeof classification.value, email: IInboundE
     <v-alert v-if="closeValidationMessage" density="compact" variant="tonal" color="warning">
       {{ closeValidationMessage }}
     </v-alert>
+    <v-btn
+      v-if="managementUrl && managementCategoryName"
+      :href="managementUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      color="primary"
+      variant="tonal"
+      prepend-icon="mdi-open-in-new"
+    >
+      {{ t('mailbox.action.manageCategory', {category: managementCategoryName}) }}
+    </v-btn>
     <v-btn
       color="success"
       prepend-icon="mdi-check-circle-outline"

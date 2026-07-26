@@ -12,7 +12,8 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             password: {type: String,   required: true, index: false, unique: false },
             categories: [{
                 name: {type: String, required: true, index: false, unique: false},
-                description: {type: String, required: false, index: false, unique: false}
+                description: {type: String, required: false, index: false, unique: false},
+                managementUrl: {type: String, required: false, index: false, unique: false}
             }],
             closeReasons: [{
                 name: {type: String, required: true, index: false, unique: false},

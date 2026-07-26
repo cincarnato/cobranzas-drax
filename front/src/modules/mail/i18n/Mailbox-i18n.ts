@@ -40,6 +40,10 @@ const messages = {
         smtpHost: 'SMTP Host',
         smtpPort: 'SMTP Port',
         smtpTls: 'SMTP TLS',
+        managementUrl: 'Management URL',
+      },
+      action: {
+        manageCategory: 'Manage {category}',
       },
     },
     permission: {
@@ -91,6 +95,10 @@ const messages = {
         smtpHost: 'Host SMTP',
         smtpPort: 'Puerto SMTP',
         smtpTls: 'TLS SMTP',
+        managementUrl: 'URL de gestión',
+      },
+      action: {
+        manageCategory: 'Gestionar {category}',
       },
     },
     permission: {

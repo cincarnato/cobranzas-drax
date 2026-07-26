@@ -126,7 +126,8 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
         groupTab: 'Gestion',
         objectFields: [
           {name: 'name', type: 'string', label: 'name', default: ''},
-          {name: 'description', type: 'string', label: 'description', default: ''}
+          {name: 'description', type: 'string', label: 'description', default: ''},
+          {name: 'managementUrl', type: 'string', label: 'managementUrl', default: ''}
         ]
       },
       {
