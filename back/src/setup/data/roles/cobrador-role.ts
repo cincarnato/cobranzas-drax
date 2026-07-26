@@ -15,6 +15,8 @@ import TransferAuditSessionPermissions from "../../../modules/transferencias/per
 import PayerPermissions from "../../../modules/transferencias/permissions/PayerPermissions.js";
 
 import InboundEmailPermissions from "../../../modules/mail/permissions/InboundEmailPermissions.js";
+import MailboxPermissions from "../../../modules/mail/permissions/MailboxPermissions.js";
+import OutboundEmailPermissions from "../../../modules/mail/permissions/OutboundEmailPermissions.js";
 
 const role = {
     name: "Cobrador",
@@ -64,6 +66,13 @@ const role = {
 
         InboundEmailPermissions.View,
         InboundEmailPermissions.Manage,
+        InboundEmailPermissions.Assign,
+        InboundEmailPermissions.AssignToMe,
+        InboundEmailPermissions.Reopen,
+        InboundEmailPermissions.Update,
+
+        MailboxPermissions.View,
+        OutboundEmailPermissions.View,
 
 
     ],
