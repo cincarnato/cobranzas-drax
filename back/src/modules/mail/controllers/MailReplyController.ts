@@ -10,6 +10,13 @@ const MailReplyBodySchema = z.object({
     subject: z.string().optional(),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
+    attachments: z.array(z.object({
+        filename: z.string().optional(),
+        filepath: z.string().optional(),
+        size: z.number().optional(),
+        mimetype: z.string().optional(),
+        url: z.string().optional(),
+    })).optional(),
     toEmails: z.array(z.string()).optional(),
     ccEmails: z.array(z.string()).optional(),
     bccEmails: z.array(z.string()).optional(),

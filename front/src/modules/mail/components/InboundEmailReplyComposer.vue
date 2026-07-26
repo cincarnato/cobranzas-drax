@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
+import {MediaSystemFactory} from "@drax/media-front";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
+import type {IOutboundEmailAttachment} from "@/modules/mail/interfaces/IOutboundEmail";
 import MailReplyProvider, {type MailReplyResult, type MailSendResult} from "@/modules/mail/providers/MailReplyProvider";
 
 type EmailField = "to" | "cc" | "bcc"
@@ -20,7 +22,9 @@ const emit = defineEmits<{
 
 const formValid = ref(false)
 const loading = ref(false)
+const uploadLoading = ref(false)
 const error = ref("")
+const attachmentError = ref("")
 const subject = ref("")
 const toEmails = ref<string[]>([])
 const ccEmails = ref<string[]>([])
@@ -33,13 +37,16 @@ const bodyText = ref("")
 const closeAfterSend = ref(false)
 const closeReason = ref<string | null>(null)
 const editorRef = ref<HTMLElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const editorTouched = ref(false)
 const savedSelection = ref<Range | null>(null)
 const selectedFontFamily = ref("Sans Serif")
 const selectedFontSize = ref("3")
 const selectedTextColor = ref("#202124")
+const attachments = ref<IOutboundEmailAttachment[]>([])
 
 const {t} = useI18n()
+const mediaSystem = MediaSystemFactory.getInstance()
 const composerMode = computed(() => props.mode || "reply")
 const isNewEmail = computed(() => composerMode.value === "new")
 
@@ -106,6 +113,7 @@ const canSend = computed(() =>
   allEmailFieldsValid.value &&
   (!needsCloseReason.value || Boolean(closeReason.value)) &&
   !loading.value
+  && !uploadLoading.value
 )
 
 watch(
@@ -121,6 +129,8 @@ watch(
     bccEmailSearch.value = ""
     bodyHtml.value = ""
     bodyText.value = ""
+    attachments.value = []
+    attachmentError.value = ""
     editorTouched.value = false
     closeAfterSend.value = false
     closeReason.value = props.inboundEmail?.closeReason || null
@@ -149,6 +159,47 @@ onBeforeUnmount(() => {
 function resolveSubject(value?: string) {
   const normalized = value?.trim() || "Sin asunto"
   return /^re:/i.test(normalized) ? normalized : `Re: ${normalized}`
+}
+
+function sizeLabel(size?: number) {
+  if (!size) return ""
+  if (size > 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`
+  return `${Math.ceil(size / 1024)} KB`
+}
+
+function openAttachmentPicker() {
+  if (loading.value || uploadLoading.value) return
+  fileInputRef.value?.click()
+}
+
+async function onAttachmentSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  input.value = ""
+  if (!files.length) return
+
+  uploadLoading.value = true
+  attachmentError.value = ""
+  try {
+    for (const file of files) {
+      const uploaded = await mediaSystem.uploadFile(file, "mail-outbound-attachments")
+      attachments.value.push({
+        filename: uploaded.filename,
+        filepath: uploaded.filepath,
+        size: Number(uploaded.size || 0),
+        mimetype: uploaded.mimetype,
+        url: uploaded.url,
+      })
+    }
+  } catch (e: any) {
+    attachmentError.value = e?.response?.data?.message || e?.data?.message || e?.message || t('mail.reply.attachmentUploadError')
+  } finally {
+    uploadLoading.value = false
+  }
+}
+
+function removeAttachment(index: number) {
+  attachments.value.splice(index, 1)
 }
 
 function parseEmails(value: string): string[] {
@@ -580,6 +631,7 @@ async function sendReply() {
       toEmails: toEmails.value,
       ccEmails: ccEmails.value,
       bccEmails: bccEmails.value,
+      attachments: attachments.value,
       closeAfterSend: closeAfterSend.value,
       closeReason: closeAfterSend.value ? closeReason.value || null : null,
     }
@@ -934,6 +986,55 @@ function userFriendlyError(message?: string) {
                 class="text-caption text-error mt-1"
               >
                 {{ t('validation.required') }}
+              </div>
+            </v-col>
+
+            <v-col cols="12">
+              <input
+                ref="fileInputRef"
+                class="d-none"
+                type="file"
+                multiple
+                @change="onAttachmentSelected"
+              >
+              <div class="d-flex align-center flex-wrap ga-2">
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  prepend-icon="mdi-paperclip"
+                  :loading="uploadLoading"
+                  :disabled="loading"
+                  @click="openAttachmentPicker"
+                >
+                  {{ t('mail.reply.attachFiles') }}
+                </v-btn>
+                <span v-if="attachments.length" class="text-caption text-medium-emphasis">
+                  {{ t('mail.reply.attachmentsCount', {count: attachments.length}) }}
+                </span>
+              </div>
+              <v-alert
+                v-if="attachmentError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                class="mt-2"
+              >
+                {{ attachmentError }}
+              </v-alert>
+              <div v-if="attachments.length" class="d-flex flex-wrap ga-2 mt-3">
+                <v-chip
+                  v-for="(attachment, index) in attachments"
+                  :key="`${attachment.filename}-${index}`"
+                  prepend-icon="mdi-paperclip"
+                  closable
+                  size="small"
+                  variant="tonal"
+                  :href="attachment.url"
+                  target="_blank"
+                  @click:close.prevent="removeAttachment(index)"
+                >
+                  {{ attachment.filename || t('mail.reply.attachment') }} {{ sizeLabel(attachment.size) }}
+                </v-chip>
               </div>
             </v-col>
           </v-row>

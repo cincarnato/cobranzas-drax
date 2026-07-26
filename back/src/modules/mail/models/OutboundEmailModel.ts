@@ -16,6 +16,13 @@ const OutboundEmailSchema = new mongoose.Schema<IOutboundEmail>({
             subject: {type: String,   required: true, index: true, unique: false },
             bodyText: {type: String,   required: false, index: false, unique: false },
             bodyHtml: {type: String,   required: false, index: false, unique: false },
+            attachments: [{
+                filename: {type: String, required: false},
+                filepath: {type: String, required: false},
+                size: {type: Number, required: false},
+                mimetype: {type: String, required: false},
+                url: {type: String, required: false},
+            }],
             status: {type: String,  enum: ['DRAFT', 'QUEUED', 'SENDING', 'SENT', 'FAILED', 'CANCELLED'], required: true, index: true, unique: false, default: 'DRAFT' },
             messageId: {type: String,   required: false, index: true, unique: false },
             inReplyTo: {type: String,   required: false, index: true, unique: false },

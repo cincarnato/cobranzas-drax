@@ -11,7 +11,7 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
     protected dataBaseFile: string;
     protected searchFields: string[] = ['fromEmail', 'subject', 'bodyText', 'messageId', 'inReplyTo'];
     protected booleanFields: string[] = [];
-    protected jsonFields: string[] = ['toEmails', 'ccEmails', 'bccEmails', 'references'];
+    protected jsonFields: string[] = ['toEmails', 'ccEmails', 'bccEmails', 'attachments', 'references'];
     protected identifier: string = 'subject';
     protected populateFields = [
         { field: 'inboundEmail', table: 'inboundEmail', identifier: '_id' },
@@ -30,6 +30,7 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository<IOutboundEm
 {name: "subject", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
 {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
+{name: "attachments", type: "TEXT", unique: undefined, primary: false},
 {name: "status", type: "TEXT", unique: undefined, primary: false},
 {name: "messageId", type: "TEXT", unique: undefined, primary: false},
 {name: "inReplyTo", type: "TEXT", unique: undefined, primary: false},

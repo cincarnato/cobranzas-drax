@@ -1,11 +1,12 @@
 import {HttpRestClientFactory, type IHttpClient} from "@drax/common-front";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
-import type {IOutboundEmail} from "@/modules/mail/interfaces/IOutboundEmail";
+import type {IOutboundEmail, IOutboundEmailAttachment} from "@/modules/mail/interfaces/IOutboundEmail";
 
 export type MailReplyPayload = {
   subject: string
   bodyText?: string
   bodyHtml?: string
+  attachments?: IOutboundEmailAttachment[]
   toEmails: string[]
   ccEmails?: string[]
   bccEmails?: string[]

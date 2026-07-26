@@ -1,4 +1,12 @@
 
+interface IOutboundEmailAttachment {
+    filename?: string
+    filepath?: string
+    size?: number
+    mimetype?: string
+    url?: string
+}
+
 interface IOutboundEmailBase {
     inboundEmail?: any
     mailbox: any
@@ -10,6 +18,7 @@ interface IOutboundEmailBase {
     subject: string
     bodyText?: string
     bodyHtml?: string
+    attachments?: Array<IOutboundEmailAttachment>
     status: string
     messageId?: string
     inReplyTo?: string
@@ -33,6 +42,7 @@ interface IOutboundEmail {
     subject: string
     bodyText?: string
     bodyHtml?: string
+    attachments?: Array<IOutboundEmailAttachment>
     status: string
     messageId?: string
     inReplyTo?: string
@@ -46,5 +56,6 @@ interface IOutboundEmail {
 
 export type {
 IOutboundEmailBase, 
-IOutboundEmail
+IOutboundEmail,
+IOutboundEmailAttachment
 }

@@ -1,12 +1,13 @@
 import {BadRequestError, ForbiddenError, NotFoundError} from "@drax/common-back";
 import {EmailTransportService, type TransportSmtpConfig} from "@drax/email-back";
+import {MediaService} from "@drax/media-back";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import SessionEmailServiceFactory from "../factory/services/SessionEmailServiceFactory.js";
 import type {IInboundEmail} from "../interfaces/IInboundEmail";
 import type {IMailbox} from "../interfaces/IMailbox";
-import type {IOutboundEmail} from "../interfaces/IOutboundEmail";
+import type {IOutboundEmail, IOutboundEmailAttachment} from "../interfaces/IOutboundEmail";
 
 type MailReplyPayload = {
     subject?: string;
@@ -15,6 +16,7 @@ type MailReplyPayload = {
     toEmails?: string[];
     ccEmails?: string[];
     bccEmails?: string[];
+    attachments?: IOutboundEmailAttachment[];
     mailboxId?: string;
     closeAfterSend?: boolean;
     closeReason?: string | null;
@@ -30,6 +32,8 @@ type MailSendResult = {
 };
 
 class MailReplyService {
+    private mediaService = new MediaService();
+
     async sendReply(inboundEmailId: string, payload: MailReplyPayload, userId?: string): Promise<MailReplyResult> {
         if (!inboundEmailId) {
             throw new BadRequestError("inbound email id is required");
@@ -51,6 +55,8 @@ class MailReplyService {
         const subject = this.resolveSubject(payload.subject, inboundEmail.subject);
         const bodyText = payload.bodyText?.trim() || "";
         const bodyHtml = payload.bodyHtml?.trim() || "";
+        const attachments = this.normalizeAttachments(payload.attachments || []);
+        const smtpAttachments = await this.buildSmtpAttachments(attachments);
         const closeReason = payload.closeReason || inboundEmail.closeReason || null;
 
         if (!toEmails.length) {
@@ -77,6 +83,7 @@ class MailReplyService {
             subject,
             bodyText,
             bodyHtml,
+            attachments,
             status: "SENDING",
             inReplyTo: inboundEmail.messageId,
             references,
@@ -93,6 +100,7 @@ class MailReplyService {
                 subject,
                 text: bodyText || undefined,
                 html: bodyHtml || undefined,
+                attachments: smtpAttachments.length ? smtpAttachments : undefined,
                 inReplyTo: inboundEmail.messageId || undefined,
                 references: references.length ? references : undefined,
             });
@@ -144,6 +152,8 @@ class MailReplyService {
         const subject = payload.subject?.trim() || "";
         const bodyText = payload.bodyText?.trim() || "";
         const bodyHtml = payload.bodyHtml?.trim() || "";
+        const attachments = this.normalizeAttachments(payload.attachments || []);
+        const smtpAttachments = await this.buildSmtpAttachments(attachments);
 
         if (!toEmails.length) {
             throw new BadRequestError("at least one recipient is required");
@@ -167,6 +177,7 @@ class MailReplyService {
             subject,
             bodyText,
             bodyHtml,
+            attachments,
             status: "SENDING",
             attempts: 1,
         });
@@ -181,6 +192,7 @@ class MailReplyService {
                 subject,
                 text: bodyText || undefined,
                 html: bodyHtml || undefined,
+                attachments: smtpAttachments.length ? smtpAttachments : undefined,
             });
 
             outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
@@ -258,6 +270,84 @@ class MailReplyService {
                 user: mailbox.username,
                 pass: mailbox.password,
             },
+        };
+    }
+
+    private normalizeAttachments(attachments: IOutboundEmailAttachment[]): IOutboundEmailAttachment[] {
+        return attachments
+            .filter((attachment) => attachment?.filename && (attachment.filepath || attachment.url))
+            .map((attachment) => ({
+                filename: attachment.filename,
+                filepath: attachment.filepath,
+                size: Number(attachment.size || 0),
+                mimetype: attachment.mimetype,
+                url: attachment.url,
+            }));
+    }
+
+    private async buildSmtpAttachments(attachments: IOutboundEmailAttachment[]) {
+        const result: Array<{filename?: string; path: string; contentType?: string}> = [];
+
+        for (const attachment of attachments) {
+            const path = await this.resolveAttachmentPath(attachment);
+            result.push({
+                filename: attachment.filename,
+                path,
+                contentType: attachment.mimetype,
+            });
+        }
+
+        return result;
+    }
+
+    private async resolveAttachmentPath(attachment: IOutboundEmailAttachment): Promise<string> {
+        const fromUrl = this.parseMediaUrl(attachment.url);
+        if (fromUrl) {
+            const file = await this.mediaService.getFile({...fromUrl, registerHit: false});
+            return file.absolutePath;
+        }
+
+        const fromFilepath = this.parseRelativeMediaPath(attachment.filepath);
+        if (fromFilepath) {
+            const file = await this.mediaService.getFile({...fromFilepath, registerHit: false});
+            return file.absolutePath;
+        }
+
+        throw new BadRequestError(`No se pudo resolver el adjunto ${attachment.filename || ""}`.trim());
+    }
+
+    private parseMediaUrl(value?: string): {dir: string; year: string; month: string; filename: string} | null {
+        if (!value) return null;
+        try {
+            const url = new URL(value, "http://localhost");
+            const parts = url.pathname.split("/").filter(Boolean);
+            const fileIndex = parts.findIndex((part) => part === "file");
+            if (fileIndex < 0 || parts.length !== fileIndex + 5) return null;
+            return {
+                dir: parts[fileIndex + 1],
+                year: parts[fileIndex + 2],
+                month: parts[fileIndex + 3],
+                filename: decodeURIComponent(parts[fileIndex + 4]),
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private parseRelativeMediaPath(value?: string): {dir: string; year: string; month: string; filename: string} | null {
+        if (!value) return null;
+        const parts = value.split(/[\\/]+/).filter(Boolean);
+        const yearIndex = parts.findIndex((part, index) =>
+            /^\d{4}$/.test(part) &&
+            /^\d{2}$/.test(parts[index + 1] || "") &&
+            Boolean(parts[index + 2])
+        );
+        if (yearIndex <= 0 || parts.length !== yearIndex + 3) return null;
+        return {
+            dir: parts[yearIndex - 1],
+            year: parts[yearIndex],
+            month: parts[yearIndex + 1],
+            filename: parts[yearIndex + 2],
         };
     }
 

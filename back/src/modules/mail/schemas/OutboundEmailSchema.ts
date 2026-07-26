@@ -1,6 +1,13 @@
 
 import { z } from 'zod';
 
+const OutboundEmailAttachmentSchema = z.object({
+    filename: z.string().optional(),
+    filepath: z.string().optional(),
+    size: z.number().optional(),
+    mimetype: z.string().optional(),
+    url: z.string().optional(),
+});
 
 const OutboundEmailBaseSchema = z.object({
       inboundEmail: z.coerce.string().optional().nullable(),
@@ -13,6 +20,7 @@ const OutboundEmailBaseSchema = z.object({
     subject: z.string().min(1,'validation.required'),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
+    attachments: z.array(OutboundEmailAttachmentSchema).optional(),
     status: z.enum(['DRAFT', 'QUEUED', 'SENDING', 'SENT', 'FAILED', 'CANCELLED']).default('DRAFT'),
     messageId: z.string().optional(),
     inReplyTo: z.string().optional(),
@@ -36,4 +44,4 @@ user: z.object({
     })
 
 export default OutboundEmailSchema;
-export {OutboundEmailSchema, OutboundEmailBaseSchema}
+export {OutboundEmailSchema, OutboundEmailBaseSchema, OutboundEmailAttachmentSchema}

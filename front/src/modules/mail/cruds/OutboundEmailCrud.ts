@@ -109,6 +109,7 @@ status: [(v: any) => !!v || 'validation.required']
 {name:'subject',type:'string',label:'subject',default:'',groupTab: 'Contenido'},
 {name:'bodyText',type:'longString',label:'bodyText',default:'',groupTab: 'Contenido'},
 {name:'bodyHtml',type:'longString',label:'bodyHtml',default:'',groupTab: 'Contenido'},
+{name:'attachments',type:'array.fullFile',label:'attachments',default:[],groupTab: 'Adjuntos'},
 {name:'status',type:'enum',label:'status',default:'DRAFT',groupTab: 'Envio',enum: ['DRAFT', 'QUEUED', 'SENDING', 'SENT', 'FAILED', 'CANCELLED']},
 {name:'messageId',type:'string',label:'messageId',default:'',groupTab: 'Envio'},
 {name:'inReplyTo',type:'string',label:'inReplyTo',default:'',groupTab: 'Envio'},
@@ -175,7 +176,7 @@ status: [(v: any) => !!v || 'validation.required']
   
   get tabs() {
     return [
-     'General', 'Destinatarios', 'Contenido', 'Envio'
+     'General', 'Destinatarios', 'Contenido', 'Adjuntos', 'Envio'
     ]
   }
   
