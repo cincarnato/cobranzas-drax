@@ -16,6 +16,7 @@ import OutboundEmailSchema from './schemas/mail/OutboundEmailSchema';
 import AffiliateSchema from './schemas/premedic/AffiliateSchema';
 import AffiliateTypeSchema from './schemas/premedic/AffiliateTypeSchema';
 import BonusSchema from './schemas/bajas/BonusSchema';
+import InternalTransferBonusSchema from './schemas/traspasosInternos/InternalTransferBonusSchema';
 import BankMovementSchema from './schemas/transferencias/BankMovementSchema';
 import PayerEntitySchema from './schemas/transferencias/PayerEntitySchema';
 import TransferEmailSchema from './schemas/transferencias/TransferEmailSchema';
@@ -48,6 +49,9 @@ const schemas = [
 
     //Bajas
     BonusSchema,
+
+    //Traspasos Internos
+    InternalTransferBonusSchema,
 
     //Transferencias
     BankMovementSchema,

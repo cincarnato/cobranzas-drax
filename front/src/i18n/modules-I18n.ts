@@ -9,6 +9,7 @@ import premedicI18n from '../modules/premedic/i18n/index'
 import recoveryI18n from '../modules/recovery/i18n/index'
 import transferenciasI18n from '../modules/transferencias/i18n/index'
 import bajasI18n from '../modules/bajas/i18n/index'
+import traspasosInternosI18n from '../modules/traspasosInternos/i18n/index'
 
 const modulesI18n = merge.all([
   afilmedI18n,
@@ -20,6 +21,7 @@ const modulesI18n = merge.all([
   recoveryI18n,
   transferenciasI18n,
   bajasI18n,
+  traspasosInternosI18n,
 ]) as LocaleMessages<never>
 
 export default modulesI18n

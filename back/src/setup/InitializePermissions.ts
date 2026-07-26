@@ -37,6 +37,7 @@ import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliateP
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
 import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
 import { BonusPermissions } from "../modules/bajas/permissions/BonusPermissions.js";
+import { InternalTransferBonusPermissions } from "../modules/traspasosInternos/permissions/InternalTransferBonusPermissions.js";
 
 function InitializePermissions() {
 
@@ -80,6 +81,7 @@ function InitializePermissions() {
         ...Object.values(TransferAuditSessionPermissions),
         ...Object.values(RecoveryPermissions),
         ...Object.values(BonusPermissions),
+        ...Object.values(InternalTransferBonusPermissions),
     ]
 
     //Load All Permissions
