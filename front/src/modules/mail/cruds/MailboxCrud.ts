@@ -10,6 +10,7 @@ import type {
   IEntityCrudRules
 } from "@drax/crud-share";
 import MailboxProvider from "../providers/MailboxProvider";
+import {UserCrud} from "@drax/identity-vue";
 
 //Import EntityCrud Refs
 
@@ -50,8 +51,11 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       // {title: 'sentiments', key: 'sentiments', align: 'start'},
       // {title: 'priorities', key: 'priorities', align: 'start'},
       // {title: 'tags', key: 'tags', align: 'start'},
+      {title: 'aiAnalysisEnabled', key: 'aiAnalysisEnabled', align: 'start'},
       {title: 'isActive', key: 'isActive', align: 'start'},
       {title: 'autoProcessEnabled', key: 'autoProcessEnabled', align: 'start'},
+      {title: 'replyRequiredToClose', key: 'replyRequiredToClose', align: 'start'},
+      {title: 'closeReasonRequired', key: 'closeReasonRequired', align: 'start'},
       {title: 'attachmentStorageEnabled', key: 'attachmentStorageEnabled', align: 'start'},
       {title: 'attachmentOcrEnabled', key: 'attachmentOcrEnabled', align: 'start'},
       {title: 'retentionDays', key: 'retentionDays', align: 'start'},
@@ -93,7 +97,9 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
   }
 
   get refs(): IEntityCrudRefs {
-    return {}
+    return {
+      User: UserCrud.instance
+    }
   }
 
   get rules(): IEntityCrudRules {
@@ -111,17 +117,62 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       {name: 'email', type: 'string', label: 'email', default: '', groupTab: 'General'},
       {name: 'username', type: 'string', label: 'username', default: '', groupTab: 'General'},
       {name: 'password', type: 'password', label: 'password', default: '', groupTab: 'General'},
+      {name: 'aiAnalysisEnabled', type: 'boolean', label: 'aiAnalysisEnabled', default: true, groupTab: 'Analisis IA'},
       {
         name: 'categories',
         type: 'array.object',
         label: 'categories',
         default: [],
-        groupTab: 'Analisis IA',
+        groupTab: 'Gestion',
+        objectFields: [
+          {name: 'name', type: 'string', label: 'name', default: ''},
+          {name: 'description', type: 'string', label: 'description', default: ''},
+          {name: 'managementUrl', type: 'string', label: 'managementUrl', default: ''}
+        ]
+      },
+      {
+        name: 'closeReasons',
+        type: 'array.object',
+        label: 'closeReasons',
+        default: [],
+        groupTab: 'Gestion',
         objectFields: [
           {name: 'name', type: 'string', label: 'name', default: ''},
           {name: 'description', type: 'string', label: 'description', default: ''}
         ]
       },
+      {
+        name: 'closeReasonRequired',
+        type: 'boolean',
+        label: 'closeReasonRequired',
+        default: false,
+        groupTab: 'Gestion'
+      },
+      {
+        name: 'replyRequiredToClose',
+        type: 'boolean',
+        label: 'replyRequiredToClose',
+        default: false,
+        groupTab: 'Gestion'
+      },
+
+      {
+        name: 'operators',
+        type: 'array.ref',
+        label: 'operators',
+        default: [],
+        groupTab: 'Gestion',
+        ref: 'User',
+        refDisplay: 'name'
+      },
+      {
+        name: 'maxAssignableEmailsPerUser',
+        type: 'number',
+        label: 'maxAssignableEmailsPerUser',
+        default: null,
+        groupTab: 'Gestion'
+      },
+
       {
         name: 'entities',
         type: 'array.object',
@@ -144,6 +195,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
         default: false,
         groupTab: 'Procesamiento'
       },
+
       {
         name: 'attachmentStorageEnabled',
         type: 'boolean',
@@ -251,7 +303,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
 
   get tabs() {
     return [
-      'General', 'IMAP', 'POP', 'SMTP', 'Procesamiento', 'Analisis IA'
+      'General',  'IMAP', 'POP', 'SMTP', 'Gestion', 'Procesamiento', 'Analisis IA'
     ]
   }
 

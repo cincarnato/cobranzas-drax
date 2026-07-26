@@ -1,5 +1,5 @@
 
-import {EntityCrud} from "@drax/crud-vue";
+import {EntityCrud, useCrudStore} from "@drax/crud-vue";
 import type{
   IDraxCrudProvider,
   IEntityCrud,
@@ -18,10 +18,12 @@ import {UserCrud} from "@drax/identity-vue"
 class WhatsappMessageCrud extends EntityCrud implements IEntityCrud {
 
   static singleton: WhatsappMessageCrud
+  private store
 
   constructor() {
     super();
     this.name = 'WhatsappMessage'
+    this.store = useCrudStore(this.name)
   }
   
   static get instance(): WhatsappMessageCrud {
@@ -177,3 +179,4 @@ template: [(v: any) => !!v || 'validation.required']
 }
 
 export default WhatsappMessageCrud
+

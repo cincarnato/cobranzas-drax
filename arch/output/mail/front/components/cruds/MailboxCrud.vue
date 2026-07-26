@@ -8,7 +8,7 @@ import {formatDate} from "@drax/common-front"
 
 <template>
   <crud :entity="MailboxCrud.instance">
-
+    <template v-slot:item.operators="{value}">{{ value.map(v => v.name).join(",") }}</template>
   </crud>
 </template>
 

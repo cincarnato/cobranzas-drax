@@ -7,16 +7,26 @@ interface IMailboxBase {
     categories?: Array<{
         name: string
         description?: string
+        managementUrl?: string
+    }>
+    closeReasons?: Array<{
+        name: string
+        description?: string
     }>
     entities?: Array<{
         name: string
         description?: string
     }>
+    operators?: Array<string | any>
+    maxAssignableEmailsPerUser?: number | null
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
+    aiAnalysisEnabled?: boolean
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    closeReasonRequired?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null
@@ -47,16 +57,26 @@ interface IMailbox {
     categories?: Array<{
         name: string
         description?: string
+        managementUrl?: string
+    }>
+    closeReasons?: Array<{
+        name: string
+        description?: string
     }>
     entities?: Array<{
         name: string
         description?: string
     }>
+    operators?: Array<string | any>
+    maxAssignableEmailsPerUser?: number | null
     sentiments?: Array<string>
     priorities?: Array<string>
     tags?: Array<string>
+    aiAnalysisEnabled?: boolean
     isActive?: boolean
     autoProcessEnabled?: boolean
+    replyRequiredToClose?: boolean
+    closeReasonRequired?: boolean
     attachmentStorageEnabled?: boolean
     attachmentOcrEnabled?: boolean
     retentionDays?: number | null

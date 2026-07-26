@@ -13,7 +13,7 @@ import type{
 import MailboxProvider from "../providers/MailboxProvider";
 
 //Import EntityCrud Refs
-
+import {UserCrud} from "@drax/identity-vue"
 
 class MailboxCrud extends EntityCrud implements IEntityCrud {
 
@@ -50,6 +50,8 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
 {title: 'username',key:'username', align: 'start'},
 {title: 'isActive',key:'isActive', align: 'start'},
 {title: 'autoProcessEnabled',key:'autoProcessEnabled', align: 'start'},
+{title: 'replyRequiredToClose',key:'replyRequiredToClose', align: 'start'},
+{title: 'closeReasonRequired',key:'closeReasonRequired', align: 'start'},
 {title: 'processingProtocol',key:'processingProtocol', align: 'start'},
 {title: 'processingIntervalMinutes',key:'processingIntervalMinutes', align: 'start'},
 {title: 'imapEnabled',key:'imapEnabled', align: 'start'},
@@ -89,7 +91,7 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
   
   get refs(): IEntityCrudRefs{
     return {
-      
+      User: UserCrud.instance 
     }
   }
 
@@ -98,7 +100,10 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
       name: [(v: any) => !!v || 'validation.required'],
 email: [(v: any) => !!v || 'validation.required'],
 username: [(v: any) => !!v || 'validation.required'],
-password: [(v: any) => !!v || 'validation.required']
+password: [(v: any) => !!v || 'validation.required'],
+categories: [],
+closeReasons: [],
+entities: []
     }
   }
 
@@ -110,6 +115,16 @@ password: [(v: any) => !!v || 'validation.required']
 {name:'password',type:'password',label:'password',default:'',groupTab: 'General'},
 {name:'isActive',type:'boolean',label:'isActive',default:true,groupTab: 'General'},
 {name:'autoProcessEnabled',type:'boolean',label:'autoProcessEnabled',default:false,groupTab: 'Procesamiento'},
+{name:'replyRequiredToClose',type:'boolean',label:'replyRequiredToClose',default:false,groupTab: 'Gestion'},
+{name:'closeReasonRequired',type:'boolean',label:'closeReasonRequired',default:false,groupTab: 'Gestion'},
+{name:'categories',type:'array.object',label:'categories',default:[],groupTab: 'Gestion',objectFields: [{name:'name',type:'string',label:'name',default:''},
+{name:'description',type:'string',label:'description',default:''}]},
+{name:'closeReasons',type:'array.object',label:'closeReasons',default:[],groupTab: 'Gestion',objectFields: [{name:'name',type:'string',label:'name',default:''},
+{name:'description',type:'string',label:'description',default:''}]},
+{name:'entities',type:'array.object',label:'entities',default:[],groupTab: 'Gestion',objectFields: [{name:'name',type:'string',label:'name',default:''},
+{name:'description',type:'string',label:'description',default:''}]},
+{name:'operators',type:'array.ref',label:'operators',default:[],groupTab: 'Gestion',ref: 'User',refDisplay: 'name'},
+{name:'maxAssignableEmailsPerUser',type:'number',label:'maxAssignableEmailsPerUser',default:null,groupTab: 'Gestion'},
 {name:'processingProtocol',type:'enum',label:'processingProtocol',default:'IMAP',groupTab: 'Procesamiento',enum: ['IMAP', 'POP']},
 {name:'processingIntervalMinutes',type:'number',label:'processingIntervalMinutes',default:5,groupTab: 'Procesamiento'},
 {name:'imapEnabled',type:'boolean',label:'imapEnabled',default:true,groupTab: 'IMAP'},
@@ -183,7 +198,7 @@ password: [(v: any) => !!v || 'validation.required']
   
   get tabs() {
     return [
-     'General', 'IMAP', 'POP', 'SMTP', 'Procesamiento'
+     'General', 'Gestion', 'IMAP', 'POP', 'SMTP', 'Procesamiento', 'Analisis IA'
     ]
   }
   

@@ -2,6 +2,8 @@
 import {computed, ref} from "vue";
 import {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import {DraxImagePreview} from "@drax/common-vue";
+import InboundEmailReplyDialog from "@/modules/mail/components/InboundEmailReplyDialog.vue";
+import type {MailReplyResult} from "@/modules/mail/providers/MailReplyProvider";
 
 interface InboundAttachment {
   filename: string
@@ -15,8 +17,13 @@ const {inboundEmail} = defineProps<{
   inboundEmail: IInboundEmail
 }>()
 
+const emit = defineEmits<{
+  (e: 'sent', value: MailReplyResult): void
+}>()
+
 const emptyValue = "—";
 const bodyContentPanel = ref<string | null>('html');
+const replyDialog = ref(false);
 
 const processingColor = computed(() => {
   const s = inboundEmail.processingStatus?.toLowerCase();
@@ -113,6 +120,10 @@ const hasProcessMarks = computed(() =>
 const hasAttachmentSection = computed(() =>
   inboundEmail.attachments?.length || inboundEmail.attachmentsOcrText || inboundEmail.attachmentsOcrError
 );
+
+const onReplySent = (result: MailReplyResult) => {
+  emit('sent', result);
+};
 </script>
 
 <template>
@@ -120,7 +131,18 @@ const hasAttachmentSection = computed(() =>
 
     <!-- ── COMPACT EMAIL HEADER ── -->
     <div class="iev-email-header">
-      <h2 class="iev-subject">{{ inboundEmail.subject || 'Sin asunto' }}</h2>
+      <div class="iev-title-row">
+        <h2 class="iev-subject">{{ inboundEmail.subject || 'Sin asunto' }}</h2>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-reply-outline"
+          size="small"
+          variant="flat"
+          @click="replyDialog = true"
+        >
+          Responder
+        </v-btn>
+      </div>
 
       <div class="iev-from-line">
         <v-avatar color="primary" size="32" variant="tonal">
@@ -499,6 +521,12 @@ const hasAttachmentSection = computed(() =>
       </v-expansion-panel>
     </v-expansion-panels>
 
+    <inbound-email-reply-dialog
+      v-model="replyDialog"
+      :inbound-email="inboundEmail"
+      @sent="onReplySent"
+    />
+
   </div>
 </template>
 
@@ -521,6 +549,13 @@ const hasAttachmentSection = computed(() =>
   font-weight: 600;
   line-height: 1.35;
   margin: 0;
+}
+
+.iev-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .iev-from-line {

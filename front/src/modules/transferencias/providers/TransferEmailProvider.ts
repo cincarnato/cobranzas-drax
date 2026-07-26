@@ -16,6 +16,17 @@ type TransferInboundEmailProcessOptions = {
   limit?: number | null
 }
 
+type TransferSingleInboundEmailProcessResult = {
+  inboundEmailId: string
+  transferEmails: ITransferEmail[]
+  created: number
+  existing: number
+  skipped: boolean
+  reason?: string
+  message?: string
+  details?: string
+}
+
 type TransferEmailReprocessResult = {
   transferEmail: ITransferEmail
   previousTransferEmail: ITransferEmail
@@ -57,6 +68,21 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
     ) as TransferInboundEmailProcessResult
   }
 
+  async processInboundEmail(inboundEmailId: string): Promise<TransferSingleInboundEmailProcessResult> {
+    return await this.httpClient.post(
+      '/api/transfer-emails/process-inbound-email',
+      {inboundEmailId},
+      {timeout: 300000}
+    ) as TransferSingleInboundEmailProcessResult
+  }
+
+  async findByInboundEmail(inboundEmailId: string): Promise<ITransferEmail[]> {
+    return await this.find({
+      filters: [{field: 'inboundEmail', operator: 'eq', value: inboundEmailId}],
+      limit: 20
+    })
+  }
+
   async reprocess(id: string): Promise<TransferEmailReprocessResult> {
     return await this.httpClient.post(
       `/api/transfer-emails/${id}/reprocess`,
@@ -65,7 +91,7 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
     ) as TransferEmailReprocessResult
   }
 
-  async audit(id: string, payload: Pick<ITransferEmailBase, 'amount' | 'affiliates' | 'humanStatus' | 'transferDate'> & {auditSessionId?: string | null}): Promise<ITransferEmail> {
+  async audit(id: string, payload: Pick<ITransferEmailBase, 'amount' | 'affiliates' | 'humanStatus' | 'transferDate'> & {auditSessionId?: string | null; closeInboundEmail?: boolean}): Promise<ITransferEmail> {
     return await this.httpClient.post(
       `/api/transfer-emails/${id}/audit`,
       payload
@@ -97,4 +123,9 @@ class TransferEmailProvider extends AbstractCrudRestProvider<ITransferEmail, ITr
 }
 
 export default TransferEmailProvider
-export type {TransferEmailReprocessResult, TransferInboundEmailProcessOptions, TransferInboundEmailProcessResult}
+export type {
+  TransferEmailReprocessResult,
+  TransferInboundEmailProcessOptions,
+  TransferInboundEmailProcessResult,
+  TransferSingleInboundEmailProcessResult
+}

@@ -9,6 +9,22 @@ const MailboxBaseSchema = z.object({
     password: z.string().min(1,'validation.required'),
     isActive: z.boolean().optional(),
     autoProcessEnabled: z.boolean().optional(),
+    replyRequiredToClose: z.boolean().optional(),
+    closeReasonRequired: z.boolean().optional(),
+    categories: z.array(
+z.object({    name: z.string().min(1,'validation.required'),
+    description: z.string().optional()})
+    ).optional(),
+    closeReasons: z.array(
+z.object({    name: z.string().min(1,'validation.required'),
+    description: z.string().optional()})
+    ).optional(),
+    entities: z.array(
+z.object({    name: z.string().min(1,'validation.required'),
+    description: z.string().optional()})
+    ).optional(),
+    operators: z.array(z.coerce.string()).optional(),
+    maxAssignableEmailsPerUser: z.number().nullable().optional(),
     processingProtocol: z.enum(['IMAP', 'POP']).optional().default('IMAP'),
     processingIntervalMinutes: z.number().nullable().optional().default(5),
     imapEnabled: z.boolean().optional(),
@@ -28,7 +44,7 @@ const MailboxBaseSchema = z.object({
 const MailboxSchema = MailboxBaseSchema
     .extend({
       _id: z.coerce.string(),
-       
+       operators: z.array(z.object({_id: z.coerce.string(), name: z.string()})).optional()
     })
 
 export default MailboxSchema;

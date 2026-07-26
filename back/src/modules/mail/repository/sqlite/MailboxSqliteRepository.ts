@@ -9,8 +9,8 @@ class MailboxSqliteRepository extends AbstractSqliteRepository<IMailbox, IMailbo
     protected tableName: string = 'Mailbox';
     protected dataBaseFile: string;
     protected searchFields: string[] = ['name', 'email', 'username', 'imapHost', 'popHost', 'smtpHost'];
-    protected booleanFields: string[] = ['isActive', 'autoProcessEnabled', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
-    protected jsonFields: string[] = ['categories', 'entities', 'sentiments', 'priorities', 'tags'];
+    protected booleanFields: string[] = ['aiAnalysisEnabled', 'isActive', 'autoProcessEnabled', 'replyRequiredToClose', 'closeReasonRequired', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
+    protected jsonFields: string[] = ['categories', 'closeReasons', 'entities', 'operators', 'sentiments', 'priorities', 'tags'];
     protected identifier: string = 'email';
     protected populateFields = []
     protected verbose: boolean = false;
@@ -20,13 +20,19 @@ class MailboxSqliteRepository extends AbstractSqliteRepository<IMailbox, IMailbo
         {name: "username", type: "TEXT", unique: undefined, primary: false},
         {name: "password", type: "TEXT", unique: undefined, primary: false},
         {name: "categories", type: "TEXT", unique: undefined, primary: false},
+        {name: "closeReasons", type: "TEXT", unique: undefined, primary: false},
         {name: "entities", type: "TEXT", unique: undefined, primary: false},
+        {name: "operators", type: "TEXT", unique: undefined, primary: false},
+        {name: "maxAssignableEmailsPerUser", type: "REAL", unique: undefined, primary: false},
         {name: "sentiments", type: "TEXT", unique: undefined, primary: false},
         {name: "priorities", type: "TEXT", unique: undefined, primary: false},
         {name: "tags", type: "TEXT", unique: undefined, primary: false},
-        {name: "isActive", type: "TEXT", unique: undefined, primary: false},
-        {name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false},
-        {name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false},
+        {name: "aiAnalysisEnabled", type: "TEXT", unique: undefined, primary: false},
+{name: "isActive", type: "TEXT", unique: undefined, primary: false},
+{name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false},
+{name: "replyRequiredToClose", type: "TEXT", unique: undefined, primary: false},
+{name: "closeReasonRequired", type: "TEXT", unique: undefined, primary: false},
+{name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false},
         {name: "attachmentOcrEnabled", type: "TEXT", unique: undefined, primary: false},
         {name: "retentionDays", type: "REAL", unique: undefined, primary: false},
         {name: "processingProtocol", type: "TEXT", unique: undefined, primary: false},

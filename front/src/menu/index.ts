@@ -178,6 +178,20 @@ const menu: MenuItem[] = [
     gallery: true,
     children: [
       {
+        icon: 'mdi-inbox-multiple-outline',
+        text: 'Gestión de correos',
+        link: { name: "EmailManagementPage" },
+        gallery: true,
+        permission: 'inboundemail:view'
+      },
+      {
+        icon: 'mdi-monitor-dashboard',
+        text: 'mail.supervision.menu',
+        link: { name: "EmailSupervisionPage" },
+        gallery: true,
+        permission: 'inboundemail:manage'
+      },
+      {
         icon: 'mdi-card-account-mail',
         text: 'mailbox.menu',
         link: { name: "MailboxCrudPage" },
@@ -190,6 +204,13 @@ const menu: MenuItem[] = [
         link: { name: "InboundEmailCrudPage" },
         gallery: true,
         permission: 'inboundemail:manage'
+      },
+      {
+        icon: 'mdi-email-arrow-right-outline',
+        text: 'outboundemail.menu',
+        link: { name: "OutboundEmailCrudPage" },
+        gallery: true,
+        permission: 'outboundemail:manage'
       },
       {
         icon: 'mdi-view-dashboard-variant-outline',

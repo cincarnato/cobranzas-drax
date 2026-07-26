@@ -15,9 +15,9 @@ class WhatsappMessageController extends AbstractFastifyController<IWhatsappMessa
         this.tenantSetter = false;
         this.tenantAssert = false;
         
-        this.userFilter = false;
-        this.userSetter = false;
-        this.userAssert = false;
+        this.userFilter = true;
+        this.userSetter = true;
+        this.userAssert = true;
     }
 
 }
@@ -26,3 +26,4 @@ export default WhatsappMessageController;
 export {
     WhatsappMessageController
 }
+

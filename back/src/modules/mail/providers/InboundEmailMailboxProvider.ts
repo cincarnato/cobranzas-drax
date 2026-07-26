@@ -5,6 +5,7 @@ import type {IAIProvider} from "@drax/ai-back";
 import {AiProviderFactory} from "@drax/ai-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
+import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import type InboundEmailService from "../services/InboundEmailService.js";
 import type MailboxService from "../services/MailboxService.js";
 import type {IMailbox} from "../interfaces/IMailbox.js";
@@ -573,6 +574,14 @@ class InboundEmailMailboxProvider {
                         : null;
 
                     if (!fetchMessage?.raw?.length) {
+                        console.log("[InboundEmailSync] Skipping inbound email without raw source", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid,
+                            fetchedUid: fetched ? fetched.uid : undefined,
+                            internalDate: this.formatDateForLog(fetched ? fetched.internalDate : undefined),
+                        });
                         result.skipped += 1;
                         continue;
                     }
@@ -583,15 +592,43 @@ class InboundEmailMailboxProvider {
 
                     if (duplicate) {
                         await this.backfillDuplicateImapUid(duplicate, mailbox, fetchMessage.uid);
-                        await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        if (this.isAiAnalysisEnabled(mailbox)) {
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        }
+                        console.log("[InboundEmailSync] Skipping duplicate inbound email", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid: fetchMessage.uid,
+                            ...this.formatParsedMailForLog(parsedMail, messageId),
+                            duplicateInboundEmailId: duplicate._id,
+                            duplicateMailboxId: duplicate.mailbox,
+                            duplicateImapUid: duplicate.imapUid,
+                        });
                         result.skipped += 1;
                         continue;
                     }
 
                     const inboundEmail = await this.buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId);
-                    await this.inboundEmailService.create(inboundEmail);
-                    await this.applyAiCategoryFlag(client, fetchMessage.uid, inboundEmail.category, mailbox);
+                    const createdInboundEmail = await this.inboundEmailService.create(inboundEmail);
                     result.created += 1;
+
+                    if (this.isAiAnalysisEnabled(mailbox)) {
+                        try {
+                            const analysis = await this.analyzeAndUpdateInboundEmail(mailbox, createdInboundEmail);
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, analysis.category, mailbox);
+                        } catch (error: any) {
+                            this.logError("Error analyzing inbound email with AI", error, {
+                                mailboxId: mailbox._id,
+                                mailboxName: mailbox.name,
+                                mailboxEmail: mailbox.email,
+                                inboundEmailId: createdInboundEmail._id,
+                                messageId,
+                                uid,
+                            });
+                            result.errors.push(this.formatError(error));
+                        }
+                    }
                 } catch (error: any) {
                     this.logError("Error processing inbound email", error, {
                         mailboxId: mailbox._id,
@@ -673,6 +710,27 @@ class InboundEmailMailboxProvider {
         return value instanceof Date ? value.toISOString() : value;
     }
 
+    private formatParsedMailForLog(parsedMail: ParsedMailLike, messageId: string): Record<string, unknown> {
+        const from = parsedMail.from?.value?.[0];
+
+        return {
+            messageId,
+            subject: this.truncateForLog(parsedMail.subject),
+            fromName: this.truncateForLog(from?.name),
+            fromEmail: from?.address,
+            date: this.formatDateForLog(parsedMail.date),
+        };
+    }
+
+    private truncateForLog(value?: string, maxLength = 300): string | undefined {
+        const normalized = this.normalizeString(value);
+        if (!normalized || normalized.length <= maxLength) {
+            return normalized;
+        }
+
+        return `${normalized.slice(0, maxLength)}...`;
+    }
+
     private async applyAiCategoryFlag(
         client: ImapFlow,
         uid: number,
@@ -740,6 +798,10 @@ class InboundEmailMailboxProvider {
         }
 
         return Date.now() - state.lastRunAt >= intervalMinutes * 60_000;
+    }
+
+    private isAiAnalysisEnabled(mailbox: IMailbox): boolean {
+        return mailbox.aiAnalysisEnabled !== false;
     }
 
     private async purgeInboundEmailAttachments(
@@ -879,20 +941,16 @@ class InboundEmailMailboxProvider {
         const attachmentResult = await this.processAttachments(mailbox, messageId, parsedAttachments);
         const analysisBodyText = this.normalizeText([textBody, attachmentResult.ocrText].filter(Boolean).join("\n\n"));
         const normalizedText = this.normalizeText([parsedMail.subject, analysisBodyText].filter(Boolean).join("\n\n"));
-        const analysis = await this.analyzeInboundEmail({
-            mailbox,
-            messageId,
-            subject: parsedMail.subject,
-            bodyText: analysisBodyText,
-            normalizedText,
-            attachmentsOcrText: attachmentResult.ocrText,
-            fromEmail: from?.address,
-            fromName: from?.name,
-        });
+        const inReplyTo = this.resolveInReplyTo(parsedMail);
+        const references = this.resolveReferences(parsedMail);
+        const parentInboundEmail = await this.resolveParentInboundEmail(mailbox, inReplyTo, references);
 
         return {
             messageId,
-            threadId: this.resolveThreadId(parsedMail),
+            threadId: this.resolveThreadId(messageId, inReplyTo, references, parentInboundEmail),
+            inReplyTo,
+            references,
+            parentInboundEmail: parentInboundEmail?._id,
             mailbox: mailbox._id,
             imapUid: fetchMessage.uid,
             sourceChannel: "EMAIL",
@@ -911,6 +969,31 @@ class InboundEmailMailboxProvider {
             attachments: attachmentResult.storedAttachments,
             attachmentsOcrText: attachmentResult.ocrText,
             attachmentsOcrError: attachmentResult.ocrError,
+            tags: [],
+            customer: {
+                name: from?.name,
+                email: from?.address,
+            },
+            extractedEntities: [],
+            processingStatus: "PENDING",
+            reviewStatus: "PENDING",
+            isDuplicate: false,
+        };
+    }
+
+    private async analyzeAndUpdateInboundEmail(mailbox: IMailbox, inboundEmail: IInboundEmail): Promise<AnalysisResult> {
+        const analysis = await this.analyzeInboundEmail({
+            mailbox,
+            messageId: inboundEmail.messageId,
+            subject: inboundEmail.subject,
+            bodyText: this.normalizeText([inboundEmail.bodyText, inboundEmail.attachmentsOcrText].filter(Boolean).join("\n\n")),
+            normalizedText: inboundEmail.normalizedText || "",
+            attachmentsOcrText: inboundEmail.attachmentsOcrText,
+            fromEmail: inboundEmail.fromEmail,
+            fromName: inboundEmail.fromName,
+        });
+
+        await this.inboundEmailService.updatePartial(inboundEmail._id, {
             category: analysis.category,
             sentiment: analysis.sentiment,
             priority: analysis.priority,
@@ -921,9 +1004,10 @@ class InboundEmailMailboxProvider {
             extractedEntities: analysis.extractedEntities,
             processingStatus: analysis.processingStatus,
             reviewStatus: analysis.reviewStatus,
-            isDuplicate: false,
             processedAt: new Date(),
-        };
+        } as Partial<IInboundEmailBase>);
+
+        return analysis;
     }
 
     private async parseEmail(raw: Buffer): Promise<ParsedMailLike> {
@@ -1016,20 +1100,71 @@ class InboundEmailMailboxProvider {
         return `<${mailbox._id}-${uid}@inbound-email.local>`;
     }
 
-    private resolveThreadId(parsedMail: ParsedMailLike): string | undefined {
-        const references = Array.isArray(parsedMail.references)
-            ? parsedMail.references[0]
-            : parsedMail.references;
+    private resolveThreadId(
+        messageId: string,
+        inReplyTo?: string,
+        references: string[] = [],
+        parentInboundEmail?: IInboundEmail | null
+    ): string {
+        return parentInboundEmail?.threadId || parentInboundEmail?.messageId || references[0] || inReplyTo || messageId;
+    }
 
-        if (references) {
-            return references;
+    private resolveInReplyTo(parsedMail: ParsedMailLike): string | undefined {
+        const rawInReplyTo = Array.isArray(parsedMail.inReplyTo)
+            ? parsedMail.inReplyTo[0]
+            : parsedMail.inReplyTo;
+        return this.normalizeMessageId(rawInReplyTo);
+    }
+
+    private resolveReferences(parsedMail: ParsedMailLike): string[] {
+        const rawReferences = Array.isArray(parsedMail.references)
+            ? parsedMail.references
+            : [parsedMail.references];
+        return this.uniqueStrings(rawReferences.flatMap((value) => this.extractMessageIds(value)));
+    }
+
+    private async resolveParentInboundEmail(
+        mailbox: IMailbox,
+        inReplyTo?: string,
+        references: string[] = []
+    ): Promise<IInboundEmail | null> {
+        const messageIds = this.uniqueStrings([...references, inReplyTo]);
+        if (!messageIds.length) return null;
+
+        const inboundMatches = await this.inboundEmailService.findByMessageIds(messageIds, [mailbox._id]);
+        if (inboundMatches.length) {
+            return inboundMatches[0];
         }
 
-        if (Array.isArray(parsedMail.inReplyTo)) {
-            return parsedMail.inReplyTo[0];
-        }
+        const outboundMatches = await OutboundEmailServiceFactory.instance.findByMessageIds(messageIds);
+        const inboundEmailIds = this.uniqueStrings(outboundMatches
+            .map((outboundEmail) => this.resolveEntityId(outboundEmail.inboundEmail)));
+        if (!inboundEmailIds.length) return null;
 
-        return parsedMail.inReplyTo;
+        const parentMatches = await this.inboundEmailService.findByIds(inboundEmailIds);
+        return parentMatches.find((inboundEmail) => inboundEmail.mailbox === mailbox._id) || null;
+    }
+
+    private extractMessageIds(value?: string): string[] {
+        if (!value) return [];
+        return (value.match(/<[^>]+>|[^\s]+/g) || [])
+            .map((item) => this.normalizeMessageId(item))
+            .filter((item): item is string => Boolean(item));
+    }
+
+    private normalizeMessageId(value?: string): string | undefined {
+        const normalized = value?.trim().replace(/\s+/g, "");
+        return normalized || undefined;
+    }
+
+    private uniqueStrings(values: Array<string | undefined | null>): string[] {
+        return [...new Set(values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)))];
+    }
+
+    private resolveEntityId(value: any): string | undefined {
+        if (!value) return undefined;
+        if (typeof value === "object") return value._id?.toString() || value.id?.toString();
+        return value.toString();
     }
 
     private extractAddresses(addresses?: ParsedAddress[]): string[] {
@@ -1563,10 +1698,6 @@ class InboundEmailMailboxProvider {
 
     private sanitizePathSegment(segment: string): string {
         return segment.replace(/[^\w.-]+/g, "_");
-    }
-
-    private uniqueStrings(values: string[]): string[] {
-        return Array.from(new Set(values.filter(Boolean)));
     }
 
     private parseAiOutput(output: unknown): InboundEmailAiExtraction {

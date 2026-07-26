@@ -46,7 +46,7 @@ const appName = computed(() => {
       <v-spacer></v-spacer>
       <slot name="toolbar-right"></slot>
       <dark-mode></dark-mode>
-      <notification-button class="mr-2"></notification-button>
+      <notification-button v-if="false" class="mr-2"></notification-button>
       <identity-profile-avatar class="cursor-pointer" @click="profileDrawer = !profileDrawer"></identity-profile-avatar>
     </v-app-bar>
 

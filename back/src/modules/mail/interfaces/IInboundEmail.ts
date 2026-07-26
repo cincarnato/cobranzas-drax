@@ -12,6 +12,9 @@ interface IInboundEmailProcessMark {
 interface IInboundEmailBase {
     messageId: string
     threadId?: string
+    inReplyTo?: string
+    references?: Array<string>
+    parentInboundEmail?: any
     mailbox?: string
     imapUid?: number
     sourceChannel: string
@@ -22,6 +25,16 @@ interface IInboundEmailBase {
     toEmails?: Array<string>
     ccEmails?: Array<string>
     replyToEmail?: string
+    assignedTo?: any
+    assignedAt?: Date
+    assignedSession?: any
+    assignmentMode?: string
+    attentionStatus?: string
+    replyCount?: number
+    firstRepliedAt?: Date
+    lastRepliedAt?: Date
+    closedAt?: Date
+    closedBy?: any
     bodyText?: string
     bodyHtml?: string
     normalizedText?: string
@@ -36,9 +49,10 @@ interface IInboundEmailBase {
     }>
     attachmentsOcrText?: string
     attachmentsOcrError?: string
-    category?: string
-    sentiment?: string
-    priority?: string
+    category?: string | null
+    closeReason?: string | null
+    sentiment?: string | null
+    priority?: string | null
     summary?: string
     tags?: Array<string>
     aiModel?: string
@@ -69,6 +83,9 @@ interface IInboundEmail {
     _id: string
     messageId: string
     threadId?: string
+    inReplyTo?: string
+    references?: Array<string>
+    parentInboundEmail?: any
     mailbox?: string
     imapUid?: number
     sourceChannel: string
@@ -79,6 +96,16 @@ interface IInboundEmail {
     toEmails?: Array<string>
     ccEmails?: Array<string>
     replyToEmail?: string
+    assignedTo?: any
+    assignedAt?: Date
+    assignedSession?: any
+    assignmentMode?: string
+    attentionStatus?: string
+    replyCount?: number
+    firstRepliedAt?: Date
+    lastRepliedAt?: Date
+    closedAt?: Date
+    closedBy?: any
     bodyText?: string
     bodyHtml?: string
     normalizedText?: string
@@ -93,9 +120,10 @@ interface IInboundEmail {
     }>
     attachmentsOcrText?: string
     attachmentsOcrError?: string
-    category?: string
-    sentiment?: string
-    priority?: string
+    category?: string | null
+    closeReason?: string | null
+    sentiment?: string | null
+    priority?: string | null
     summary?: string
     tags?: Array<string>
     aiModel?: string

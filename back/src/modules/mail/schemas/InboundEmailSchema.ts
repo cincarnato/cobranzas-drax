@@ -4,6 +4,9 @@ import {z} from 'zod';
 const InboundEmailBaseSchema = z.object({
     messageId: z.string().min(1, 'validation.required'),
     threadId: z.string().optional(),
+    inReplyTo: z.string().optional(),
+    references: z.array(z.string()).optional(),
+    parentInboundEmail: z.coerce.string().optional().nullable(),
     mailbox: z.string().optional(),
     imapUid: z.number().optional(),
     sourceChannel: z.enum(['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API']).default('EMAIL'),
@@ -14,6 +17,16 @@ const InboundEmailBaseSchema = z.object({
     toEmails: z.array(z.string()).optional(),
     ccEmails: z.array(z.string()).optional(),
     replyToEmail: z.string().optional(),
+    assignedTo: z.coerce.string().optional().nullable(),
+    assignedAt: z.coerce.date().nullable().optional(),
+    assignedSession: z.coerce.string().optional().nullable(),
+    assignmentMode: z.enum(['MANUAL', 'AUTO']).optional().nullable(),
+    attentionStatus: z.enum(['PENDING', 'ASSIGNED', 'CLOSED']).default('PENDING'),
+    replyCount: z.number().nullable().optional().default(0),
+    firstRepliedAt: z.coerce.date().nullable().optional(),
+    lastRepliedAt: z.coerce.date().nullable().optional(),
+    closedAt: z.coerce.date().nullable().optional(),
+    closedBy: z.coerce.string().optional().nullable(),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
     normalizedText: z.string().optional(),
@@ -28,9 +41,10 @@ const InboundEmailBaseSchema = z.object({
     })).optional(),
     attachmentsOcrText: z.string().optional(),
     attachmentsOcrError: z.string().optional(),
-    category: z.string().optional(),
-    sentiment: z.string().optional(),
-    priority: z.string().optional(),
+    category: z.string().nullable().optional(),
+    closeReason: z.string().nullable().optional(),
+    sentiment: z.string().nullable().optional(),
+    priority: z.string().nullable().optional(),
     summary: z.string().optional(),
     tags: z.array(z.string()).optional(),
     aiModel: z.string().optional(),
@@ -67,6 +81,9 @@ const InboundEmailBaseSchema = z.object({
 const InboundEmailSchema = InboundEmailBaseSchema
     .extend({
         _id: z.coerce.string(),
+        assignedTo: z.object({_id: z.coerce.string(), name: z.string()}).nullable().optional(),
+        closedBy: z.object({_id: z.coerce.string(), name: z.string().optional(), username: z.string().optional(), email: z.string().optional()}).nullable().optional(),
+        assignedSession: z.any().nullable().optional(),
 
     })
 

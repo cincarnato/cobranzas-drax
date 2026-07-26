@@ -11,6 +11,8 @@ import {AbstractService} from "@drax/crud-back";
 import type {ZodObject, ZodRawShape} from "zod";
 import ExcelJS from "exceljs";
 import type {IDraxFindOptions} from "@drax/crud-share";
+import {BadRequestError} from "@drax/common-back";
+import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmailServiceFactory.js";
 
 interface ITransferEmailExcelExportResult {
     buffer: Buffer
@@ -158,7 +160,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
         return this.transferEmailRepository.renewAssignments(sessionId, operatorId, now, new Date(now.getTime() + leaseMs))
     }
 
-    async auditTransferEmail(id: string, data: ITransferEmailBase, userId: string, auditSessionId?: string): Promise<ITransferEmail> {
+    async auditTransferEmail(id: string, data: ITransferEmailBase, userId: string, auditSessionId?: string, closeInboundEmail = false): Promise<ITransferEmail> {
         const currentTransferEmail = await this.findById(id)
         const resolved = this.withResolvedProcessingFields(currentTransferEmail, {
             ...data,
@@ -166,19 +168,38 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             auditedAt: new Date(),
         })
 
+        let updated: ITransferEmail
         if (auditSessionId || currentTransferEmail.auditSessionId) {
-            const updated = await this.transferEmailRepository.auditAssigned(id, userId, auditSessionId || '', new Date(), resolved)
+            updated = await this.transferEmailRepository.auditAssigned(id, userId, auditSessionId || '', new Date(), resolved)
             if (!updated) {
                 throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT')
             }
-            return updated
-        }
-
-        if (currentTransferEmail.assignedTo) {
+        } else if (currentTransferEmail.assignedTo) {
             throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT')
+        } else {
+            updated = await super.updatePartial(id, resolved)
         }
 
-        return super.updatePartial(id, resolved)
+        if (closeInboundEmail) {
+            await this.closeLinkedInboundEmail(updated, currentTransferEmail, userId)
+        }
+
+        return updated
+    }
+
+    private async closeLinkedInboundEmail(transferEmail: ITransferEmail, fallbackTransferEmail: ITransferEmail, userId: string): Promise<void> {
+        const inboundEmailId = this.resolveEntityId(transferEmail.inboundEmail) || this.resolveEntityId(fallbackTransferEmail.inboundEmail)
+        if (!inboundEmailId) {
+            throw new BadRequestError('La transferencia no tiene un correo vinculado para cerrar.')
+        }
+
+        await InboundEmailServiceFactory.instance.closeFromExternal(inboundEmailId, userId)
+    }
+
+    private resolveEntityId(entity?: any): string {
+        if (!entity) return ''
+        if (typeof entity === 'string') return entity
+        return entity._id?.toString?.() || entity.id?.toString?.() || ''
     }
 
     private withResolvedProcessingFields(

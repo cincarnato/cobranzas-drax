@@ -55,7 +55,13 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
 
         let item
         try {
-            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload as ITransferEmailBase, userId, payload.auditSessionId as string | undefined)
+            item = await TransferEmailServiceFactory.instance.auditTransferEmail(
+                id,
+                auditPayload as ITransferEmailBase,
+                userId,
+                payload.auditSessionId as string | undefined,
+                payload.closeInboundEmail === true
+            )
         } catch (error: any) {
             if (error?.message === 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT') {
                 return reply.status(409).send({
@@ -104,6 +110,36 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
                 error: "TRANSFER_EMAIL_PROCESS_ERROR",
                 message: error?.message || "Failed to process inbound transfer emails",
             });
+        }
+    }
+
+    async processInboundEmail(request: CustomRequest, reply: FastifyReply) {
+        try {
+            request?.rbac.assertAuthenticated();
+            request?.rbac.assertPermission(TransferEmailPermissions.Create);
+
+            const body = (request.body || {}) as {
+                inboundEmailId?: string | null;
+            };
+
+            if (!body.inboundEmailId) {
+                return reply.status(400).send({
+                    error: "TRANSFER_EMAIL_INBOUND_EMAIL_REQUIRED",
+                    message: "inboundEmailId is required",
+                });
+            }
+
+            const result = await this.getInboundMailTransferProcessor().processInboundEmail(body.inboundEmailId);
+            return reply.status(200).send(result);
+        } catch (error: any) {
+            if (error?.message === "Inbound email not found") {
+                return reply.status(404).send({
+                    error: "INBOUND_EMAIL_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return this.handleError(error, reply);
         }
     }
 

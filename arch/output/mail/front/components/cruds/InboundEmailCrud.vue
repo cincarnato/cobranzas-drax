@@ -11,6 +11,11 @@ import {formatDate} from "@drax/common-front"
     <template v-slot:item.receivedAt="{value}">{{formatDate(value)}}</template>
     <template v-slot:item.toEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.ccEmails="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
+    <template v-slot:item.assignedTo="{value}">{{value?.name}}</template>
+    <template v-slot:item.assignedAt="{value}">{{formatDate(value)}}</template>
+    <template v-slot:item.firstRepliedAt="{value}">{{formatDate(value)}}</template>
+    <template v-slot:item.lastRepliedAt="{value}">{{formatDate(value)}}</template>
+    <template v-slot:item.closedAt="{value}">{{formatDate(value)}}</template>
     <template v-slot:item.tags="{value}"><v-chip v-for="v in value">{{v}}</v-chip></template>
     <template v-slot:item.processedAt="{value}">{{formatDate(value)}}</template>
     <template v-slot:item.lastErrorAt="{value}">{{formatDate(value)}}</template>
