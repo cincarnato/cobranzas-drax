@@ -42,6 +42,24 @@ const messages = {
         needsHumanReview: 'Needs Human Review',
         affiliateStrategy: 'Strategy',
         payer: 'Payer',
+      },
+      inboundManagement: {
+        title: 'Process inbound email as transfer',
+        inboundEmail: 'Inbound email: {id}',
+        refresh: 'Refresh',
+        missingInboundEmail: 'Missing inboundEmail query parameter.',
+        noTransferTitle: 'No transfer was found for this email',
+        noTransferText: 'You can process this email individually as a transfer and then audit the result.',
+        emailPreview: 'Email to process',
+        emailNotFound: 'The inbound email could not be found.',
+        process: 'Process as transfer',
+        noGenerated: 'No transfer was generated for this email.',
+        selectTransfer: 'Transfer',
+        errors: {
+          load: 'Could not load transfers for this email.',
+          loadInboundEmail: 'Could not load the inbound email.',
+          process: 'Could not process this email as a transfer.',
+        },
       }
     },
     permission: {
@@ -94,6 +112,24 @@ const messages = {
         needsHumanReview: 'Requiere revisión humana',
         affiliateStrategy: 'Estrategia',
         payer: 'Payer',
+      },
+      inboundManagement: {
+        title: 'Procesar mail como transferencia',
+        inboundEmail: 'Mail entrante: {id}',
+        refresh: 'Actualizar',
+        missingInboundEmail: 'Falta el parámetro inboundEmail en la URL.',
+        noTransferTitle: 'No se encontró una transferencia para este mail',
+        noTransferText: 'Podés procesar este mail individualmente como transferencia y luego auditar el resultado.',
+        emailPreview: 'Mail a procesar',
+        emailNotFound: 'No se encontró el mail entrante.',
+        process: 'Procesar como transferencia',
+        noGenerated: 'No se generó una transferencia para este mail.',
+        selectTransfer: 'Transferencia',
+        errors: {
+          load: 'No se pudieron cargar transferencias para este mail.',
+          loadInboundEmail: 'No se pudo cargar el mail entrante.',
+          process: 'No se pudo procesar este mail como transferencia.',
+        },
       }
     },
     permission: {

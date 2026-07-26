@@ -56,6 +56,43 @@ async function TransferEmailFastifyRoutes(fastify, options) {
     )
 
     fastify.post(
+        '/api/transfer-emails/process-inbound-email',
+        {
+            schema: {
+                tags: ["transferencias"],
+                summary: "Process one inbound email as a transfer email",
+                body: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["inboundEmailId"],
+                    properties: {
+                        inboundEmailId: {type: "string"},
+                    },
+                },
+                response: {
+                    200: {
+                        type: "object",
+                        properties: {
+                            inboundEmailId: {type: "string"},
+                            transferEmails: {
+                                type: "array",
+                                items: {type: "object", additionalProperties: true},
+                            },
+                            created: {type: "number"},
+                            existing: {type: "number"},
+                            skipped: {type: "boolean"},
+                            reason: {type: "string"},
+                            message: {type: "string"},
+                            details: {type: "string"},
+                        },
+                    },
+                },
+            },
+        },
+        (req,rep) => controller.processInboundEmail(req as any, rep)
+    )
+
+    fastify.post(
         '/api/transfer-emails/:id/reprocess',
         {
             schema: {

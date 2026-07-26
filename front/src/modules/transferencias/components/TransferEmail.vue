@@ -449,6 +449,16 @@ const humanStatusPresentation = (status?: string) => {
       {{ formatDate(email.auditedAt) }}
     </v-chip>
     <v-chip
+      v-if="email._id"
+      color="blue-grey"
+      prepend-icon="mdi-identifier"
+      variant="tonal"
+      size="small"
+      class="transfer-id-chip"
+    >
+      ID: {{ email._id }}
+    </v-chip>
+    <v-chip
       v-if="showHumanReviewAlert"
       color="warning"
       prepend-icon="mdi-alert"

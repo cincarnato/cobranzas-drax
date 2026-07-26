@@ -107,6 +107,36 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
         }
     }
 
+    async processInboundEmail(request: CustomRequest, reply: FastifyReply) {
+        try {
+            request?.rbac.assertAuthenticated();
+            request?.rbac.assertPermission(TransferEmailPermissions.Create);
+
+            const body = (request.body || {}) as {
+                inboundEmailId?: string | null;
+            };
+
+            if (!body.inboundEmailId) {
+                return reply.status(400).send({
+                    error: "TRANSFER_EMAIL_INBOUND_EMAIL_REQUIRED",
+                    message: "inboundEmailId is required",
+                });
+            }
+
+            const result = await this.getInboundMailTransferProcessor().processInboundEmail(body.inboundEmailId);
+            return reply.status(200).send(result);
+        } catch (error: any) {
+            if (error?.message === "Inbound email not found") {
+                return reply.status(404).send({
+                    error: "INBOUND_EMAIL_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return this.handleError(error, reply);
+        }
+    }
+
     async reprocess(request: CustomRequest, reply: FastifyReply) {
         try {
             request?.rbac.assertAuthenticated();
