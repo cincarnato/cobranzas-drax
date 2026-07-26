@@ -7,6 +7,7 @@ import type {FastifyReply} from "fastify";
 import type {CustomRequest} from "@drax/crud-back/src/controllers/AbstractFastifyController";
 import {z} from "zod";
 import EmailUserStateServiceFactory from "../factory/services/EmailUserStateServiceFactory.js";
+import {ForbiddenError} from "@drax/common-back";
 
 const ClassificationSchema = z.object({
     category: z.string().nullable().optional(),
@@ -100,7 +101,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
     async assignToMe(request: CustomRequest, reply: FastifyReply) {
         try {
             request.rbac.assertAuthenticated();
-            request.rbac.assertPermission(InboundEmailPermissions.Update);
+            this.assertPermissionOrManage(request, InboundEmailPermissions.AssignToMe);
             const {id} = request.params as {id: string};
             const payload = AssignToMeSchema.parse(request.body || {});
             return reply.send(await InboundEmailServiceFactory.instance.assignToMe(id, request.rbac.userId, Boolean(payload.force)));
@@ -114,7 +115,7 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
 
     async reassign(request: CustomRequest, reply: FastifyReply) {
         request.rbac.assertAuthenticated();
-        request.rbac.assertPermission(InboundEmailPermissions.Manage);
+        this.assertPermissionOrManage(request, InboundEmailPermissions.Assign);
         const {id} = request.params as {id: string};
         const payload = AssignmentSchema.parse(request.body || {});
         return reply.send(await InboundEmailServiceFactory.instance.reassign(id, payload.assignedTo || null, request.rbac.userId));
@@ -135,9 +136,16 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         request.rbac.assertPermission(InboundEmailPermissions.Update);
         const {id} = request.params as {id: string};
         const current = await InboundEmailServiceFactory.instance.findById(id);
-        InboundEmailServiceFactory.instance.assertCanOperate(current, request.rbac.userId, request.rbac.hasPermission(InboundEmailPermissions.Manage));
+        InboundEmailServiceFactory.instance.assertCanOperate(current, request.rbac.userId, false);
         const payload = CloseManagementSchema.parse(request.body || {});
         return reply.send(await InboundEmailServiceFactory.instance.closeManagement(id, request.rbac.userId, payload.closeReason || undefined));
+    }
+
+    async reopenAndAssignToMe(request: CustomRequest, reply: FastifyReply) {
+        request.rbac.assertAuthenticated();
+        this.assertPermissionsOrManage(request, [InboundEmailPermissions.Reopen, InboundEmailPermissions.AssignToMe]);
+        const {id} = request.params as {id: string};
+        return reply.send(await InboundEmailServiceFactory.instance.reopenAndAssignToMe(id, request.rbac.userId));
     }
 
     async updateUserState(request: CustomRequest, reply: FastifyReply) {
@@ -172,6 +180,17 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
     private booleanQuery(value: any): boolean | undefined {
         if (value === undefined || value === null || value === "") return undefined;
         return value === true || value === "true" || value === "1";
+    }
+
+    private assertPermissionOrManage(request: CustomRequest, permission: InboundEmailPermissions) {
+        if (request.rbac.hasPermission(permission) || request.rbac.hasPermission(InboundEmailPermissions.Manage)) return;
+        throw new ForbiddenError();
+    }
+
+    private assertPermissionsOrManage(request: CustomRequest, permissions: InboundEmailPermissions[]) {
+        if (request.rbac.hasPermission(InboundEmailPermissions.Manage)) return;
+        if (permissions.every((permission) => request.rbac.hasPermission(permission))) return;
+        throw new ForbiddenError();
     }
 
 }

@@ -392,6 +392,20 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return await this.update(id, {...item, attentionStatus: "CLOSED", closedAt: new Date(), closeReason: closeReason || item.closeReason});
     }
 
+    async reopenAndAssignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
+        const item = await this.findById(id);
+        if (!item || item.attentionStatus !== "CLOSED") return null;
+        return await this.update(id, {
+            ...item,
+            attentionStatus: "ASSIGNED",
+            assignedTo: userId,
+            assignedAt: new Date(),
+            assignedSession: null,
+            assignmentMode: "MANUAL",
+            closedAt: null,
+        });
+    }
+
 }
 
 export default InboundEmailSqliteRepository

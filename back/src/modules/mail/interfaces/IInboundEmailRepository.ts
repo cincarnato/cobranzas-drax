@@ -31,6 +31,7 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     findAssignedLiteByUser(mailboxValues: string[], userId: string): Promise<InboundEmailAssignedLite[]>
     updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null>
     closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null>
+    reopenAndAssignToMe(id: string, userId: string): Promise<IInboundEmail | null>
 
 }
 

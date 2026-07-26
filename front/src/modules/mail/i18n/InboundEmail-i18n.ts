@@ -109,6 +109,9 @@ const messages = {
       'inboundemail:update': 'Edit Inbound Email',
       'inboundemail:delete': 'Delete Inbound Email',
       'inboundemail:manage': 'Manage Inbound Emails',
+      'inboundemail:assign': 'Assign Inbound Email',
+      'inboundemail:assign-to-me': 'Take Inbound Email',
+      'inboundemail:reopen': 'Reopen Inbound Email',
     },
   },
   es: {
@@ -221,6 +224,9 @@ const messages = {
       'inboundemail:update': 'Editar correo entrante',
       'inboundemail:delete': 'Eliminar correo entrante',
       'inboundemail:manage': 'Gestionar correos entrantes',
+      'inboundemail:assign': 'Asignar correo entrante',
+      'inboundemail:assign-to-me': 'Tomar correo entrante',
+      'inboundemail:reopen': 'Reabrir correo entrante',
     },
   },
 };

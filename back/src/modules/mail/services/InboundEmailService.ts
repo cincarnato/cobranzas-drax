@@ -172,6 +172,10 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (!inboundEmail) throw new NotFoundError();
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
         if (currentUserId) this.assertMailboxOperator(mailbox, currentUserId);
+        const assignedTo = this.resolveAssignedToId(inboundEmail);
+        if (!currentUserId || inboundEmail.attentionStatus !== "ASSIGNED" || assignedTo !== currentUserId) {
+            throw new BadRequestError("Para cerrar la gestión primero tenés que tomar el correo.");
+        }
         if (mailbox.replyRequiredToClose && !(inboundEmail.replyCount && inboundEmail.replyCount > 0)) {
             throw new BadRequestError("Este mailbox requiere una respuesta antes de cerrar la gestión.");
         }
@@ -185,9 +189,23 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         return updated;
     }
 
+    async reopenAndAssignToMe(id: string, userId: string): Promise<IInboundEmail> {
+        const inboundEmail = await this.findById(id);
+        if (!inboundEmail) throw new NotFoundError();
+        if (inboundEmail.attentionStatus !== "CLOSED") {
+            throw new BadRequestError("El correo no está cerrado.");
+        }
+        const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
+        this.assertMailboxOperator(mailbox, userId);
+        await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
+        const updated = await this.repository.reopenAndAssignToMe(id, userId);
+        if (!updated) throw new NotFoundError();
+        return updated;
+    }
+
     assertCanOperate(inboundEmail: IInboundEmail, userId: string, isSupervisor: boolean) {
         if (isSupervisor) return;
-        const assignedTo = typeof inboundEmail.assignedTo === "object" ? inboundEmail.assignedTo?._id?.toString() : inboundEmail.assignedTo?.toString();
+        const assignedTo = this.resolveAssignedToId(inboundEmail);
         if (inboundEmail.attentionStatus === "CLOSED" || assignedTo !== userId) {
             throw new ForbiddenError();
         }
@@ -218,7 +236,7 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
     private async assertAssignmentLimit(mailbox: IMailbox, userId: string, inboundEmail: IInboundEmail): Promise<void> {
         const maxAssigned = Number(mailbox.maxAssignableEmailsPerUser || 0);
         if (!maxAssigned || maxAssigned <= 0) return;
-        const assignedTo = typeof inboundEmail.assignedTo === "object" ? inboundEmail.assignedTo?._id?.toString() : inboundEmail.assignedTo?.toString();
+        const assignedTo = this.resolveAssignedToId(inboundEmail);
         if (inboundEmail.attentionStatus === "ASSIGNED" && assignedTo === userId) return;
         const mailboxValues = this.getMailboxValues(mailbox);
         const assignedCount = await this.repository.countAssignedToUser(mailboxValues, userId);
@@ -231,6 +249,12 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         return (mailbox.operators || [])
             .map((operator: any) => typeof operator === "object" ? operator?._id?.toString() || operator?.id?.toString() : operator?.toString())
             .filter(Boolean);
+    }
+
+    private resolveAssignedToId(inboundEmail: IInboundEmail): string | undefined {
+        return typeof inboundEmail.assignedTo === "object"
+            ? inboundEmail.assignedTo?._id?.toString() || inboundEmail.assignedTo?.id?.toString()
+            : inboundEmail.assignedTo?.toString();
     }
 
     private getMailboxValues(mailbox: IMailbox): string[] {

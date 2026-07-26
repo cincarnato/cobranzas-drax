@@ -23,6 +23,7 @@ const emit = defineEmits<{
   (e: "save-classification", value: {category?: string | null, closeReason?: string | null, priority?: string | null}): void
   (e: "reassign", userId: string | null): void
   (e: "assign"): void
+  (e: "reopen-and-assign"): void
   (e: "close-request", closeReason?: string | null): void
 }>()
 
@@ -30,8 +31,12 @@ const classification = ref({category: props.email.category || null, closeReason:
 const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
+const saveState = ref<"idle" | "saving" | "saved" | "error">("idle")
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+let suppressAutoSave = false
 const {paginateUser} = useUser()
 const mailboxOperators = computed(() => props.mailbox?.operators || [])
+const canEditClassification = computed(() => props.permissions.canClose || props.permissions.canReply)
 const selectableUsers = computed(() => {
   if (!props.mailbox) return users.value
   if (!mailboxOperators.value.length) return []
@@ -46,13 +51,35 @@ const closeReasonValidation = computed(() => {
 const closeValidationMessage = computed(() => props.closeValidation || closeReasonValidation.value)
 
 watch(() => props.email._id, () => {
+  suppressAutoSave = true
   classification.value = {
     category: props.email.category || null,
     closeReason: props.email.closeReason || null,
     priority: props.email.priority || null,
   }
   selectedUser.value = typeof props.email.assignedTo === "object" ? props.email.assignedTo?._id : props.email.assignedTo || null
+  saveState.value = "idle"
+  if (saveTimer) clearTimeout(saveTimer)
+  void Promise.resolve().then(() => {
+    suppressAutoSave = false
+  })
 }, {immediate: true})
+
+watch(classification, (value) => {
+  if (suppressAutoSave || !canEditClassification.value) return
+  if (sameClassification(value, props.email)) return
+  saveState.value = "saving"
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    emit("save-classification", value)
+  }, 500)
+}, {deep: true})
+
+watch(() => props.saving, (value, previous) => {
+  if (previous && !value && saveState.value === "saving") {
+    saveState.value = sameClassification(classification.value, props.email) ? "saved" : "error"
+  }
+})
 
 watch(userSearch, () => void loadUsers())
 watch(() => props.mailbox?._id, () => void loadUsers())
@@ -75,6 +102,12 @@ function userId(user?: any) {
   if (!user) return ""
   return String(typeof user === "object" ? user._id || user.id : user)
 }
+
+function sameClassification(value: typeof classification.value, email: IInboundEmail) {
+  return (value.category || null) === (email.category || null)
+    && (value.closeReason || null) === (email.closeReason || null)
+    && (value.priority || null) === (email.priority || null)
+}
 </script>
 
 <template>
@@ -82,6 +115,10 @@ function userId(user?: any) {
     <div>
       <div class="text-subtitle-2 mb-2">Gestión</div>
       <div class="d-flex flex-column ga-2">
+        <div class="d-flex justify-space-between align-start ga-2">
+          <span class="text-body-2 text-medium-emphasis">ID</span>
+          <span class="text-caption text-right email-id">{{ email._id }}</span>
+        </div>
         <div class="d-flex justify-space-between align-center">
           <span class="text-body-2 text-medium-emphasis">Estado</span>
           <EmailStatusBadge :status="email.attentionStatus" />
@@ -98,6 +135,15 @@ function userId(user?: any) {
       :loading="actionLoading"
       @assign="emit('assign')"
     />
+    <v-btn
+      v-if="permissions.canReopen && email.attentionStatus === 'CLOSED'"
+      color="primary"
+      prepend-icon="mdi-email-open-outline"
+      :loading="actionLoading"
+      @click="emit('reopen-and-assign')"
+    >
+      Reabrir y tomar
+    </v-btn>
 
     <template v-if="permissions.canReassign">
       <v-divider />
@@ -119,10 +165,12 @@ function userId(user?: any) {
 
     <v-divider />
 
-    <EmailClassificationForm v-model="classification" :mailbox="mailbox" :readonly="!permissions.canClose && !permissions.canReply" />
-    <v-btn color="primary" prepend-icon="mdi-content-save-outline" :loading="saving" @click="emit('save-classification', classification)">
-      Guardar cambios
-    </v-btn>
+    <EmailClassificationForm v-model="classification" :mailbox="mailbox" :readonly="!canEditClassification" />
+    <div class="text-caption min-save-state">
+      <span v-if="saving || saveState === 'saving'" class="text-medium-emphasis">Guardando cambios...</span>
+      <span v-else-if="saveState === 'saved'" class="text-success">Cambios guardados</span>
+      <span v-else-if="saveState === 'error'" class="text-error">No se pudieron guardar los cambios</span>
+    </div>
     <v-alert v-if="closeValidationMessage" density="compact" variant="tonal" color="warning">
       {{ closeValidationMessage }}
     </v-alert>
@@ -140,3 +188,12 @@ function userId(user?: any) {
     <ExtractedEntitiesPanel :entities="email.extractedEntities" :sentiment="email.sentiment" :tags="email.tags" />
   </div>
 </template>
+
+<style scoped>
+.email-id {
+  max-width: 220px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+</style>

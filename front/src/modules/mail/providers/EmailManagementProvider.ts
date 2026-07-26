@@ -56,6 +56,10 @@ class EmailManagementProvider {
     return await this.httpClient.post(`${this.basePath}/${id}/close`, payload) as IInboundEmail
   }
 
+  async reopenAndAssignToMe(id: string): Promise<IInboundEmail> {
+    return await this.httpClient.post(`${this.basePath}/${id}/reopen-and-assign-to-me`, {}) as IInboundEmail
+  }
+
   async updateUserState(id: string, payload: {isRead?: boolean, isStarred?: boolean}): Promise<IEmailUserState> {
     return await this.httpClient.patch(`${this.basePath}/${id}/user-state`, payload) as IEmailUserState
   }

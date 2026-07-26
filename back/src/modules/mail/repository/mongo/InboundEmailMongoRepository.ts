@@ -280,7 +280,19 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
     }
 
     async updateClassification(id: string, data: InboundEmailClassificationUpdate): Promise<IInboundEmail | null> {
-        return await this._model.findByIdAndUpdate(id, {$set: data}, {new: true})
+        const $set: Record<string, any> = {};
+        const $unset: Record<string, ""> = {};
+        Object.entries(data).forEach(([key, value]) => {
+            if (value === null) {
+                $unset[key] = "";
+                return;
+            }
+            if (value !== undefined) $set[key] = value;
+        });
+        const update: Record<string, any> = {};
+        if (Object.keys($set).length) update.$set = $set;
+        if (Object.keys($unset).length) update.$unset = $unset;
+        return await this._model.findByIdAndUpdate(id, update, {new: true})
             .populate(this._populateFields)
             .lean(this._lean)
             .exec() as IInboundEmail | null;
@@ -293,6 +305,17 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             .populate(this._populateFields)
             .lean(this._lean)
             .exec() as IInboundEmail | null;
+    }
+
+    async reopenAndAssignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
+        return await this._model.findOneAndUpdate(
+            {_id: id, attentionStatus: "CLOSED"},
+            {
+                $set: {attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date(), assignmentMode: "MANUAL"},
+                $unset: {assignedSession: "", closedAt: ""},
+            },
+            {new: true}
+        ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;
     }
 
     private async buildManagementQuery(options: InboundEmailManagementListOptions) {

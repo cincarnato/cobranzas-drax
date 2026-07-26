@@ -47,10 +47,10 @@ interface IInboundEmailBase {
   }>
   attachmentsOcrText?: string
   attachmentsOcrError?: string
-  category?: string
-  closeReason?: string
-  sentiment?: string
-  priority?: string
+  category?: string | null
+  closeReason?: string | null
+  sentiment?: string | null
+  priority?: string | null
   summary?: string
   tags?: Array<string>
   aiModel?: string
@@ -116,10 +116,10 @@ interface IInboundEmail {
   }>
   attachmentsOcrText?: string
   attachmentsOcrError?: string
-  category?: string
-  closeReason?: string
-  sentiment?: string
-  priority?: string
+  category?: string | null
+  closeReason?: string | null
+  sentiment?: string | null
+  priority?: string | null
   summary?: string
   tags?: Array<string>
   aiModel?: string

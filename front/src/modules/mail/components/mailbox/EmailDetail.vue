@@ -25,6 +25,7 @@ const emit = defineEmits<{
   (e: "back"): void
   (e: "retry"): void
   (e: "assign"): void
+  (e: "reopen-and-assign"): void
   (e: "save-classification", value: any): void
   (e: "reassign", userId: string | null): void
   (e: "close", closeReason?: string | null): void
@@ -107,6 +108,9 @@ function closeValidation(closeReason?: string | null) {
 
 function closeBaseValidation() {
   if (!email.value || !props.detail?.mailbox) return ""
+  if (!assignedToMe.value) {
+    return "Para cerrar la gestión primero tenés que tomar el correo."
+  }
   if (props.detail.mailbox.replyRequiredToClose && !(email.value.replyCount && email.value.replyCount > 0)) {
     return "Este mailbox requiere una respuesta antes de cerrar la gestión."
   }
@@ -199,6 +203,17 @@ function closeBaseValidation() {
             </div>
             <v-alert v-else density="compact" variant="tonal" color="info" class="mt-4">
               La gestión está cerrada.
+              <template v-if="permissions.canReopen" #append>
+                <v-btn
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  :loading="actionLoading"
+                  @click="$emit('reopen-and-assign')"
+                >
+                  Reabrir y tomar
+                </v-btn>
+              </template>
             </v-alert>
           </div>
         </div>
@@ -211,6 +226,7 @@ function closeBaseValidation() {
             :action-loading="actionLoading"
             :close-validation="closeBaseValidation()"
             @assign="$emit('assign')"
+            @reopen-and-assign="$emit('reopen-and-assign')"
             @save-classification="$emit('save-classification', $event)"
             @reassign="$emit('reassign', $event)"
             @close-request="requestClose"

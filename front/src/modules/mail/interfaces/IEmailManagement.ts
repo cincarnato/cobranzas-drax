@@ -11,6 +11,7 @@ type EmailManagementPermissions = {
   canReassign: boolean
   canReply: boolean
   canClose: boolean
+  canReopen: boolean
   canViewTechnicalDetails: boolean
 }
 

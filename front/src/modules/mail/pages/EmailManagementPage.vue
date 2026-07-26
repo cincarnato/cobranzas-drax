@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {useAuth, useAuthStore} from "@drax/identity-vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
@@ -60,6 +60,7 @@ const closeSessionEmailDialog = ref(false)
 const listError = ref("")
 const detailError = ref("")
 const snackbar = ref({show: false, text: "", color: "info"})
+const routeInboundEmailId = ref(queryParamToString(route.query.inboundEmail))
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const currentUser = computed(() => authStore.authUser)
@@ -67,6 +68,9 @@ const currentUserId = computed(() => (currentUser.value as any)?._id || currentU
 const selectedMailbox = computed(() => mailboxes.value.find((item) => item._id === mailboxId.value) || null)
 const isSupervisor = computed(() => auth.hasPermission("inboundemail:manage"))
 const baseCanUpdate = computed(() => auth.hasPermission("inboundemail:update") || isSupervisor.value)
+const canAssignOperator = computed(() => auth.hasPermission("inboundemail:assign") || isSupervisor.value)
+const canAssignToMe = computed(() => auth.hasPermission("inboundemail:assign-to-me") || isSupervisor.value)
+const canReopenEmail = computed(() => auth.hasPermission("inboundemail:reopen") || isSupervisor.value)
 const detailPermissions = computed(() => {
   const email = detail.value?.inboundEmail
   const assignedTo = typeof email?.assignedTo === "object" ? email?.assignedTo?._id : email?.assignedTo
@@ -74,10 +78,11 @@ const detailPermissions = computed(() => {
   const openAndAssigned = email?.attentionStatus !== "CLOSED" && (assignedToMe || isSupervisor.value)
   const canManageDetailMailbox = canManageMailbox(detail.value?.mailbox || selectedMailbox.value)
   return {
-    canAssign: baseCanUpdate.value && canManageDetailMailbox,
-    canReassign: isSupervisor.value && canManageDetailMailbox,
+    canAssign: canAssignToMe.value && canManageDetailMailbox,
+    canReassign: canAssignOperator.value && canManageDetailMailbox,
     canReply: baseCanUpdate.value && canManageDetailMailbox && email?.attentionStatus !== "CLOSED" && Boolean(assignedToMe),
-    canClose: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned),
+    canClose: baseCanUpdate.value && canManageDetailMailbox && Boolean(openAndAssigned) && Boolean(assignedToMe),
+    canReopen: canReopenEmail.value && canAssignToMe.value && baseCanUpdate.value && canManageDetailMailbox && email?.attentionStatus === "CLOSED",
     canViewTechnicalDetails: isSupervisor.value,
   }
 })
@@ -100,6 +105,14 @@ watch([mailboxId, view, page, pageSize, debouncedSearch, filters], () => {
   void fetchList()
 }, {deep: true})
 
+watch(() => route.query.inboundEmail, (value) => {
+  const inboundEmailId = queryParamToString(value)
+  routeInboundEmailId.value = inboundEmailId
+  if (inboundEmailId && inboundEmailId !== selectedId.value) {
+    void openInboundEmailFromRoute(inboundEmailId)
+  }
+})
+
 watch(mailboxId, () => {
   page.value = 1
   selectedId.value = null
@@ -111,7 +124,10 @@ watch(mailboxId, () => {
 
 onMounted(async () => {
   await fetchMailboxes()
-  if (!mailboxId.value && mailboxes.value[0]) mailboxId.value = mailboxes.value[0]._id
+  if (routeInboundEmailId.value) {
+    await openInboundEmailFromRoute(routeInboundEmailId.value)
+  }
+  if (!routeInboundEmailId.value && !mailboxId.value && mailboxes.value[0]) mailboxId.value = mailboxes.value[0]._id
   await fetchSessionEmail()
   await fetchList()
   await fetchCounts()
@@ -211,6 +227,33 @@ async function fetchDetail(id = selectedId.value) {
   }
 }
 
+async function openInboundEmailFromRoute(id: string) {
+  if (!id) return
+  selectedId.value = id
+  loadingDetail.value = true
+  detailError.value = ""
+  try {
+    const result = await EmailManagementProvider.instance.detail(id)
+    const detailMailboxId = result.mailbox?._id
+    if (detailMailboxId && mailboxId.value !== detailMailboxId) {
+      mailboxId.value = detailMailboxId
+      await nextTick()
+    }
+    selectedId.value = id
+    detail.value = result
+    if (!result.inboundEmail.userState?.isRead) {
+      result.inboundEmail.userState = await EmailManagementProvider.instance.updateUserState(id, {isRead: true})
+    }
+  } catch {
+    selectedId.value = id
+    detail.value = null
+    detailError.value = "El email entrante no fue encontrado."
+    notify(detailError.value, "warning")
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
 async function toggleStar(email: EmailManagementListItem) {
   const previous = Boolean(email.userState?.isStarred)
   email.userState = {...email.userState, isStarred: !previous} as any
@@ -246,11 +289,25 @@ async function saveClassification(payload: any) {
   try {
     await EmailManagementProvider.instance.updateClassification(selectedId.value, payload)
     await Promise.all([fetchDetail(), fetchList()])
-    notify("Cambios guardados.")
   } catch {
     notify("No se pudieron guardar los cambios.", "error")
   } finally {
     saving.value = false
+  }
+}
+
+async function reopenAndAssignToMe() {
+  if (!selectedId.value) return
+  actionLoading.value = true
+  try {
+    await EmailManagementProvider.instance.reopenAndAssignToMe(selectedId.value)
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
+    notify("Correo reabierto y asignado.", "success")
+  } catch (error: any) {
+    notify(error?.response?.data?.message || "No se pudo reabrir el correo.", "error")
+    await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
+  } finally {
+    actionLoading.value = false
   }
 }
 
@@ -383,6 +440,10 @@ function selectSidebarCategory(value?: string) {
 function closeDetail() {
   selectedId.value = null
   detail.value = null
+  if (routeInboundEmailId.value) {
+    routeInboundEmailId.value = null
+    syncRoute()
+  }
 }
 
 function keepCompatibleFilters() {
@@ -418,6 +479,7 @@ function syncRoute() {
   const query: Record<string, any> = {
     mailbox: mailboxId.value || undefined,
     view: view.value,
+    inboundEmail: routeInboundEmailId.value || undefined,
     category: filters.value.category,
     search: search.value || undefined,
     page: page.value > 1 ? page.value : undefined,
@@ -425,6 +487,11 @@ function syncRoute() {
     assignedTo: filters.value.assignedTo,
   }
   void router.replace({query})
+}
+
+function queryParamToString(value: unknown) {
+  if (Array.isArray(value)) return value[0] ? String(value[0]) : null
+  return value ? String(value) : null
 }
 
 function notify(text: string, color = "info") {
@@ -498,6 +565,7 @@ function notify(text: string, color = "info") {
             @back="closeDetail"
             @retry="fetchDetail()"
             @assign="assignToMe"
+            @reopen-and-assign="reopenAndAssignToMe"
             @save-classification="saveClassification"
             @reassign="reassign"
             @close="closeEmail"

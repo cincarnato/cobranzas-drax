@@ -32,6 +32,8 @@ async function InboundEmailFastifyRoutes(fastify, options) {
 
     fastify.post('/api/inbound-emails/:id/close', (req,rep) => controller.closeManagement(req as any,rep))
 
+    fastify.post('/api/inbound-emails/:id/reopen-and-assign-to-me', (req,rep) => controller.reopenAndAssignToMe(req as any,rep))
+
     fastify.patch('/api/inbound-emails/:id/user-state', (req,rep) => controller.updateUserState(req as any,rep))
 
     fastify.post('/api/inbound-emails', {schema: schemas.createSchema}, (req,rep) =>controller.create(req,rep))

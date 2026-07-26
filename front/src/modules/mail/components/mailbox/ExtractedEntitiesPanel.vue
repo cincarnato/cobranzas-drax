@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   entities?: Array<{label: string, value?: string, source?: string, confidence?: number}>
-  sentiment?: string
+  sentiment?: string | null
   tags?: string[]
 }>()
 </script>
