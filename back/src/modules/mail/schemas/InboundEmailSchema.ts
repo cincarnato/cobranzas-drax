@@ -26,6 +26,7 @@ const InboundEmailBaseSchema = z.object({
     firstRepliedAt: z.coerce.date().nullable().optional(),
     lastRepliedAt: z.coerce.date().nullable().optional(),
     closedAt: z.coerce.date().nullable().optional(),
+    closedBy: z.coerce.string().optional().nullable(),
     bodyText: z.string().optional(),
     bodyHtml: z.string().optional(),
     normalizedText: z.string().optional(),
@@ -81,6 +82,7 @@ const InboundEmailSchema = InboundEmailBaseSchema
     .extend({
         _id: z.coerce.string(),
         assignedTo: z.object({_id: z.coerce.string(), name: z.string()}).nullable().optional(),
+        closedBy: z.object({_id: z.coerce.string(), name: z.string().optional(), username: z.string().optional(), email: z.string().optional()}).nullable().optional(),
         assignedSession: z.any().nullable().optional(),
 
     })

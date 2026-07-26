@@ -47,6 +47,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         {name: "firstRepliedAt", type: "TEXT", unique: undefined, primary: false},
         {name: "lastRepliedAt", type: "TEXT", unique: undefined, primary: false},
         {name: "closedAt", type: "TEXT", unique: undefined, primary: false},
+        {name: "closedBy", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyText", type: "TEXT", unique: undefined, primary: false},
         {name: "bodyHtml", type: "TEXT", unique: undefined, primary: false},
         {name: "normalizedText", type: "TEXT", unique: undefined, primary: false},
@@ -386,10 +387,19 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
         return await this.update(id, {...item, ...data});
     }
 
-    async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
+    async closeManagement(id: string, closeReason?: string | null, closedBy?: string | null): Promise<IInboundEmail | null> {
         const item = await this.findById(id);
         if (!item) return null;
-        return await this.update(id, {...item, attentionStatus: "CLOSED", closedAt: new Date(), closeReason: closeReason || item.closeReason});
+        return await this.update(id, {
+            ...item,
+            attentionStatus: "CLOSED",
+            closedAt: new Date(),
+            closedBy: closedBy || item.closedBy,
+            assignedTo: closedBy || item.assignedTo,
+            assignedAt: closedBy ? new Date() : item.assignedAt,
+            assignmentMode: closedBy ? "MANUAL" : item.assignmentMode,
+            closeReason: closeReason || item.closeReason,
+        });
     }
 
     async reopenAndAssignToMe(id: string, userId: string): Promise<IInboundEmail | null> {
@@ -403,6 +413,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
             assignedSession: null,
             assignmentMode: "MANUAL",
             closedAt: null,
+            closedBy: null,
         });
     }
 

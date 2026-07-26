@@ -18,7 +18,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         super();
         this._model = InboundEmailModel;
         this._searchFields = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'category', 'attentionStatus', 'duplicateOfMessageId'];
-        this._populateFields = ['assignedTo', 'assignedSession'];
+        this._populateFields = ['assignedTo', 'assignedSession', 'closedBy'];
         this._lean = true
     }
 
@@ -298,9 +298,15 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             .exec() as IInboundEmail | null;
     }
 
-    async closeManagement(id: string, closeReason?: string | null): Promise<IInboundEmail | null> {
+    async closeManagement(id: string, closeReason?: string | null, closedBy?: string | null): Promise<IInboundEmail | null> {
         const $set: Record<string, any> = {attentionStatus: "CLOSED", closedAt: new Date()};
         if (closeReason) $set.closeReason = closeReason;
+        if (closedBy) {
+            $set.closedBy = closedBy;
+            $set.assignedTo = closedBy;
+            $set.assignedAt = new Date();
+            $set.assignmentMode = "MANUAL";
+        }
         return await this._model.findByIdAndUpdate(id, {$set}, {new: true})
             .populate(this._populateFields)
             .lean(this._lean)
@@ -312,7 +318,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             {_id: id, attentionStatus: "CLOSED"},
             {
                 $set: {attentionStatus: "ASSIGNED", assignedTo: userId, assignedAt: new Date(), assignmentMode: "MANUAL"},
-                $unset: {assignedSession: "", closedAt: ""},
+                $unset: {assignedSession: "", closedAt: "", closedBy: ""},
             },
             {new: true}
         ).populate(this._populateFields).lean(this._lean).exec() as IInboundEmail | null;

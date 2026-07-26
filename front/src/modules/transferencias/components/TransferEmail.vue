@@ -60,6 +60,7 @@ const inboundEmailError = ref('')
 const savingMetadata = ref(false)
 const metadataSaveError = ref('')
 const metadataSaveSuccess = ref('')
+const closeInboundEmail = ref(true)
 const partialForm = reactive<Required<TransferEmailPartialForm>>({
   amount: 0,
   affiliates: [],
@@ -97,6 +98,9 @@ const inboundEmailId = computed(() => {
   }
   return null
 })
+const inboundEmailManagementUrl = computed(() =>
+  inboundEmailId.value ? `/mail/management?inboundEmail=${encodeURIComponent(inboundEmailId.value)}` : ''
+)
 
 const attachments = computed<InboundAttachment[]>(() =>
   (linkedInboundEmail.value?.attachments || []) as InboundAttachment[]
@@ -179,6 +183,7 @@ function syncPartialForm() {
   partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
   partialForm.humanStatus = resolveInitialHumanStatus(email.value.humanStatus)
   partialForm.transferDate = email.value.transferDate ? new Date(email.value.transferDate) : null
+  closeInboundEmail.value = true
   syncSingleAffiliateAmount()
   metadataSaveError.value = ''
   metadataSaveSuccess.value = ''
@@ -267,7 +272,8 @@ async function saveMetadata() {
       affiliates: buildAffiliatesPayload(),
       humanStatus: partialForm.humanStatus,
       transferDate: partialForm.transferDate,
-      auditSessionId: props.auditSessionId
+      auditSessionId: props.auditSessionId,
+      closeInboundEmail: closeInboundEmail.value
     })
 
     email.value.amount = updated.amount || 0
@@ -901,21 +907,26 @@ const humanStatusPresentation = (status?: string) => {
         <v-divider class="mt-2"></v-divider>
 
         <v-card-actions>
-
-          <div
-            v-if="!readonly && (savingMetadata || metadataSaveError || metadataSaveSuccess)"
-            class="metadata-save-state"
-            :class="{ 'metadata-save-state--error': metadataSaveError }"
+          <v-checkbox
+            v-if="!readonly"
+            v-model="closeInboundEmail"
+            label="Cerrar correo"
+            density="compact"
+            hide-details
+            class="close-inbound-email-checkbox"
+          />
+          <v-btn
+            v-if="inboundEmailManagementUrl"
+            :href="inboundEmailManagementUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="text"
+            color="primary"
+            prepend-icon="mdi-email-arrow-right-outline"
           >
-            <v-progress-circular
-              v-if="savingMetadata"
-              indeterminate
-              size="14"
-              width="2"
-              class="mr-2"
-            />
-            {{ metadataSaveError || metadataSaveSuccess || 'Guardando cambios...' }}
-          </div>
+            Ir al correo
+          </v-btn>
+
           <v-spacer></v-spacer>
           <v-btn
             color="primary"
@@ -924,10 +935,28 @@ const humanStatusPresentation = (status?: string) => {
             :disabled="readonly || !email._id"
             @click="saveMetadata"
           >
-            Actualizar
+            Guardar
           </v-btn>
 
         </v-card-actions>
+
+        <div
+          v-if="!readonly && (savingMetadata || metadataSaveError || metadataSaveSuccess)"
+          class="metadata-save-state"
+          :class="{
+            'metadata-save-state--error': metadataSaveError,
+            'metadata-save-state--success': metadataSaveSuccess && !metadataSaveError && !savingMetadata
+          }"
+        >
+          <v-progress-circular
+            v-if="savingMetadata"
+            indeterminate
+            size="14"
+            width="2"
+            class="mr-2"
+          />
+          {{ metadataSaveError || metadataSaveSuccess || 'Guardando cambios...' }}
+        </div>
 
       </v-card>
     </v-col>
@@ -1117,14 +1146,21 @@ const humanStatusPresentation = (status?: string) => {
 .metadata-save-state {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-height: 20px;
   color: var(--transfer-muted);
-  font-size: 0.78rem;
-  white-space: nowrap;
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-top: 4px;
+  text-align: center;
 }
 
 .metadata-save-state--error {
   color: rgb(var(--v-theme-error));
+}
+
+.metadata-save-state--success {
+  color: rgb(var(--v-theme-success));
 }
 
 .sketch-input :deep(.v-field__outline) {

@@ -174,7 +174,8 @@ async function TransferEmailFastifyRoutes(fastify, options) {
                         },
                         humanStatus: {type: "string", enum: ["PENDIENTE", "VALIDADO", "CORREGIDO", "DESCARTADO"]}
                         ,
-                        auditSessionId: {type: ["string", "null"]}
+                        auditSessionId: {type: ["string", "null"]},
+                        closeInboundEmail: {type: "boolean"}
 
                     },
                 },

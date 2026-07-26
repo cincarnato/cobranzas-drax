@@ -183,9 +183,18 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         if (mailbox.closeReasonRequired && !resolvedCloseReason) {
             throw new BadRequestError("Este mailbox requiere un motivo de cierre antes de cerrar la gestión.");
         }
-        const updated = await this.repository.closeManagement(id, resolvedCloseReason);
+        const updated = await this.repository.closeManagement(id, resolvedCloseReason, currentUserId);
         if (!updated) throw new NotFoundError();
         await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, currentUserId);
+        return updated;
+    }
+
+    async closeFromExternal(id: string, userId: string, closeReason?: string | null): Promise<IInboundEmail> {
+        const inboundEmail = await this.findById(id);
+        if (!inboundEmail) throw new NotFoundError();
+        const updated = await this.repository.closeManagement(id, closeReason || inboundEmail.closeReason || null, userId);
+        if (!updated) throw new NotFoundError();
+        await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, userId);
         return updated;
     }
 

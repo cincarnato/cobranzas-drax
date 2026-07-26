@@ -33,6 +33,7 @@ interface IInboundEmailBase {
   firstRepliedAt?: Date
   lastRepliedAt?: Date
   closedAt?: Date
+  closedBy?: any
   bodyText?: string
   bodyHtml?: string
   normalizedText?: string
@@ -102,6 +103,7 @@ interface IInboundEmail {
   firstRepliedAt?: Date
   lastRepliedAt?: Date
   closedAt?: Date
+  closedBy?: any
   bodyText?: string
   bodyHtml?: string
   normalizedText?: string

@@ -199,6 +199,12 @@ function isAbsoluteUrl(url: string) {
                   {{ assignedToName }} está gestionando este correo.
                 </v-alert>
               </div>
+              <v-btn
+                icon="mdi-refresh"
+                variant="text"
+                :loading="loading"
+                @click="$emit('retry')"
+              />
               <v-btn :icon="showPanel ? 'mdi-dock-right' : 'mdi-dock-window'" variant="text" @click="showPanel = !showPanel" />
             </div>
           </div>

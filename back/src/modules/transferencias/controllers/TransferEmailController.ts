@@ -55,7 +55,13 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
 
         let item
         try {
-            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload as ITransferEmailBase, userId, payload.auditSessionId as string | undefined)
+            item = await TransferEmailServiceFactory.instance.auditTransferEmail(
+                id,
+                auditPayload as ITransferEmailBase,
+                userId,
+                payload.auditSessionId as string | undefined,
+                payload.closeInboundEmail === true
+            )
         } catch (error: any) {
             if (error?.message === 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT') {
                 return reply.status(409).send({
