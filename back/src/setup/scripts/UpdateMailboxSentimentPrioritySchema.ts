@@ -34,11 +34,11 @@ type PriorityOption = {
 
 const DEFAULT_SENTIMENTS: Record<string, Omit<SentimentOption, "name">> = {
     POSITIVO: {
-        emoji: "🙂",
+        emoji: "🤩",
         description: "El correo expresa conformidad, agradecimiento o una experiencia favorable.",
     },
     NEGATIVO: {
-        emoji: "🙁",
+        emoji: "😡",
         description: "El correo expresa disconformidad, reclamo, enojo o frustración.",
     },
     NEUTRAL: {

@@ -54,6 +54,28 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
         density="compact"
         @click.stop="$emit('toggle-star', email)"
       />
+      <div class="ai-indicators">
+        <v-tooltip v-if="priorityValue" :text="priorityValue">
+          <template #activator="{props: tooltipProps}">
+            <v-icon
+              v-if="priorityDisplay !== priorityValue"
+              v-bind="tooltipProps"
+              :icon="priorityDisplay"
+              :color="priorityDisplayColor"
+              size="18"
+            />
+            <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
+              {{ priorityDisplay }}
+            </v-chip>
+          </template>
+        </v-tooltip>
+        <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+          <template #activator="{props: tooltipProps}">
+            <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
+            <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
+          </template>
+        </v-tooltip>
+      </div>
       <div class="sender-block">
         <span class="sender text-truncate">{{ sender }}</span>
         <span v-if="senderEmail && senderEmail !== sender" class="sender-email text-caption text-medium-emphasis text-truncate">
@@ -79,28 +101,8 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
       </div>
       <div class="right-meta">
         <span class="date text-caption text-medium-emphasis">{{ dayjs(email.receivedAt).format('DD/MM HH:mm') }}</span>
-        <div v-if="email.category || priorityValue || sentimentValue" class="date-chip-row">
+        <div v-if="email.category" class="date-chip-row">
           <v-chip v-if="email.category" size="x-small" variant="tonal">{{ email.category }}</v-chip>
-          <v-tooltip v-if="priorityValue" :text="priorityValue">
-            <template #activator="{props: tooltipProps}">
-              <v-icon
-                v-if="priorityDisplay !== priorityValue"
-                v-bind="tooltipProps"
-                :icon="priorityDisplay"
-                :color="priorityDisplayColor"
-                size="18"
-              />
-              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
-                {{ priorityDisplay }}
-              </v-chip>
-            </template>
-          </v-tooltip>
-          <v-tooltip v-if="sentimentValue" :text="sentimentValue">
-            <template #activator="{props: tooltipProps}">
-              <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
-              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
-            </template>
-          </v-tooltip>
         </div>
       </div>
       <div class="summary-line">
@@ -119,6 +121,28 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
         density="compact"
         @click.stop="$emit('toggle-star', email)"
       />
+      <div class="ai-indicators">
+        <v-tooltip v-if="priorityValue" :text="priorityValue">
+          <template #activator="{props: tooltipProps}">
+            <v-icon
+              v-if="priorityDisplay !== priorityValue"
+              v-bind="tooltipProps"
+              :icon="priorityDisplay"
+              :color="priorityDisplayColor"
+              size="18"
+            />
+            <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
+              {{ priorityDisplay }}
+            </v-chip>
+          </template>
+        </v-tooltip>
+        <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+          <template #activator="{props: tooltipProps}">
+            <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
+            <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
+          </template>
+        </v-tooltip>
+      </div>
       <span class="sender text-truncate">{{ sender }}</span>
       <v-tooltip v-if="email.hasAttachments" text="Tiene adjuntos">
         <template #activator="{props: tooltipProps}">
@@ -139,28 +163,8 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
       </div>
       <div class="right-meta">
         <span class="date text-caption text-medium-emphasis">{{ dayjs(email.receivedAt).format('DD/MM HH:mm') }}</span>
-        <div v-if="email.category || priorityValue || sentimentValue" class="date-chip-row">
+        <div v-if="email.category" class="date-chip-row">
           <v-chip v-if="email.category" size="x-small" variant="tonal">{{ email.category }}</v-chip>
-          <v-tooltip v-if="priorityValue" :text="priorityValue">
-            <template #activator="{props: tooltipProps}">
-              <v-icon
-                v-if="priorityDisplay !== priorityValue"
-                v-bind="tooltipProps"
-                :icon="priorityDisplay"
-                :color="priorityDisplayColor"
-                size="18"
-              />
-              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
-                {{ priorityDisplay }}
-              </v-chip>
-            </template>
-          </v-tooltip>
-          <v-tooltip v-if="sentimentValue" :text="sentimentValue">
-            <template #activator="{props: tooltipProps}">
-              <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
-              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
-            </template>
-          </v-tooltip>
         </div>
       </div>
     </div>
@@ -181,13 +185,13 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
 }
 .compact-row {
   display: grid;
-  grid-template-columns: 40px 170px 24px minmax(220px, 1fr) 28px 150px 150px;
+  grid-template-columns: 40px 52px 170px 24px minmax(220px, 1fr) 28px 150px 150px;
   align-items: center;
   column-gap: 10px;
 }
 .comfortable-row {
   display: grid;
-  grid-template-columns: 40px 260px 24px minmax(260px, 1fr) 28px 150px 150px;
+  grid-template-columns: 40px 52px 260px 24px minmax(260px, 1fr) 28px 150px 150px;
   grid-template-rows: 28px 28px;
   align-items: center;
   column-gap: 10px;
@@ -200,8 +204,19 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
 .comfortable-row .star-action {
   grid-row: 1 / span 2;
 }
-.sender-block {
+.ai-indicators {
   grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+.comfortable-row .ai-indicators {
+  grid-row: 1 / span 2;
+}
+.sender-block {
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -210,10 +225,10 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
   grid-row: 1 / span 2;
 }
 .compact-row .sender {
-  grid-column: 2;
+  grid-column: 3;
 }
 .attachment-icon {
-  grid-column: 3;
+  grid-column: 4;
   justify-self: center;
   color: rgba(var(--v-theme-on-surface), 0.72);
 }
@@ -227,11 +242,11 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
   line-height: 1.2;
 }
 .subject {
-  grid-column: 4;
+  grid-column: 5;
   font-weight: 500;
 }
 .reply-icon {
-  grid-column: 5;
+  grid-column: 6;
   justify-self: center;
 }
 .comfortable-row .reply-icon {
@@ -244,7 +259,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
   white-space: nowrap;
 }
 .assignment-meta {
-  grid-column: 6;
+  grid-column: 7;
   justify-self: end;
   display: flex;
   flex-direction: column;
@@ -257,7 +272,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
   grid-row: 1 / span 2;
 }
 .right-meta {
-  grid-column: 7;
+  grid-column: 8;
   justify-self: end;
   display: flex;
   flex-direction: column;
@@ -288,7 +303,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
   line-height: 1;
 }
 .summary-line {
-  grid-column: 4 / 6;
+  grid-column: 5 / 7;
   grid-row: 2;
   display: flex;
   align-items: center;

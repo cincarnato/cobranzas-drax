@@ -23,14 +23,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: "save-classification", value: {category?: string | null, closeReason?: string | null, priority?: string | null}): void
+  (e: "save-classification", value: {category?: string | null, closeReason?: string | null, priority?: string | null, sentiment?: string | null}): void
   (e: "reassign", userId: string | null): void
   (e: "assign"): void
   (e: "reopen-and-assign"): void
   (e: "close-request", closeReason?: string | null): void
 }>()
 
-const classification = ref({category: props.email.category || null, closeReason: props.email.closeReason || null, priority: props.email.priority || null})
+const classification = ref({
+  category: props.email.category || null,
+  closeReason: props.email.closeReason || null,
+  priority: props.email.priority || null,
+  sentiment: props.email.sentiment || null,
+})
 const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
@@ -60,6 +65,7 @@ watch(() => props.email._id, () => {
     category: props.email.category || null,
     closeReason: props.email.closeReason || null,
     priority: props.email.priority || null,
+    sentiment: props.email.sentiment || null,
   }
   selectedUser.value = typeof props.email.assignedTo === "object" ? props.email.assignedTo?._id : props.email.assignedTo || null
   saveState.value = "idle"
@@ -111,6 +117,7 @@ function sameClassification(value: typeof classification.value, email: IInboundE
   return (value.category || null) === (email.category || null)
     && (value.closeReason || null) === (email.closeReason || null)
     && (value.priority || null) === (email.priority || null)
+    && (value.sentiment || null) === (email.sentiment || null)
 }
 </script>
 
