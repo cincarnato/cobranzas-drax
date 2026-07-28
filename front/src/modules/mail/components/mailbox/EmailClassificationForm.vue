@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
+import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 
 const props = defineProps<{
   modelValue: {category?: string | null, closeReason?: string | null, priority?: string | null}
@@ -8,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{(e: "update:modelValue", value: any): void}>()
+const {optionNames} = useMailboxAiOptions()
 
 function update(partial: Partial<typeof props.modelValue>) {
   emit("update:modelValue", {...props.modelValue, ...partial})
@@ -20,7 +22,7 @@ function update(partial: Partial<typeof props.modelValue>) {
       <v-select :model-value="modelValue.category" :readonly="readonly" :items="(mailbox?.categories || []).map((item) => item.name)" label="Categoría" density="compact" variant="outlined" clearable @update:model-value="update({category: $event || null})" />
     </v-col>
     <v-col cols="12">
-      <v-select :model-value="modelValue.priority" :readonly="readonly" :items="mailbox?.priorities || []" label="Prioridad" density="compact" variant="outlined" clearable @update:model-value="update({priority: $event || null})" />
+      <v-select :model-value="modelValue.priority" :readonly="readonly" :items="optionNames(mailbox?.priorities)" label="Prioridad" density="compact" variant="outlined" clearable @update:model-value="update({priority: $event || null})" />
     </v-col>
     <v-col v-if="mailbox?.closeReasonRequired || mailbox?.closeReasons?.length" cols="12">
       <v-select

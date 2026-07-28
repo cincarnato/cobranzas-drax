@@ -3,6 +3,7 @@ import {computed, onMounted, ref, watch} from "vue";
 import {useUser} from "@drax/identity-vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailManagementFilters} from "@/modules/mail/interfaces/IEmailManagement";
+import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 import EmailSearchInput from "./EmailSearchInput.vue";
 
 const props = defineProps<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const {paginateUser} = useUser()
+const {optionNames} = useMailboxAiOptions()
 const users = ref<any[]>([])
 const userSearch = ref("")
 
@@ -98,7 +100,7 @@ function userId(user?: any) {
       <v-col cols="12" md="2">
         <v-select
           :model-value="modelValue.priorities"
-          :items="mailbox?.priorities || []"
+          :items="optionNames(mailbox?.priorities)"
           label="Prioridad"
           density="compact"
           variant="outlined"

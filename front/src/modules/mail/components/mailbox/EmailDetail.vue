@@ -4,6 +4,7 @@ import {useI18n} from "vue-i18n";
 import dayjs from "dayjs";
 import type {EmailManagementDetail, EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
+import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 import EmailStatusBadge from "./EmailStatusBadge.vue";
 import EmailReplyStatus from "./EmailReplyStatus.vue";
 import EmailThread from "./EmailThread.vue";
@@ -23,6 +24,7 @@ const props = defineProps<{
 }>()
 
 const {t} = useI18n()
+const {sentimentEmoji, priorityIcon, priorityColor} = useMailboxAiOptions()
 
 const emit = defineEmits<{
   (e: "back"): void
@@ -75,6 +77,11 @@ const selectedCategory = computed(() => {
   if (!categoryName) return null
   return (props.detail?.mailbox?.categories || []).find((category) => category.name === categoryName) || null
 })
+const sentimentValue = computed(() => email.value?.sentiment || "")
+const sentimentDisplay = computed(() => sentimentEmoji(props.detail?.mailbox, sentimentValue.value) || sentimentValue.value)
+const priorityValue = computed(() => email.value?.priority || "")
+const priorityDisplay = computed(() => priorityIcon(props.detail?.mailbox, priorityValue.value) || priorityValue.value)
+const priorityDisplayColor = computed(() => priorityColor(props.detail?.mailbox, priorityValue.value) || "deep-purple")
 const managementUrl = computed(() => {
   const url = selectedCategory.value?.managementUrl?.trim()
   const inboundEmailId = email.value?._id
@@ -188,11 +195,29 @@ function isAbsoluteUrl(url: string) {
                   </v-chip>
                   <v-chip size="small" variant="tonal" color="deep-purple">
                     <span class="attribute-label">Prioridad:</span>
-                    <span>{{ email.priority || 'Sin prioridad' }}</span>
+                    <v-tooltip v-if="priorityValue" :text="priorityValue">
+                      <template #activator="{props: tooltipProps}">
+                        <v-icon
+                          v-if="priorityDisplay !== priorityValue"
+                          v-bind="tooltipProps"
+                          :icon="priorityDisplay"
+                          :color="priorityDisplayColor"
+                          size="18"
+                          class="ms-1"
+                        />
+                        <span v-else v-bind="tooltipProps">{{ priorityDisplay }}</span>
+                      </template>
+                    </v-tooltip>
+                    <span v-else>Sin prioridad</span>
                   </v-chip>
                   <v-chip size="small" variant="tonal" color="pink">
                     <span class="attribute-label">Sentimiento:</span>
-                    <span>{{ email.sentiment || 'Sin sentimiento' }}</span>
+                    <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+                      <template #activator="{props: tooltipProps}">
+                        <span v-bind="tooltipProps">{{ sentimentDisplay }}</span>
+                      </template>
+                    </v-tooltip>
+                    <span v-else>Sin sentimiento</span>
                   </v-chip>
                 </div>
                 <v-alert v-if="assignedToName && !permissions.canReply" density="compact" variant="tonal" color="info" class="mt-3">

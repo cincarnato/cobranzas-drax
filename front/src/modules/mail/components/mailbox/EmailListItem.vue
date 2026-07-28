@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import {computed} from "vue";
 import dayjs from "dayjs";
+import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailDensity, EmailManagementListItem} from "@/modules/mail/interfaces/IEmailManagement";
+import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 import EmailStatusBadge from "./EmailStatusBadge.vue";
 
 const props = defineProps<{
   email: EmailManagementListItem
+  mailbox: IMailbox | null
   selected?: boolean
   density: EmailDensity
 }>()
@@ -15,6 +18,7 @@ defineEmits<{
   (e: "toggle-star", email: EmailManagementListItem): void
 }>()
 
+const {sentimentEmoji, priorityIcon, priorityColor} = useMailboxAiOptions()
 const sender = computed(() => props.email.fromName || props.email.fromEmail || "Remitente desconocido")
 const senderEmail = computed(() => props.email.fromEmail || "")
 const fragment = computed(() => props.email.summary || props.email.bodyText || props.email.normalizedText || "")
@@ -28,6 +32,11 @@ const replyIndicator = computed(() => {
   if (!props.email.replyCount) return {icon: "mdi-reply-alert", color: "warning", label: "Sin respuesta"}
   return {icon: "mdi-reply-check", color: "success", label: "Respondido"}
 })
+const sentimentValue = computed(() => props.email.sentiment || "")
+const sentimentDisplay = computed(() => sentimentEmoji(props.mailbox, sentimentValue.value) || sentimentValue.value)
+const priorityValue = computed(() => props.email.priority || "")
+const priorityDisplay = computed(() => priorityIcon(props.mailbox, priorityValue.value) || priorityValue.value)
+const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorityValue.value))
 </script>
 
 <template>
@@ -70,13 +79,32 @@ const replyIndicator = computed(() => {
       </div>
       <div class="right-meta">
         <span class="date text-caption text-medium-emphasis">{{ dayjs(email.receivedAt).format('DD/MM HH:mm') }}</span>
-        <div v-if="email.category" class="date-chip-row">
+        <div v-if="email.category || priorityValue || sentimentValue" class="date-chip-row">
           <v-chip v-if="email.category" size="x-small" variant="tonal">{{ email.category }}</v-chip>
+          <v-tooltip v-if="priorityValue" :text="priorityValue">
+            <template #activator="{props: tooltipProps}">
+              <v-icon
+                v-if="priorityDisplay !== priorityValue"
+                v-bind="tooltipProps"
+                :icon="priorityDisplay"
+                :color="priorityDisplayColor"
+                size="18"
+              />
+              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
+                {{ priorityDisplay }}
+              </v-chip>
+            </template>
+          </v-tooltip>
+          <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+            <template #activator="{props: tooltipProps}">
+              <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
+              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
+            </template>
+          </v-tooltip>
         </div>
       </div>
       <div class="summary-line">
         <span class="fragment text-body-2 text-medium-emphasis text-truncate">{{ fragment }}</span>
-        <v-icon v-if="String(email.sentiment || '').toLowerCase().includes('neg')" color="error" size="18" icon="mdi-emoticon-sad-outline" />
         <v-chip v-if="email.processingStatus === 'ERROR'" size="x-small" color="error" variant="tonal">Error de procesamiento</v-chip>
         <v-chip v-if="email.isDuplicate" size="x-small" color="warning" variant="tonal">Posible duplicado</v-chip>
         <v-chip v-if="email.attachmentsOcrError" size="x-small" color="error" variant="tonal">Error al procesar adjunto</v-chip>
@@ -111,8 +139,28 @@ const replyIndicator = computed(() => {
       </div>
       <div class="right-meta">
         <span class="date text-caption text-medium-emphasis">{{ dayjs(email.receivedAt).format('DD/MM HH:mm') }}</span>
-        <div v-if="email.category" class="date-chip-row">
+        <div v-if="email.category || priorityValue || sentimentValue" class="date-chip-row">
           <v-chip v-if="email.category" size="x-small" variant="tonal">{{ email.category }}</v-chip>
+          <v-tooltip v-if="priorityValue" :text="priorityValue">
+            <template #activator="{props: tooltipProps}">
+              <v-icon
+                v-if="priorityDisplay !== priorityValue"
+                v-bind="tooltipProps"
+                :icon="priorityDisplay"
+                :color="priorityDisplayColor"
+                size="18"
+              />
+              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
+                {{ priorityDisplay }}
+              </v-chip>
+            </template>
+          </v-tooltip>
+          <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+            <template #activator="{props: tooltipProps}">
+              <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
+              <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
+            </template>
+          </v-tooltip>
         </div>
       </div>
     </div>
@@ -228,8 +276,16 @@ const replyIndicator = computed(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 4px;
   max-width: 100%;
+}
+.sentiment-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  line-height: 1;
 }
 .summary-line {
   grid-column: 4 / 6;

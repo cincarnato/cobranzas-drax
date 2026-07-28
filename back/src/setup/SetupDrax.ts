@@ -6,6 +6,7 @@ import CreateSystemRoles from "./CreateSystemRoles.js";
 import InitializeSettings from "./InitializeSettings.js";
 import InitializeAudit from "./InitializeAudit.js";
 import {projectPasswordPolicy} from "./data/policies/PasswordPolicy.js";
+import updateMailboxSentimentPrioritySchema from "./scripts/UpdateMailboxSentimentPrioritySchema.js";
 
 async function SetupDrax(){
 
@@ -36,6 +37,11 @@ async function SetupDrax(){
     await CreateRootUserAndAdminRole()
 
     await CreateSystemRoles()
+
+    //Scripts
+    if(DraxConfig.getOrLoad(CommonConfig.DbEngine) === 'mongo'){
+        await updateMailboxSentimentPrioritySchema()
+    }
 
 }
 

@@ -21,8 +21,17 @@ const MailboxBaseSchema = z.object({
     })).optional().default([]),
     operators: z.array(z.coerce.string()).optional().default([]),
     maxAssignableEmailsPerUser: z.number().nullable().optional().default(null),
-    sentiments: z.array(z.string()).optional().default([]),
-    priorities: z.array(z.string()).optional().default([]),
+    sentiments: z.array(z.object({
+        name: z.string().min(1, 'validation.required'),
+        emoji: z.string().optional().default(''),
+        description: z.string().optional().default('')
+    })).optional().default([]),
+    priorities: z.array(z.object({
+        name: z.string().min(1, 'validation.required'),
+        icon: z.string().optional().default(''),
+        color: z.string().optional().default(''),
+        description: z.string().optional().default('')
+    })).optional().default([]),
     tags: z.array(z.string()).optional().default([]),
     aiAnalysisEnabled: z.boolean().optional().default(true),
     isActive: z.boolean().optional(),
