@@ -82,6 +82,8 @@ const sentimentDisplay = computed(() => sentimentEmoji(props.detail?.mailbox, se
 const priorityValue = computed(() => email.value?.priority || "")
 const priorityDisplay = computed(() => priorityIcon(props.detail?.mailbox, priorityValue.value) || priorityValue.value)
 const priorityDisplayColor = computed(() => priorityColor(props.detail?.mailbox, priorityValue.value) || "deep-purple")
+const sentimentTooltip = computed(() => sentimentValue.value ? `sentimiento: ${sentimentValue.value}` : "")
+const priorityTooltip = computed(() => priorityValue.value ? `prioridad: ${priorityValue.value}` : "")
 const managementUrl = computed(() => {
   const url = selectedCategory.value?.managementUrl?.trim()
   const inboundEmailId = email.value?._id
@@ -184,6 +186,28 @@ function isAbsoluteUrl(url: string) {
                   <EmailReplyStatus :email="email" />
                 </div>
                 <div class="email-attribute-row d-flex flex-wrap align-center ga-2 mt-2">
+                  <div v-if="priorityValue || sentimentValue" class="detail-ai-indicators">
+                    <v-tooltip v-if="priorityValue" :text="priorityTooltip">
+                      <template #activator="{props: tooltipProps}">
+                        <v-icon
+                          v-if="priorityDisplay !== priorityValue"
+                          v-bind="tooltipProps"
+                          :icon="priorityDisplay"
+                          :color="priorityDisplayColor"
+                          size="20"
+                        />
+                        <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal" :color="priorityDisplayColor">
+                          {{ priorityDisplay }}
+                        </v-chip>
+                      </template>
+                    </v-tooltip>
+                    <v-tooltip v-if="sentimentValue" :text="sentimentTooltip">
+                      <template #activator="{props: tooltipProps}">
+                        <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="detail-sentiment-emoji">{{ sentimentDisplay }}</span>
+                        <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
+                      </template>
+                    </v-tooltip>
+                  </div>
                   <EmailStatusBadge :status="email.attentionStatus" labeled color="blue-grey" />
                   <v-chip size="small" variant="tonal" color="blue-grey">
                     <span class="attribute-label">Asignación:</span>
@@ -192,32 +216,6 @@ function isAbsoluteUrl(url: string) {
                   <v-chip size="small" variant="tonal" color="teal">
                     <span class="attribute-label">Categoría:</span>
                     <span>{{ email.category || 'Sin categoría' }}</span>
-                  </v-chip>
-                  <v-chip size="small" variant="tonal" color="deep-purple">
-                    <span class="attribute-label">Prioridad:</span>
-                    <v-tooltip v-if="priorityValue" :text="priorityValue">
-                      <template #activator="{props: tooltipProps}">
-                        <v-icon
-                          v-if="priorityDisplay !== priorityValue"
-                          v-bind="tooltipProps"
-                          :icon="priorityDisplay"
-                          :color="priorityDisplayColor"
-                          size="18"
-                          class="ms-1"
-                        />
-                        <span v-else v-bind="tooltipProps">{{ priorityDisplay }}</span>
-                      </template>
-                    </v-tooltip>
-                    <span v-else>Sin prioridad</span>
-                  </v-chip>
-                  <v-chip size="small" variant="tonal" color="pink">
-                    <span class="attribute-label">Sentimiento:</span>
-                    <v-tooltip v-if="sentimentValue" :text="sentimentValue">
-                      <template #activator="{props: tooltipProps}">
-                        <span v-bind="tooltipProps">{{ sentimentDisplay }}</span>
-                      </template>
-                    </v-tooltip>
-                    <span v-else>Sin sentimiento</span>
                   </v-chip>
                 </div>
                 <v-alert v-if="assignedToName && !permissions.canReply" density="compact" variant="tonal" color="info" class="mt-3">
@@ -364,6 +362,19 @@ function isAbsoluteUrl(url: string) {
 }
 .attribute-label {
   font-weight: 600;
+}
+.detail-ai-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.detail-sentiment-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  line-height: 1;
 }
 .management-panel {
   width: 340px;

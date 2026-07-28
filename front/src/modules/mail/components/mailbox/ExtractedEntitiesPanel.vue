@@ -1,16 +1,14 @@
 <script setup lang="ts">
 defineProps<{
   entities?: Array<{label: string, value?: string, source?: string, confidence?: number}>
-  sentiment?: string | null
   tags?: string[]
 }>()
 </script>
 
 <template>
-  <div v-if="entities?.length || sentiment || tags?.length">
+  <div v-if="entities?.length || tags?.length">
     <div class="text-subtitle-2 mb-2">Variables Extraídas IA</div>
     <v-list density="compact" class="pa-0">
-      <v-list-item v-if="sentiment" title="Sentimiento" :subtitle="sentiment" />
       <v-list-item
         v-for="(entity, index) in entities || []"
         :key="`${entity.label}-${index}`"

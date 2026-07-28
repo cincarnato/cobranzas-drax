@@ -207,7 +207,7 @@ function sameClassification(value: typeof classification.value, email: IInboundE
     </v-btn>
 
     <v-divider />
-    <ExtractedEntitiesPanel :entities="email.extractedEntities" :sentiment="email.sentiment" :tags="email.tags" />
+    <ExtractedEntitiesPanel :entities="email.extractedEntities" :tags="email.tags" />
   </div>
 </template>
 

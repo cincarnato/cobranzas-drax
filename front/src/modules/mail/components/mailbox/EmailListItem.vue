@@ -37,6 +37,8 @@ const sentimentDisplay = computed(() => sentimentEmoji(props.mailbox, sentimentV
 const priorityValue = computed(() => props.email.priority || "")
 const priorityDisplay = computed(() => priorityIcon(props.mailbox, priorityValue.value) || priorityValue.value)
 const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorityValue.value))
+const sentimentTooltip = computed(() => sentimentValue.value ? `sentimiento: ${sentimentValue.value}` : "")
+const priorityTooltip = computed(() => priorityValue.value ? `prioridad: ${priorityValue.value}` : "")
 </script>
 
 <template>
@@ -55,7 +57,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
         @click.stop="$emit('toggle-star', email)"
       />
       <div class="ai-indicators">
-        <v-tooltip v-if="priorityValue" :text="priorityValue">
+        <v-tooltip v-if="priorityValue" :text="priorityTooltip">
           <template #activator="{props: tooltipProps}">
             <v-icon
               v-if="priorityDisplay !== priorityValue"
@@ -69,7 +71,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
             </v-chip>
           </template>
         </v-tooltip>
-        <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+        <v-tooltip v-if="sentimentValue" :text="sentimentTooltip">
           <template #activator="{props: tooltipProps}">
             <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
             <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
@@ -122,7 +124,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
         @click.stop="$emit('toggle-star', email)"
       />
       <div class="ai-indicators">
-        <v-tooltip v-if="priorityValue" :text="priorityValue">
+        <v-tooltip v-if="priorityValue" :text="priorityTooltip">
           <template #activator="{props: tooltipProps}">
             <v-icon
               v-if="priorityDisplay !== priorityValue"
@@ -136,7 +138,7 @@ const priorityDisplayColor = computed(() => priorityColor(props.mailbox, priorit
             </v-chip>
           </template>
         </v-tooltip>
-        <v-tooltip v-if="sentimentValue" :text="sentimentValue">
+        <v-tooltip v-if="sentimentValue" :text="sentimentTooltip">
           <template #activator="{props: tooltipProps}">
             <span v-if="sentimentDisplay !== sentimentValue" v-bind="tooltipProps" class="sentiment-emoji">{{ sentimentDisplay }}</span>
             <v-chip v-else v-bind="tooltipProps" size="x-small" variant="tonal">{{ sentimentDisplay }}</v-chip>
