@@ -386,6 +386,8 @@ const aiStatusPresentation = (status?: string) => {
       return {label: 'Procesado con dudas', color: 'warning', icon: 'mdi-robot-confused-outline'}
     case 'PROCESADO_INCOMPLETO':
       return {label: 'Procesado incompleto', color: 'deep-orange', icon: 'mdi-robot-dead-outline'}
+    case 'PROCESADO_SIN_IA':
+      return {label: 'Fallback sin IA', color: 'warning', icon: 'mdi-text-search'}
     case 'ERROR_PROCESAMIENTO':
       return {label: 'Error de procesamiento', color: 'error', icon: 'mdi-robot-angry-outline'}
     default:
