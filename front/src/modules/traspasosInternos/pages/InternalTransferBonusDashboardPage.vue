@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from "vue";
 import type {IDraxFieldFilter} from "@drax/crud-share";
+import {VDateInput} from "vuetify/labs/VDateInput";
 import {useTheme} from "vuetify";
 import InternalTransferBonusProvider from "../providers/InternalTransferBonusProvider";
 
@@ -40,6 +41,12 @@ const emit = defineEmits<{
 }>();
 
 const theme = useTheme();
+const today = new Date(new Date().setHours(0, 0, 0, 0));
+const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+const fromDate = ref<Date | null>(monthStart);
+const toDate = ref<Date | null>(today);
+const appliedMonth = ref<string | null>(null);
 const monthRows = ref<SummaryRow[]>([]);
 const typeRows = ref<SummaryRow[]>([]);
 const createdByRows = ref<SummaryRow[]>([]);
@@ -61,6 +68,21 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+const appliedMonthOptions = [
+  {title: "Enero", value: "Enero"},
+  {title: "Febrero", value: "Febrero"},
+  {title: "Marzo", value: "Marzo"},
+  {title: "Abril", value: "Abril"},
+  {title: "Mayo", value: "Mayo"},
+  {title: "Junio", value: "Junio"},
+  {title: "Julio", value: "Julio"},
+  {title: "Agosto", value: "Agosto"},
+  {title: "Septiembre", value: "Septiembre"},
+  {title: "Octubre", value: "Octubre"},
+  {title: "Noviembre", value: "Noviembre"},
+  {title: "Diciembre", value: "Diciembre"},
+];
 
 const cards = computed<CardConfig[]>(() => [
   {
@@ -114,6 +136,36 @@ const cards = computed<CardConfig[]>(() => [
     rows: statusAmountRows.value,
   },
 ]);
+
+function getStartOfDay(value: Date): Date {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function getEndOfDay(value: Date): Date {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+function buildFilters(): IDraxFieldFilter[] {
+  const filters: IDraxFieldFilter[] = [...(props.filters ?? [])];
+
+  if (fromDate.value) {
+    filters.push({field: "createdAt", operator: "gte", value: getStartOfDay(fromDate.value)});
+  }
+
+  if (toDate.value) {
+    filters.push({field: "createdAt", operator: "lte", value: getEndOfDay(toDate.value)});
+  }
+
+  if (appliedMonth.value) {
+    filters.push({field: "appliedMonth", operator: "eq", value: appliedMonth.value});
+  }
+
+  return filters;
+}
 
 function parseAmount(value: unknown): number {
   if (typeof value === "number") return value;
@@ -194,7 +246,7 @@ async function fetchDashboardData() {
   error.value = "";
 
   try {
-    const filters = props.filters ?? [];
+    const filters = buildFilters();
     const [monthData, typeData, createdByData, statusData, statusAmountData] = await Promise.all([
       InternalTransferBonusProvider.instance.groupBy({fields: ["appliedMonth", "bonifiedValue"], filters}),
       InternalTransferBonusProvider.instance.groupBy({fields: ["bonusType", "bonifiedValue"], filters}),
@@ -224,8 +276,14 @@ async function fetchDashboardData() {
   }
 }
 
+function resetFilters() {
+  fromDate.value = monthStart;
+  toDate.value = today;
+  appliedMonth.value = null;
+}
+
 watch(
-  () => props.filters,
+  [fromDate, toDate, appliedMonth, () => props.filters],
   () => {
     fetchDashboardData();
   },
@@ -240,9 +298,71 @@ defineExpose({
 <template>
   <v-container fluid>
     <div class="tpi-dashboard">
+      <v-card class="tpi-dashboard__filters" variant="outlined">
+        <v-card-item>
+          <v-card-title>Dashboard de bonificaciones TPI</v-card-title>
+          <v-card-subtitle>
+            Filtrá por fecha de carga y, opcionalmente, por mes aplicado.
+          </v-card-subtitle>
+        </v-card-item>
+
+        <v-card-text>
+          <v-row align="center">
+            <v-col cols="12" md="4" lg="3">
+              <v-date-input
+                v-model="fromDate"
+                label="Carga desde"
+                variant="outlined"
+                hide-details="auto"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4" lg="3">
+              <v-date-input
+                v-model="toDate"
+                label="Carga hasta"
+                variant="outlined"
+                hide-details="auto"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4" lg="3">
+              <v-select
+                v-model="appliedMonth"
+                :items="appliedMonthOptions"
+                label="Mes aplicado"
+                variant="outlined"
+                hide-details="auto"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="auto" class="tpi-dashboard__actions">
+              <v-btn
+                color="primary"
+                prepend-icon="mdi-refresh"
+                variant="tonal"
+                :loading="loading"
+                :disabled="loading"
+                @click="fetchDashboardData"
+              >
+                Actualizar
+              </v-btn>
+              <v-btn
+                prepend-icon="mdi-filter-remove-outline"
+                variant="text"
+                :disabled="loading"
+                @click="resetFilters"
+              >
+                Reiniciar
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
       <v-alert
         v-if="error"
-        class="mb-4"
+        class="my-4"
         type="error"
         variant="tonal"
         density="compact"
@@ -250,7 +370,7 @@ defineExpose({
         {{ error }}
       </v-alert>
 
-      <v-row class="tpi-dashboard__cards">
+      <v-row class="tpi-dashboard__cards mt-4">
         <v-col
           v-for="card in cards"
           :key="card.key"
@@ -357,6 +477,17 @@ defineExpose({
 <style scoped>
 .tpi-dashboard {
   width: 100%;
+}
+
+.tpi-dashboard__filters {
+  border-color: rgba(var(--v-border-color), .42);
+  border-radius: 8px;
+}
+
+.tpi-dashboard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .tpi-dashboard__cards {

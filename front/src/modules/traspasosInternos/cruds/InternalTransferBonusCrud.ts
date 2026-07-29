@@ -176,6 +176,7 @@ class InternalTransferBonusCrud extends EntityCrud implements IEntityCrud {
 
   get filters(): IEntityCrudFilter[] {
     return [
+      {name: 'createdAt', type: 'date', label: 'createdAt', default: '', operator: 'range'},
       {name: 'dni', type: 'string', label: 'dni', default: '', operator: 'eq'},
       {name: 'fullname', type: 'string', label: 'fullname', default: '', operator: 'like'},
 
