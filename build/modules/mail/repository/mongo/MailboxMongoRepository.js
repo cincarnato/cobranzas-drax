@@ -5,7 +5,7 @@ class MailboxMongoRepository extends AbstractMongoRepository {
         super();
         this._model = MailboxModel;
         this._searchFields = ['name', 'email', 'username', 'imapHost', 'popHost', 'smtpHost'];
-        this._populateFields = [];
+        this._populateFields = ['operators'];
         this._lean = true;
     }
 }

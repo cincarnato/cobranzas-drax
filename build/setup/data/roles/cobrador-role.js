@@ -11,6 +11,8 @@ import TransferEmailPermissions from "../../../modules/transferencias/permission
 import TransferAuditSessionPermissions from "../../../modules/transferencias/permissions/TransferAuditSessionPermissions.js";
 import PayerPermissions from "../../../modules/transferencias/permissions/PayerPermissions.js";
 import InboundEmailPermissions from "../../../modules/mail/permissions/InboundEmailPermissions.js";
+import MailboxPermissions from "../../../modules/mail/permissions/MailboxPermissions.js";
+import OutboundEmailPermissions from "../../../modules/mail/permissions/OutboundEmailPermissions.js";
 const role = {
     name: "Cobrador",
     permissions: [
@@ -47,6 +49,12 @@ const role = {
         PayerPermissions.Delete,
         InboundEmailPermissions.View,
         InboundEmailPermissions.Manage,
+        InboundEmailPermissions.Assign,
+        InboundEmailPermissions.AssignToMe,
+        InboundEmailPermissions.Reopen,
+        InboundEmailPermissions.Update,
+        MailboxPermissions.View,
+        OutboundEmailPermissions.View,
     ],
     childRoles: [],
     readonly: true

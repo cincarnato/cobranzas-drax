@@ -32,7 +32,7 @@ const TransferEmailBaseSchema = z.object({
     destinationBank: z.string().optional(),
     affiliateStrategy: z.enum(['EMAIL_FROM', 'DNI_CUIL', 'CBU_CVU', 'NRO_CUENTA', 'EMAIL_DATA']).optional(),
     affiliates: z.array(TransferEmailAffiliateSchema).optional().default([]),
-    aiStatus: z.enum(['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']).optional(),
+    aiStatus: z.enum(['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'PROCESADO_SIN_IA', 'ERROR_PROCESAMIENTO']).optional(),
     aiProcessedAt: z.coerce.date().nullable().optional(),
     aiError: z.string().optional(),
     humanStatus: z.enum(['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO']).optional(),

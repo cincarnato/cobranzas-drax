@@ -4,8 +4,8 @@ class MailboxSqliteRepository extends AbstractSqliteRepository {
         super(...arguments);
         this.tableName = 'Mailbox';
         this.searchFields = ['name', 'email', 'username', 'imapHost', 'popHost', 'smtpHost'];
-        this.booleanFields = ['isActive', 'autoProcessEnabled', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
-        this.jsonFields = ['categories', 'entities', 'sentiments', 'priorities', 'tags'];
+        this.booleanFields = ['aiAnalysisEnabled', 'isActive', 'autoProcessEnabled', 'replyRequiredToClose', 'closeReasonRequired', 'attachmentStorageEnabled', 'attachmentOcrEnabled', 'imapEnabled', 'imapTls', 'popEnabled', 'popTls', 'smtpEnabled', 'smtpTls'];
+        this.jsonFields = ['categories', 'closeReasons', 'entities', 'operators', 'sentiments', 'priorities', 'tags'];
         this.identifier = 'email';
         this.populateFields = [];
         this.verbose = false;
@@ -15,12 +15,18 @@ class MailboxSqliteRepository extends AbstractSqliteRepository {
             { name: "username", type: "TEXT", unique: undefined, primary: false },
             { name: "password", type: "TEXT", unique: undefined, primary: false },
             { name: "categories", type: "TEXT", unique: undefined, primary: false },
+            { name: "closeReasons", type: "TEXT", unique: undefined, primary: false },
             { name: "entities", type: "TEXT", unique: undefined, primary: false },
+            { name: "operators", type: "TEXT", unique: undefined, primary: false },
+            { name: "maxAssignableEmailsPerUser", type: "REAL", unique: undefined, primary: false },
             { name: "sentiments", type: "TEXT", unique: undefined, primary: false },
             { name: "priorities", type: "TEXT", unique: undefined, primary: false },
             { name: "tags", type: "TEXT", unique: undefined, primary: false },
+            { name: "aiAnalysisEnabled", type: "TEXT", unique: undefined, primary: false },
             { name: "isActive", type: "TEXT", unique: undefined, primary: false },
             { name: "autoProcessEnabled", type: "TEXT", unique: undefined, primary: false },
+            { name: "replyRequiredToClose", type: "TEXT", unique: undefined, primary: false },
+            { name: "closeReasonRequired", type: "TEXT", unique: undefined, primary: false },
             { name: "attachmentStorageEnabled", type: "TEXT", unique: undefined, primary: false },
             { name: "attachmentOcrEnabled", type: "TEXT", unique: undefined, primary: false },
             { name: "retentionDays", type: "REAL", unique: undefined, primary: false },

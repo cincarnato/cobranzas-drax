@@ -22,7 +22,11 @@ import { GroupZoneFastifyRoutes } from "../modules/collections/routes/GroupZoneR
 import { InboundEmailFastifyRoutes } from "../modules/mail/routes/InboundEmailRoutes.js";
 import { InboundEmailMailboxRoutes } from "../modules/mail/routes/InboundEmailMailboxRoutes.js";
 import { MailToolsRoutes } from "../modules/mail/routes/MailToolsRoutes.js";
+import { MailReplyRoutes } from "../modules/mail/routes/MailReplyRoutes.js";
+import { SessionEmailFastifyRoutes } from "../modules/mail/routes/SessionEmailRoutes.js";
+import { EmailSupervisionFastifyRoutes } from "../modules/mail/routes/EmailSupervisionRoutes.js";
 import { MailboxFastifyRoutes } from "../modules/mail/routes/MailboxRoutes.js";
+import { OutboundEmailFastifyRoutes } from "../modules/mail/routes/OutboundEmailRoutes.js";
 import { BankMovementFastifyRoutes } from "../modules/transferencias/routes/BankMovementRoutes.js";
 import { PayerFastifyRoutes } from "../modules/transferencias/routes/PayerRoutes.js";
 import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/TransferEmailRoutes.js";
@@ -31,6 +35,7 @@ import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRout
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js";
 import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js";
 import { BonusFastifyRoutes } from "../modules/bajas/routes/BonusRoutes.js";
+import { InternalTransferBonusFastifyRoutes } from "../modules/traspasosInternos/routes/InternalTransferBonusRoutes.js";
 function FastifyServerFactory(rootDir) {
     const server = new FastifyServer(rootDir);
     server.fastifyDecorateRequest('authUser', null);
@@ -69,7 +74,11 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(InboundEmailFastifyRoutes);
     server.fastifyRegister(InboundEmailMailboxRoutes);
     server.fastifyRegister(MailToolsRoutes);
+    server.fastifyRegister(MailReplyRoutes);
+    server.fastifyRegister(SessionEmailFastifyRoutes);
+    server.fastifyRegister(EmailSupervisionFastifyRoutes);
     server.fastifyRegister(MailboxFastifyRoutes);
+    server.fastifyRegister(OutboundEmailFastifyRoutes);
     server.fastifyRegister(AffiliateFastifyRoutes);
     server.fastifyRegister(AffiliateTypeFastifyRoutes);
     server.fastifyRegister(BankMovementFastifyRoutes);
@@ -78,6 +87,7 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(TransferAuditSessionFastifyRoutes);
     server.fastifyRegister(RecoveryFastifyRoutes);
     server.fastifyRegister(BonusFastifyRoutes);
+    server.fastifyRegister(InternalTransferBonusFastifyRoutes);
     return server;
 }
 export default FastifyServerFactory;

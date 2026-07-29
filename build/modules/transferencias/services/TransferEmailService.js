@@ -1,5 +1,7 @@
 import { AbstractService } from "@drax/crud-back";
 import ExcelJS from "exceljs";
+import { BadRequestError } from "@drax/common-back";
+import InboundEmailServiceFactory from "../../mail/factory/services/InboundEmailServiceFactory.js";
 class TransferEmailService extends AbstractService {
     constructor(TransferEmailRepository, baseSchema, fullSchema) {
         super(TransferEmailRepository, baseSchema, fullSchema);
@@ -117,24 +119,44 @@ class TransferEmailService extends AbstractService {
         const now = new Date();
         return this.transferEmailRepository.renewAssignments(sessionId, operatorId, now, new Date(now.getTime() + leaseMs));
     }
-    async auditTransferEmail(id, data, userId, auditSessionId) {
+    async auditTransferEmail(id, data, userId, auditSessionId, closeInboundEmail = false) {
         const currentTransferEmail = await this.findById(id);
         const resolved = this.withResolvedProcessingFields(currentTransferEmail, {
             ...data,
             auditedBy: userId,
             auditedAt: new Date(),
         });
+        let updated;
         if (auditSessionId || currentTransferEmail.auditSessionId) {
-            const updated = await this.transferEmailRepository.auditAssigned(id, userId, auditSessionId || '', new Date(), resolved);
+            updated = await this.transferEmailRepository.auditAssigned(id, userId, auditSessionId || '', new Date(), resolved);
             if (!updated) {
                 throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT');
             }
-            return updated;
         }
-        if (currentTransferEmail.assignedTo) {
+        else if (currentTransferEmail.assignedTo) {
             throw new Error('TRANSFER_EMAIL_ASSIGNMENT_CONFLICT');
         }
-        return super.updatePartial(id, resolved);
+        else {
+            updated = await super.updatePartial(id, resolved);
+        }
+        if (closeInboundEmail) {
+            await this.closeLinkedInboundEmail(updated, currentTransferEmail, userId);
+        }
+        return updated;
+    }
+    async closeLinkedInboundEmail(transferEmail, fallbackTransferEmail, userId) {
+        const inboundEmailId = this.resolveEntityId(transferEmail.inboundEmail) || this.resolveEntityId(fallbackTransferEmail.inboundEmail);
+        if (!inboundEmailId) {
+            throw new BadRequestError('La transferencia no tiene un correo vinculado para cerrar.');
+        }
+        await InboundEmailServiceFactory.instance.closeFromExternal(inboundEmailId, userId);
+    }
+    resolveEntityId(entity) {
+        if (!entity)
+            return '';
+        if (typeof entity === 'string')
+            return entity;
+        return entity._id?.toString?.() || entity.id?.toString?.() || '';
     }
     withResolvedProcessingFields(currentTransferEmail, data) {
         const mergedTransferEmail = {
@@ -190,7 +212,7 @@ class TransferEmailService extends AbstractService {
         if (requestedNeedsHumanReview !== undefined) {
             return requestedNeedsHumanReview;
         }
-        if (aiStatus === 'PROCESADO_CON_DUDAS' || aiStatus === 'PROCESADO_INCOMPLETO' || aiStatus === 'ERROR_PROCESAMIENTO') {
+        if (aiStatus === 'PROCESADO_CON_DUDAS' || aiStatus === 'PROCESADO_INCOMPLETO' || aiStatus === 'PROCESADO_SIN_IA' || aiStatus === 'ERROR_PROCESAMIENTO') {
             return true;
         }
         if (aiStatus === 'PROCESADO_CONFIABLE') {

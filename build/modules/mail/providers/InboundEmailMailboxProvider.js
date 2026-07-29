@@ -4,6 +4,7 @@ import { z } from "zod";
 import { AiProviderFactory } from "@drax/ai-back";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
+import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import AffiliateServiceFactory from "../../premedic/factory/services/AffiliateServiceFactory.js";
 import { MediaService } from "@drax/media-back";
 import { SettingServiceFactory } from "@drax/settings-back";
@@ -379,6 +380,14 @@ class InboundEmailMailboxProvider {
                         }
                         : null;
                     if (!fetchMessage?.raw?.length) {
+                        console.log("[InboundEmailSync] Skipping inbound email without raw source", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid,
+                            fetchedUid: fetched ? fetched.uid : undefined,
+                            internalDate: this.formatDateForLog(fetched ? fetched.internalDate : undefined),
+                        });
                         result.skipped += 1;
                         continue;
                     }
@@ -387,14 +396,42 @@ class InboundEmailMailboxProvider {
                     const duplicate = await this.findExistingByMessageId(messageId);
                     if (duplicate) {
                         await this.backfillDuplicateImapUid(duplicate, mailbox, fetchMessage.uid);
-                        await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        if (this.isAiAnalysisEnabled(mailbox)) {
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, duplicate.category, mailbox);
+                        }
+                        console.log("[InboundEmailSync] Skipping duplicate inbound email", {
+                            mailboxId: mailbox._id,
+                            mailboxName: mailbox.name,
+                            mailboxEmail: mailbox.email,
+                            uid: fetchMessage.uid,
+                            ...this.formatParsedMailForLog(parsedMail, messageId),
+                            duplicateInboundEmailId: duplicate._id,
+                            duplicateMailboxId: duplicate.mailbox,
+                            duplicateImapUid: duplicate.imapUid,
+                        });
                         result.skipped += 1;
                         continue;
                     }
                     const inboundEmail = await this.buildInboundEmail(mailbox, parsedMail, fetchMessage, messageId);
-                    await this.inboundEmailService.create(inboundEmail);
-                    await this.applyAiCategoryFlag(client, fetchMessage.uid, inboundEmail.category, mailbox);
+                    const createdInboundEmail = await this.inboundEmailService.create(inboundEmail);
                     result.created += 1;
+                    if (this.isAiAnalysisEnabled(mailbox)) {
+                        try {
+                            const analysis = await this.analyzeAndUpdateInboundEmail(mailbox, createdInboundEmail);
+                            await this.applyAiCategoryFlag(client, fetchMessage.uid, analysis.category, mailbox);
+                        }
+                        catch (error) {
+                            this.logError("Error analyzing inbound email with AI", error, {
+                                mailboxId: mailbox._id,
+                                mailboxName: mailbox.name,
+                                mailboxEmail: mailbox.email,
+                                inboundEmailId: createdInboundEmail._id,
+                                messageId,
+                                uid,
+                            });
+                            result.errors.push(this.formatError(error));
+                        }
+                    }
                 }
                 catch (error) {
                     this.logError("Error processing inbound email", error, {
@@ -466,6 +503,23 @@ class InboundEmailMailboxProvider {
         }
         return value instanceof Date ? value.toISOString() : value;
     }
+    formatParsedMailForLog(parsedMail, messageId) {
+        const from = parsedMail.from?.value?.[0];
+        return {
+            messageId,
+            subject: this.truncateForLog(parsedMail.subject),
+            fromName: this.truncateForLog(from?.name),
+            fromEmail: from?.address,
+            date: this.formatDateForLog(parsedMail.date),
+        };
+    }
+    truncateForLog(value, maxLength = 300) {
+        const normalized = this.normalizeString(value);
+        if (!normalized || normalized.length <= maxLength) {
+            return normalized;
+        }
+        return `${normalized.slice(0, maxLength)}...`;
+    }
     async applyAiCategoryFlag(client, uid, category, mailbox) {
         const flag = this.buildAiCategoryFlag(category);
         if (!flag) {
@@ -522,6 +576,9 @@ class InboundEmailMailboxProvider {
             return true;
         }
         return Date.now() - state.lastRunAt >= intervalMinutes * 60000;
+    }
+    isAiAnalysisEnabled(mailbox) {
+        return mailbox.aiAnalysisEnabled !== false;
     }
     async purgeInboundEmailAttachments(emails, mailbox) {
         const result = {
@@ -638,19 +695,15 @@ class InboundEmailMailboxProvider {
         const attachmentResult = await this.processAttachments(mailbox, messageId, parsedAttachments);
         const analysisBodyText = this.normalizeText([textBody, attachmentResult.ocrText].filter(Boolean).join("\n\n"));
         const normalizedText = this.normalizeText([parsedMail.subject, analysisBodyText].filter(Boolean).join("\n\n"));
-        const analysis = await this.analyzeInboundEmail({
-            mailbox,
-            messageId,
-            subject: parsedMail.subject,
-            bodyText: analysisBodyText,
-            normalizedText,
-            attachmentsOcrText: attachmentResult.ocrText,
-            fromEmail: from?.address,
-            fromName: from?.name,
-        });
+        const inReplyTo = this.resolveInReplyTo(parsedMail);
+        const references = this.resolveReferences(parsedMail);
+        const parentInboundEmail = await this.resolveParentInboundEmail(mailbox, inReplyTo, references);
         return {
             messageId,
-            threadId: this.resolveThreadId(parsedMail),
+            threadId: this.resolveThreadId(messageId, inReplyTo, references, parentInboundEmail),
+            inReplyTo,
+            references,
+            parentInboundEmail: parentInboundEmail?._id,
             mailbox: mailbox._id,
             imapUid: fetchMessage.uid,
             sourceChannel: "EMAIL",
@@ -669,6 +722,29 @@ class InboundEmailMailboxProvider {
             attachments: attachmentResult.storedAttachments,
             attachmentsOcrText: attachmentResult.ocrText,
             attachmentsOcrError: attachmentResult.ocrError,
+            tags: [],
+            customer: {
+                name: from?.name,
+                email: from?.address,
+            },
+            extractedEntities: [],
+            processingStatus: "PENDING",
+            reviewStatus: "PENDING",
+            isDuplicate: false,
+        };
+    }
+    async analyzeAndUpdateInboundEmail(mailbox, inboundEmail) {
+        const analysis = await this.analyzeInboundEmail({
+            mailbox,
+            messageId: inboundEmail.messageId,
+            subject: inboundEmail.subject,
+            bodyText: this.normalizeText([inboundEmail.bodyText, inboundEmail.attachmentsOcrText].filter(Boolean).join("\n\n")),
+            normalizedText: inboundEmail.normalizedText || "",
+            attachmentsOcrText: inboundEmail.attachmentsOcrText,
+            fromEmail: inboundEmail.fromEmail,
+            fromName: inboundEmail.fromName,
+        });
+        await this.inboundEmailService.updatePartial(inboundEmail._id, {
             category: analysis.category,
             sentiment: analysis.sentiment,
             priority: analysis.priority,
@@ -679,9 +755,9 @@ class InboundEmailMailboxProvider {
             extractedEntities: analysis.extractedEntities,
             processingStatus: analysis.processingStatus,
             reviewStatus: analysis.reviewStatus,
-            isDuplicate: false,
             processedAt: new Date(),
-        };
+        });
+        return analysis;
     }
     async parseEmail(raw) {
         try {
@@ -760,17 +836,57 @@ class InboundEmailMailboxProvider {
         }
         return `<${mailbox._id}-${uid}@inbound-email.local>`;
     }
-    resolveThreadId(parsedMail) {
-        const references = Array.isArray(parsedMail.references)
-            ? parsedMail.references[0]
-            : parsedMail.references;
-        if (references) {
-            return references;
+    resolveThreadId(messageId, inReplyTo, references = [], parentInboundEmail) {
+        return parentInboundEmail?.threadId || parentInboundEmail?.messageId || references[0] || inReplyTo || messageId;
+    }
+    resolveInReplyTo(parsedMail) {
+        const rawInReplyTo = Array.isArray(parsedMail.inReplyTo)
+            ? parsedMail.inReplyTo[0]
+            : parsedMail.inReplyTo;
+        return this.normalizeMessageId(rawInReplyTo);
+    }
+    resolveReferences(parsedMail) {
+        const rawReferences = Array.isArray(parsedMail.references)
+            ? parsedMail.references
+            : [parsedMail.references];
+        return this.uniqueStrings(rawReferences.flatMap((value) => this.extractMessageIds(value)));
+    }
+    async resolveParentInboundEmail(mailbox, inReplyTo, references = []) {
+        const messageIds = this.uniqueStrings([...references, inReplyTo]);
+        if (!messageIds.length)
+            return null;
+        const inboundMatches = await this.inboundEmailService.findByMessageIds(messageIds, [mailbox._id]);
+        if (inboundMatches.length) {
+            return inboundMatches[0];
         }
-        if (Array.isArray(parsedMail.inReplyTo)) {
-            return parsedMail.inReplyTo[0];
-        }
-        return parsedMail.inReplyTo;
+        const outboundMatches = await OutboundEmailServiceFactory.instance.findByMessageIds(messageIds);
+        const inboundEmailIds = this.uniqueStrings(outboundMatches
+            .map((outboundEmail) => this.resolveEntityId(outboundEmail.inboundEmail)));
+        if (!inboundEmailIds.length)
+            return null;
+        const parentMatches = await this.inboundEmailService.findByIds(inboundEmailIds);
+        return parentMatches.find((inboundEmail) => inboundEmail.mailbox === mailbox._id) || null;
+    }
+    extractMessageIds(value) {
+        if (!value)
+            return [];
+        return (value.match(/<[^>]+>|[^\s]+/g) || [])
+            .map((item) => this.normalizeMessageId(item))
+            .filter((item) => Boolean(item));
+    }
+    normalizeMessageId(value) {
+        const normalized = value?.trim().replace(/\s+/g, "");
+        return normalized || undefined;
+    }
+    uniqueStrings(values) {
+        return [...new Set(values.map((value) => value?.trim()).filter((value) => Boolean(value)))];
+    }
+    resolveEntityId(value) {
+        if (!value)
+            return undefined;
+        if (typeof value === "object")
+            return value._id?.toString() || value.id?.toString();
+        return value.toString();
     }
     extractAddresses(addresses) {
         return (addresses || [])
@@ -956,8 +1072,8 @@ class InboundEmailMailboxProvider {
         const needsHumanReview = extraction.needsHumanReview ?? Boolean(!matchedAffiliateId && !customer.documentNumber && !customer.cuil);
         return {
             category: this.sanitizeConfiguredOption(extraction.category, (input.mailbox.categories || []).map((category) => category.name)),
-            sentiment: this.sanitizeConfiguredOption(extraction.sentiment, input.mailbox.sentiments),
-            priority: this.sanitizeConfiguredOption(extraction.priority, input.mailbox.priorities),
+            sentiment: this.sanitizeConfiguredOption(extraction.sentiment, this.mailboxOptionNames(input.mailbox.sentiments)),
+            priority: this.sanitizeConfiguredOption(extraction.priority, this.mailboxOptionNames(input.mailbox.priorities)),
             summary: this.normalizeString(extraction.summary),
             tags,
             aiModel: this.resolveAiModelName(),
@@ -976,6 +1092,8 @@ class InboundEmailMailboxProvider {
             name: entity.name,
             description: entity.description,
         }));
+        const mailboxSentiments = this.mailboxOptionsForAi(input.mailbox.sentiments);
+        const mailboxPriorities = this.mailboxOptionsForAi(input.mailbox.priorities);
         const response = await this.aiProvider.prompt({
             operationTitle: "Correo entrante",
             systemPrompt: [
@@ -990,27 +1108,27 @@ class InboundEmailMailboxProvider {
                 "needsHumanReview debe ser true cuando haya ambiguedad relevante o falten datos clave para operar el correo.",
                 "source en extractedEntities debe ser uno de SUBJECT, BODY, ATTACHMENT o MANUAL.",
             ].join("\n"),
-            userInput: this.buildAiUserInput(input, mailboxCategories, mailboxEntities),
+            userInput: this.buildAiUserInput(input, mailboxCategories, mailboxSentiments, mailboxPriorities, mailboxEntities),
             zodSchema: inboundEmailAiSchema,
         });
         return this.parseAiOutput(response.output);
     }
-    buildAiUserInput(input, mailboxCategories, mailboxEntities) {
+    buildAiUserInput(input, mailboxCategories, mailboxSentiments, mailboxPriorities, mailboxEntities) {
         const sections = [
             this.buildSection("MAILBOX CONFIG", [
                 `mailboxId: ${input.mailbox._id}`,
                 `mailboxName: ${input.mailbox.name}`,
                 `mailboxEmail: ${input.mailbox.email}`,
                 `categories: ${this.formatOptionObjects(mailboxCategories)}`,
-                `sentiments: ${this.formatOptions(input.mailbox.sentiments)}`,
-                `priorities: ${this.formatOptions(input.mailbox.priorities)}`,
+                `sentiments: ${this.formatOptionObjects(mailboxSentiments)}`,
+                `priorities: ${this.formatOptionObjects(mailboxPriorities)}`,
                 `tags: ${this.formatOptions(input.mailbox.tags)}`,
                 `entities: ${this.formatOptionObjects(mailboxEntities)}`,
             ]),
             this.buildSection("OUTPUT RULES", [
                 "category: devolver exactamente un name de mailbox.categories o null; no incluir description.",
-                "sentiment: devolver exactamente una opcion de mailbox.sentiments o null.",
-                "priority: devolver exactamente una opcion de mailbox.priorities o null.",
+                "sentiment: devolver exactamente un name de mailbox.sentiments o null; usar description solo como contexto de decision.",
+                "priority: devolver exactamente un name de mailbox.priorities o null; usar description solo como contexto de decision.",
                 "tags: devolver un array; puede incluir tags existentes y tambien tags nuevos.",
                 "extractedEntities: usar labels de mailbox.entities cuando existan.",
             ]),
@@ -1147,6 +1265,17 @@ class InboundEmailMailboxProvider {
             .map((item) => item.description ? `name=${item.name}; description=${item.description}` : `name=${item.name}`)
             .join(" | ");
     }
+    mailboxOptionNames(values) {
+        return (values || [])
+            .map((item) => typeof item === "string" ? item : item.name)
+            .map((item) => this.normalizeString(item))
+            .filter(Boolean);
+    }
+    mailboxOptionsForAi(values) {
+        return (values || [])
+            .map((item) => typeof item === "string" ? { name: item } : { name: item.name, description: item.description })
+            .filter((item) => Boolean(this.normalizeString(item.name)));
+    }
     buildSection(title, lines) {
         const content = lines
             .map((line) => this.normalizeString(line))
@@ -1161,9 +1290,6 @@ class InboundEmailMailboxProvider {
     }
     sanitizePathSegment(segment) {
         return segment.replace(/[^\w.-]+/g, "_");
-    }
-    uniqueStrings(values) {
-        return Array.from(new Set(values.filter(Boolean)));
     }
     parseAiOutput(output) {
         try {

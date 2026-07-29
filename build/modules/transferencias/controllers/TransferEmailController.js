@@ -36,7 +36,7 @@ class TransferEmailController extends AbstractFastifyController {
         };
         let item;
         try {
-            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload, userId, payload.auditSessionId);
+            item = await TransferEmailServiceFactory.instance.auditTransferEmail(id, auditPayload, userId, payload.auditSessionId, payload.closeInboundEmail === true);
         }
         catch (error) {
             if (error?.message === 'TRANSFER_EMAIL_ASSIGNMENT_CONFLICT') {
@@ -78,6 +78,30 @@ class TransferEmailController extends AbstractFastifyController {
                 error: "TRANSFER_EMAIL_PROCESS_ERROR",
                 message: error?.message || "Failed to process inbound transfer emails",
             });
+        }
+    }
+    async processInboundEmail(request, reply) {
+        try {
+            request?.rbac.assertAuthenticated();
+            request?.rbac.assertPermission(TransferEmailPermissions.Create);
+            const body = (request.body || {});
+            if (!body.inboundEmailId) {
+                return reply.status(400).send({
+                    error: "TRANSFER_EMAIL_INBOUND_EMAIL_REQUIRED",
+                    message: "inboundEmailId is required",
+                });
+            }
+            const result = await this.getInboundMailTransferProcessor().processInboundEmail(body.inboundEmailId);
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            if (error?.message === "Inbound email not found") {
+                return reply.status(404).send({
+                    error: "INBOUND_EMAIL_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+            return this.handleError(error, reply);
         }
     }
     async reprocess(request, reply) {

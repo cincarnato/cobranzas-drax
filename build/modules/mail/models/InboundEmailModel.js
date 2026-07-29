@@ -4,6 +4,9 @@ import mongoosePaginate from 'mongoose-paginate-v2';
 const InboundEmailSchema = new mongoose.Schema({
     messageId: { type: String, required: true, index: true, unique: true },
     threadId: { type: String, required: false, index: true, unique: false },
+    inReplyTo: { type: String, required: false, index: true, unique: false },
+    references: [{ type: String, required: false, index: false, unique: false }],
+    parentInboundEmail: { type: mongoose.Schema.Types.ObjectId, ref: 'InboundEmail', required: false, index: true, unique: false },
     mailbox: { type: String, required: false, index: false, unique: false },
     imapUid: { type: Number, required: false, index: true, unique: false },
     sourceChannel: { type: String, enum: ['EMAIL', 'FORWARDED_EMAIL', 'MANUAL_UPLOAD', 'API'], required: true, index: false, unique: false },
@@ -14,6 +17,16 @@ const InboundEmailSchema = new mongoose.Schema({
     toEmails: [{ type: String, required: false, index: false, unique: false }],
     ccEmails: [{ type: String, required: false, index: false, unique: false }],
     replyToEmail: { type: String, required: false, index: false, unique: false },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
+    assignedAt: { type: Date, required: false, index: true, unique: false },
+    assignedSession: { type: mongoose.Schema.Types.ObjectId, ref: 'SessionEmail', required: false, index: true, unique: false },
+    assignmentMode: { type: String, enum: ['MANUAL', 'AUTO'], required: false, index: true, unique: false },
+    attentionStatus: { type: String, enum: ['PENDING', 'ASSIGNED', 'CLOSED'], required: true, index: true, unique: false, default: 'PENDING' },
+    replyCount: { type: Number, required: false, index: false, unique: false, default: 0 },
+    firstRepliedAt: { type: Date, required: false, index: false, unique: false },
+    lastRepliedAt: { type: Date, required: false, index: false, unique: false },
+    closedAt: { type: Date, required: false, index: true, unique: false },
+    closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
     bodyText: { type: String, required: false, index: false, unique: false },
     bodyHtml: { type: String, required: false, index: false, unique: false },
     normalizedText: { type: String, required: false, index: false, unique: false },
@@ -29,6 +42,7 @@ const InboundEmailSchema = new mongoose.Schema({
     attachmentsOcrText: { type: String, required: false, index: false, unique: false },
     attachmentsOcrError: { type: String, required: false, index: false, unique: false },
     category: { type: String, required: false, index: true, unique: false },
+    closeReason: { type: String, required: false, index: true, unique: false },
     sentiment: { type: String, required: false, index: false, unique: false },
     priority: { type: String, required: false, index: false, unique: false },
     summary: { type: String, required: false, index: false, unique: false },
@@ -61,6 +75,9 @@ const InboundEmailSchema = new mongoose.Schema({
     duplicateOfMessageId: { type: String, required: false, index: true, unique: false },
     processedAt: { type: Date, required: false, index: false, unique: false },
 }, { timestamps: true });
+InboundEmailSchema.index({ mailbox: 1, attentionStatus: 1, receivedAt: 1 });
+InboundEmailSchema.index({ mailbox: 1, assignedTo: 1, attentionStatus: 1 });
+InboundEmailSchema.index({ mailbox: 1, attentionStatus: 1, closedAt: 1 });
 InboundEmailSchema.plugin(uniqueValidator, { message: 'validation.unique' });
 InboundEmailSchema.plugin(mongoosePaginate);
 InboundEmailSchema.virtual("id").get(function () {

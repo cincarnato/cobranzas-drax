@@ -19,6 +19,8 @@ import { CovenantPermissions } from "../modules/collections/permissions/Covenant
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
 import { InboundEmailPermissions } from "../modules/mail/permissions/InboundEmailPermissions.js";
 import { MailboxPermissions } from "../modules/mail/permissions/MailboxPermissions.js";
+import { OutboundEmailPermissions } from "../modules/mail/permissions/OutboundEmailPermissions.js";
+import { SessionEmailPermissions } from "../modules/mail/permissions/SessionEmailPermissions.js";
 import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
 import { PayerPermissions } from "../modules/transferencias/permissions/PayerPermissions.js";
 import { TransferEmailPermissions } from "../modules/transferencias/permissions/TransferEmailPermissions.js";
@@ -27,6 +29,7 @@ import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliateP
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
 import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
 import { BonusPermissions } from "../modules/bajas/permissions/BonusPermissions.js";
+import { InternalTransferBonusPermissions } from "../modules/traspasosInternos/permissions/InternalTransferBonusPermissions.js";
 function InitializePermissions() {
     //Merge All Permissions
     const permissions = [
@@ -57,6 +60,8 @@ function InitializePermissions() {
         ...Object.values(GroupZonePermissions),
         ...Object.values(InboundEmailPermissions),
         ...Object.values(MailboxPermissions),
+        ...Object.values(OutboundEmailPermissions),
+        ...Object.values(SessionEmailPermissions),
         ...Object.values(AffiliatePermissions),
         ...Object.values(AffiliateTypePermissions),
         ...Object.values(BankMovementPermissions),
@@ -65,6 +70,7 @@ function InitializePermissions() {
         ...Object.values(TransferAuditSessionPermissions),
         ...Object.values(RecoveryPermissions),
         ...Object.values(BonusPermissions),
+        ...Object.values(InternalTransferBonusPermissions),
     ];
     //Load All Permissions
     LoadPermissions(permissions);

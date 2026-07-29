@@ -3,6 +3,7 @@ import { AiProviderFactory } from "@drax/ai-back";
 import { SettingServiceFactory } from "@drax/settings-back";
 import TransferEmailServiceFactory from "../factory/services/TransferEmailServiceFactory.js";
 import PayerServiceFactory from "../factory/services/PayerServiceFactory.js";
+import { extractTransferEmailFallback } from "./TransferEmailFallbackExtractor.js";
 import { z } from "zod";
 const DEFAULT_PROCESS_LIMIT = 10;
 const DEFAULT_PROCESS_INTERVAL_MS = 60000;
@@ -117,6 +118,87 @@ class InboundMailTransferProcessor {
     async processInboundEmails(options = {}) {
         return this.process(options);
     }
+    async processInboundEmail(inboundEmailId) {
+        const inboundEmail = await this.inboundMailService.findById(inboundEmailId);
+        if (!inboundEmail) {
+            throw new Error("Inbound email not found");
+        }
+        const existingTransferEmails = await this.findExistingTransferEmails(inboundEmail);
+        if (existingTransferEmails.length > 0) {
+            await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                attempts: this.resolveCurrentTransferEmailAttempts(inboundEmail),
+                metadata: {
+                    reason: "existing-transfer-email",
+                    transferEmailIds: existingTransferEmails.map((transferEmail) => transferEmail._id),
+                },
+            });
+            return {
+                inboundEmailId: inboundEmail._id,
+                transferEmails: existingTransferEmails,
+                created: 0,
+                existing: existingTransferEmails.length,
+                skipped: true,
+                reason: "existing-transfer-email",
+            };
+        }
+        const attempts = this.resolveNextTransferEmailAttempt(inboundEmail);
+        await this.markInboundEmailProcess(inboundEmail, "PROCESSING", { attempts });
+        try {
+            const transferEmailBuildResult = await this.buildTransferEmailPayloadsResult(inboundEmail);
+            if (transferEmailBuildResult.payloads.length === 0) {
+                await this.markInboundEmailProcess(inboundEmail, "SKIPPED", {
+                    attempts,
+                    metadata: {
+                        reason: transferEmailBuildResult.reason,
+                        details: transferEmailBuildResult.details,
+                    },
+                });
+                return {
+                    inboundEmailId: inboundEmail._id,
+                    transferEmails: [],
+                    created: 0,
+                    existing: 0,
+                    skipped: true,
+                    reason: transferEmailBuildResult.reason,
+                    message: transferEmailBuildResult.message,
+                    details: transferEmailBuildResult.details,
+                };
+            }
+            const transferEmails = await this.createTransferEmails(transferEmailBuildResult.payloads);
+            await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                attempts,
+                metadata: { transferEmailIds: transferEmails.map((transferEmail) => transferEmail._id) },
+            });
+            return {
+                inboundEmailId: inboundEmail._id,
+                transferEmails,
+                created: transferEmails.length,
+                existing: 0,
+                skipped: false,
+            };
+        }
+        catch (error) {
+            const fallbackTransferEmail = await this.transferEmailService.create(this.buildManualTransferEmailPayload(inboundEmail, error));
+            await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
+                attempts,
+                metadata: {
+                    reason: "manual-transfer-created-after-ai-error",
+                    transferEmailIds: [fallbackTransferEmail._id],
+                    aiError: this.serializeErrorMessage(error),
+                },
+            });
+            return {
+                inboundEmailId: inboundEmail._id,
+                transferEmails: [fallbackTransferEmail],
+                created: 1,
+                existing: 0,
+                skipped: false,
+                reason: "manual-transfer-created-after-ai-error",
+                message: "La IA no pudo procesar el mail. Se creó un registro mínimo para que pueda completarse manualmente.",
+                details: this.serializeErrorMessage(error),
+            };
+        }
+    }
     async reprocessTransferEmail(transferEmailId) {
         const transferEmail = await this.transferEmailService.findById(transferEmailId);
         if (!transferEmail) {
@@ -209,15 +291,11 @@ class InboundMailTransferProcessor {
                     skipped++;
                     continue;
                 }
-                const createdTransferEmailIds = [];
-                for (const transferEmail of transferEmails) {
-                    const createdTransferEmail = await this.transferEmailService.create(transferEmail);
-                    createdTransferEmailIds.push(createdTransferEmail._id);
-                    created++;
-                }
+                const createdTransferEmails = await this.createTransferEmails(transferEmails);
+                created += createdTransferEmails.length;
                 await this.markInboundEmailProcess(inboundEmail, "SUCCESS", {
                     attempts,
-                    metadata: { transferEmailIds: createdTransferEmailIds },
+                    metadata: { transferEmailIds: createdTransferEmails.map((transferEmail) => transferEmail._id) },
                 });
             }
             catch (error) {
@@ -335,12 +413,32 @@ class InboundMailTransferProcessor {
         await this.inboundMailService.updatePartial(inboundEmail._id, { processMarks });
     }
     async buildTransferEmailPayloads(inboundEmail) {
-        const extractionResult = await this.extractTransferDataWithAi(inboundEmail);
-        if (!extractionResult.isTransferProof || extractionResult.transfers.length === 0) {
-            return [];
+        return (await this.buildTransferEmailPayloadsResult(inboundEmail)).payloads;
+    }
+    async buildTransferEmailPayloadsResult(inboundEmail) {
+        const extractionResult = await this.extractTransferData(inboundEmail);
+        if (!extractionResult.isTransferProof) {
+            return {
+                payloads: [],
+                reason: extractionResult.extractionSource === "FALLBACK" ? "fallback-not-transfer-proof" : "not-transfer-proof",
+                message: extractionResult.extractionSource === "FALLBACK"
+                    ? "La IA no respondió y el fallback no encontró evidencia suficiente de un comprobante o aviso de transferencia bancaria."
+                    : "La IA analizó el mail y no encontró evidencia de un comprobante o aviso de transferencia bancaria.",
+                details: this.normalizeString(extractionResult.reasoning),
+            };
+        }
+        if (extractionResult.transfers.length === 0) {
+            return {
+                payloads: [],
+                reason: "no-transfer-items",
+                message: extractionResult.extractionSource === "FALLBACK"
+                    ? "La IA no respondió y el fallback detectó señales de transferencia, pero no pudo extraer ningún comprobante procesable."
+                    : "La IA detectó que el mail podría estar relacionado con transferencias, pero no pudo extraer ningún comprobante procesable.",
+                details: this.normalizeString(extractionResult.reasoning),
+            };
         }
         const processDate = new Date();
-        return await Promise.all(extractionResult.transfers.map(async (extraction) => {
+        const payloads = await Promise.all(extractionResult.transfers.map(async (extraction) => {
             const emailFromName = this.normalizeString(extraction.affiliateName)
                 || inboundEmail.customer?.name
                 || this.normalizeString(inboundEmail.fromName);
@@ -376,12 +474,14 @@ class InboundMailTransferProcessor {
                 affiliates: extractedAffiliates,
                 amount,
             });
-            const aiStatus = this.resolveAiStatus({
-                amount,
-                transferDate,
-                affiliates: affiliateResolution.affiliates,
-                needsHumanReview: Boolean(extraction.needsHumanReview),
-            });
+            const aiStatus = extractionResult.extractionSource === "FALLBACK"
+                ? "PROCESADO_SIN_IA"
+                : this.resolveAiStatus({
+                    amount,
+                    transferDate,
+                    affiliates: affiliateResolution.affiliates,
+                    needsHumanReview: Boolean(extraction.needsHumanReview),
+                });
             const aiProcessedAt = processDate;
             const payload = {
                 inboundEmail: inboundEmail._id,
@@ -411,13 +511,48 @@ class InboundMailTransferProcessor {
                 affiliates: affiliateResolution.affiliates,
                 aiStatus,
                 aiProcessedAt,
-                aiError: undefined,
+                aiError: extractionResult.aiError,
                 humanStatus: "PENDIENTE",
                 status: "PENDIENTE_AUDITORIA",
                 needsHumanReview: this.resolveNeedsHumanReviewFromAiStatus(aiStatus),
             };
             return this.removeUndefinedFields(payload);
         }));
+        return { payloads };
+    }
+    async createTransferEmails(transferEmailPayloads) {
+        const transferEmails = [];
+        for (const transferEmailPayload of transferEmailPayloads) {
+            transferEmails.push(await this.transferEmailService.create(transferEmailPayload));
+        }
+        return transferEmails;
+    }
+    buildManualTransferEmailPayload(inboundEmail, error) {
+        const emailFromName = inboundEmail.customer?.name || this.normalizeString(inboundEmail.fromName);
+        const emailFromEmail = inboundEmail.customer?.email || this.normalizeString(inboundEmail.fromEmail);
+        const emailDocumentNumber = this.normalizeDocumentNumber(inboundEmail.customer?.documentNumber || this.extractDocumentNumberFromCuil(inboundEmail.customer?.cuil));
+        return this.removeUndefinedFields({
+            inboundEmail: inboundEmail._id,
+            emailMessageId: inboundEmail.messageId,
+            emailSubject: this.normalizeString(inboundEmail.subject),
+            emailFromName,
+            emailFromEmail,
+            emailDocumentNumber,
+            isTransferProof: true,
+            emailDate: inboundEmail.receivedAt,
+            processDate: new Date(),
+            affiliateStrategy: EMAIL_DATA_AFFILIATE_STRATEGY,
+            affiliates: this.ensureAffiliates([], {
+                name: emailFromName,
+                documentNumber: emailDocumentNumber,
+            }),
+            aiStatus: "ERROR_PROCESAMIENTO",
+            aiProcessedAt: new Date(),
+            aiError: error ? this.serializeErrorMessage(error) : undefined,
+            humanStatus: "PENDIENTE",
+            status: "PENDIENTE_AUDITORIA",
+            needsHumanReview: true,
+        });
     }
     async resolveAffiliateFromPayerMappings(input) {
         const criteria = this.buildPayerLookupCriteria(input);
@@ -560,6 +695,7 @@ class InboundMailTransferProcessor {
     resolveNeedsHumanReviewFromAiStatus(aiStatus) {
         return aiStatus === "PROCESADO_CON_DUDAS"
             || aiStatus === "PROCESADO_INCOMPLETO"
+            || aiStatus === "PROCESADO_SIN_IA"
             || aiStatus === "ERROR_PROCESAMIENTO";
     }
     resolvePendingAuditStatus(currentStatus) {
@@ -581,6 +717,17 @@ class InboundMailTransferProcessor {
             this.logError("Error updating transfer email AI error state", updateError, {
                 transferEmailId: transferEmail._id,
             });
+        }
+    }
+    async extractTransferData(inboundEmail) {
+        try {
+            return {
+                ...await this.extractTransferDataWithAi(inboundEmail),
+                extractionSource: "AI",
+            };
+        }
+        catch (error) {
+            return extractTransferEmailFallback(inboundEmail, this.serializeErrorMessage(error));
         }
     }
     async extractTransferDataWithAi(inboundEmail) {
