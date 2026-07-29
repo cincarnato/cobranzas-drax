@@ -175,6 +175,27 @@ class BonusCrud extends EntityCrud implements IEntityCrud {
       {name: 'fullname', type: 'string', label: 'fullname', default: '', operator: 'like'},
       {name: 'plan', type: 'string', label: 'plan', default: '', operator: 'like'},
       {
+        name: 'appliedMonth',
+        type: 'select',
+        label: 'appliedMonth',
+        default: null,
+        items: [
+          {title: "Enero", value: "Enero"},
+          {title: "Febrero", value: "Febrero"},
+          {title: "Marzo", value: "Marzo"},
+          {title: "Abril", value: "Abril"},
+          {title: "Mayo", value: "Mayo"},
+          {title: "Junio", value: "Junio"},
+          {title: "Julio", value: "Julio"},
+          {title: "Agosto", value: "Agosto"},
+          {title: "Septiembre", value: "Septiembre"},
+          {title: "Octubre", value: "Octubre"},
+          {title: "Noviembre", value: "Noviembre"},
+          {title: "Diciembre", value: "Diciembre"}
+        ],
+        operator: 'eq'
+      },
+      {
         name: 'status',
         type: 'enum',
         label: 'status',

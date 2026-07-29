@@ -90,10 +90,17 @@ class InternalTransferBonusCrud extends EntityCrud implements IEntityCrud {
       bonifiedValue: [(v: any) => !!v || 'validation.required'],
       bonusType: [(v: any) => !!v || 'validation.required'],
       bankDataAttachment: [
-        (v: any) => this.store.getFieldValue('bonusType') !== 'Transferencia Bancaria'
-          || !!v?.url
-          || !!v?.filepath
-          || 'validation.required'
+        (v: any) => {
+          if (this.store.getFieldValue('bonusType') !== 'Transferencia Bancaria') {
+            return true
+          }
+
+          if (typeof v === 'string') {
+            return !!v.trim() || 'validation.required'
+          }
+
+          return !!v?.url || !!v?.filepath || 'validation.required'
+        }
       ],
       status: [(v: any) => !!v || 'validation.required'],
       observation: [
@@ -107,7 +114,8 @@ class InternalTransferBonusCrud extends EntityCrud implements IEntityCrud {
     const fields: IEntityCrudField[] = [
       {name: 'dni', type: 'string', label: 'dni', default: '', md: 6},
       {name: 'fullname', type: 'string', label: 'fullname', default: '', md: 6},
-      {name: 'appliedMonth', type: 'select', label: 'appliedMonth', default: null, md: 4, items: [
+      {
+        name: 'appliedMonth', type: 'select', label: 'appliedMonth', default: null, md: 4, items: [
           {title: "Enero", value: "Enero"},
           {title: "Febrero", value: "Febrero"},
           {title: "Marzo", value: "Marzo"},
@@ -170,6 +178,7 @@ class InternalTransferBonusCrud extends EntityCrud implements IEntityCrud {
     return [
       {name: 'dni', type: 'string', label: 'dni', default: '', operator: 'eq'},
       {name: 'fullname', type: 'string', label: 'fullname', default: '', operator: 'like'},
+
       {
         name: 'bonusType',
         type: 'enum',
@@ -177,6 +186,27 @@ class InternalTransferBonusCrud extends EntityCrud implements IEntityCrud {
         default: null,
         enum: ['Crédito en Cuenta Corriente', 'Transferencia Bancaria'],
         operator: 'in'
+      },
+      {
+        name: 'appliedMonth',
+        type: 'select',
+        label: 'appliedMonth',
+        default: null,
+        items: [
+          {title: "Enero", value: "Enero"},
+          {title: "Febrero", value: "Febrero"},
+          {title: "Marzo", value: "Marzo"},
+          {title: "Abril", value: "Abril"},
+          {title: "Mayo", value: "Mayo"},
+          {title: "Junio", value: "Junio"},
+          {title: "Julio", value: "Julio"},
+          {title: "Agosto", value: "Agosto"},
+          {title: "Septiembre", value: "Septiembre"},
+          {title: "Octubre", value: "Octubre"},
+          {title: "Noviembre", value: "Noviembre"},
+          {title: "Diciembre", value: "Diciembre"}
+        ],
+        operator: 'eq'
       },
       {
         name: 'status',
