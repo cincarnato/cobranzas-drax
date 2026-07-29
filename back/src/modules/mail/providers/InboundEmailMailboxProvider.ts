@@ -176,6 +176,67 @@ const DEFAULT_ATTACHMENT_OCR_MAX_ATTEMPTS = 2;
 const DEFAULT_ATTACHMENT_OCR_TIMEOUT_MS = 120_000;
 const MAILBOX_AUTO_SYNC_SETTING_KEY = "MailboxAutoSync";
 const MAILBOX_AUTO_PURGE_SETTING_KEY = "MailboxAutoPurge";
+const MAX_TAG_LENGTH = 60;
+const DYNAMIC_VALUE_TAG_PREFIXES = [
+    "monto",
+    "importe",
+    "valor",
+    "saldo",
+    "deuda",
+    "cuota",
+    "nro_afiliado",
+    "numero_afiliado",
+    "afiliado",
+    "dni",
+    "documento",
+    "cuil",
+    "cuit",
+    "telefono",
+    "tel",
+    "celular",
+    "email",
+    "mail",
+    "fecha",
+    "mes",
+    "anio",
+    "ano",
+] as const;
+
+function normalizeInboundEmailTag(value?: string | null): string | undefined {
+    const normalized = value
+        ?.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\s:-]+/g, " ")
+        .replace(/\s+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^[_:-]+|[_:-]+$/g, "");
+
+    return normalized || undefined;
+}
+
+function isAllowedInboundEmailTag(tag?: string | null): boolean {
+    if (tag && /(@|https?:\/\/|www\.)/i.test(tag)) {
+        return false;
+    }
+
+    const normalized = normalizeInboundEmailTag(tag);
+    if (!normalized || normalized.length > MAX_TAG_LENGTH) {
+        return false;
+    }
+
+    if (/\d/.test(normalized)) {
+        return false;
+    }
+
+    const prefixPattern = new RegExp(`^(${DYNAMIC_VALUE_TAG_PREFIXES.join("|")})(_|:|-|$)`);
+    if (prefixPattern.test(normalized)) {
+        return false;
+    }
+
+    return true;
+}
 
 class InboundEmailMailboxProvider {
     private static singleton: InboundEmailMailboxProvider;
@@ -1463,7 +1524,9 @@ class InboundEmailMailboxProvider {
                 "No inventes datos ni completes campos con inferencias debiles.",
                 "Mailbox define las opciones posibles de category, sentiment, priority, tags y entities.",
                 "Debes responder usando texto libre, pero cuando mailbox defina opciones para category, sentiment o priority debes elegir uno de los nombres exactos.",
-                "Para tags puedes usar tags del mailbox y tambien proponer nuevos tags si realmente hacen falta.",
+                "Para tags usa conceptos estables y reutilizables. No uses montos, importes, saldos, numeros de afiliado, DNI, CUIL, telefonos, fechas, meses, anios, emails ni cualquier otro valor puntual como tag.",
+                "Si un monto, numero, identificador, fecha o dato de contacto es relevante, guardalo en customer o extractedEntities, nunca en tags.",
+                "Puedes usar tags del mailbox y proponer nuevos tags solo si realmente hacen falta y no contienen valores variables.",
                 "Para extractedEntities usa labels de entities del mailbox cuando existan.",
                 "Si un valor no se puede determinar con confianza suficiente, devuelve null.",
                 "needsHumanReview debe ser true cuando haya ambiguedad relevante o falten datos clave para operar el correo.",
@@ -1500,14 +1563,14 @@ class InboundEmailMailboxProvider {
                 `categories: ${this.formatOptionObjects(mailboxCategories)}`,
                 `sentiments: ${this.formatOptionObjects(mailboxSentiments)}`,
                 `priorities: ${this.formatOptionObjects(mailboxPriorities)}`,
-                `tags: ${this.formatOptions(input.mailbox.tags)}`,
+                `tags: ${this.formatOptions(this.filterAllowedTags(input.mailbox.tags || []))}`,
                 `entities: ${this.formatOptionObjects(mailboxEntities)}`,
             ]),
             this.buildSection("OUTPUT RULES", [
                 "category: devolver exactamente un name de mailbox.categories o null; no incluir description.",
                 "sentiment: devolver exactamente un name de mailbox.sentiments o null; usar description solo como contexto de decision.",
                 "priority: devolver exactamente un name de mailbox.priorities o null; usar description solo como contexto de decision.",
-                "tags: devolver un array; puede incluir tags existentes y tambien tags nuevos.",
+                "tags: devolver un array de conceptos reutilizables; no devolver tags con numeros, montos, identificadores, fechas ni datos de contacto.",
                 "extractedEntities: usar labels de mailbox.entities cuando existan.",
             ]),
             this.buildSection("EMAIL METADATA", [
@@ -1546,11 +1609,14 @@ class InboundEmailMailboxProvider {
     }
 
     private async syncMailboxTags(mailbox: IMailbox, aiTags: string[]): Promise<string[]> {
-        const normalizedExistingTags = this.uniqueStrings((mailbox.tags || []).map((tag) => this.normalizeTag(tag)).filter(Boolean) as string[]);
-        const normalizedAiTags = this.uniqueStrings(aiTags.map((tag) => this.normalizeTag(tag)).filter(Boolean) as string[]);
+        const originalExistingTags = this.uniqueStrings((mailbox.tags || []).map((tag) => this.normalizeTag(tag)).filter(Boolean) as string[]);
+        const normalizedExistingTags = this.filterAllowedTags(originalExistingTags);
+        const normalizedAiTags = this.filterAllowedTags(aiTags);
         const newTags = normalizedAiTags.filter((tag) => !normalizedExistingTags.includes(tag));
+        const shouldCleanExistingTags = originalExistingTags.length !== normalizedExistingTags.length
+            || originalExistingTags.some((tag, index) => tag !== normalizedExistingTags[index]);
 
-        if (newTags.length > 0) {
+        if (newTags.length > 0 || shouldCleanExistingTags) {
             await this.mailboxService.updatePartial(mailbox._id, {
                 tags: [...normalizedExistingTags, ...newTags],
             } as Partial<IMailbox>);
@@ -1666,7 +1732,15 @@ class InboundEmailMailboxProvider {
     }
 
     private normalizeTag(value?: string | null): string | undefined {
-        return this.normalizeString(value)?.toLowerCase();
+        return normalizeInboundEmailTag(value);
+    }
+
+    private filterAllowedTags(values: string[]): string[] {
+        return this.uniqueStrings(
+            values
+                .map((tag) => this.normalizeTag(tag))
+                .filter((tag): tag is string => Boolean(tag) && isAllowedInboundEmailTag(tag))
+        );
     }
 
     private formatOptions(values?: string[]): string {
@@ -1837,5 +1911,5 @@ class InboundEmailMailboxProvider {
 }
 
 export default InboundEmailMailboxProvider;
-export {InboundEmailMailboxProvider};
+export {InboundEmailMailboxProvider, isAllowedInboundEmailTag, normalizeInboundEmailTag};
 export type {InboundEmailSyncOptions, PurgeAllResult, PurgeMailboxResult};
