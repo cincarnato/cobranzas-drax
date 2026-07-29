@@ -8,6 +8,7 @@ import premedicRoutes from '../modules/premedic/routes/index.js'
 import recoveryRoutes from '../modules/recovery/routes/index.js'
 import transferenciasRoutes from '../modules/transferencias/routes/index.js'
 import bajasRoutes from '../modules/bajas/routes/index.js'
+import traspasosInternosRoutes from '../modules/traspasosInternos/routes/index.js'
 
 const modulesRoutes = [
   ...afilmedRoutes,
@@ -19,7 +20,8 @@ const modulesRoutes = [
   ...premedicRoutes,
   ...recoveryRoutes,
   ...transferenciasRoutes,
-  ...bajasRoutes
+  ...bajasRoutes,
+  ...traspasosInternosRoutes
 
 ]
 

@@ -45,6 +45,7 @@ import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRout
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js"
 import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js"
 import { BonusFastifyRoutes } from "../modules/bajas/routes/BonusRoutes.js"
+import { InternalTransferBonusFastifyRoutes } from "../modules/traspasosInternos/routes/InternalTransferBonusRoutes.js"
 
 function FastifyServerFactory(rootDir: string) {
     const server = new FastifyServer(rootDir);
@@ -103,6 +104,7 @@ function FastifyServerFactory(rootDir: string) {
     server.fastifyRegister(TransferAuditSessionFastifyRoutes)
     server.fastifyRegister(RecoveryFastifyRoutes)
     server.fastifyRegister(BonusFastifyRoutes)
+    server.fastifyRegister(InternalTransferBonusFastifyRoutes)
 
 
     return server

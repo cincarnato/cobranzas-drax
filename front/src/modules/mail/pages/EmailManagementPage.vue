@@ -16,6 +16,7 @@ import EmailManagementProvider from "@/modules/mail/providers/EmailManagementPro
 import OutboundEmailProvider from "@/modules/mail/providers/OutboundEmailProvider";
 import SessionEmailProvider from "@/modules/mail/providers/SessionEmailProvider";
 import type {SessionEmailState} from "@/modules/mail/interfaces/ISessionEmail";
+import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 import EmailSidebar from "@/modules/mail/components/mailbox/EmailSidebar.vue";
 import EmailToolbar from "@/modules/mail/components/mailbox/EmailToolbar.vue";
 import EmailList from "@/modules/mail/components/mailbox/EmailList.vue";
@@ -28,6 +29,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuth()
 const authStore = useAuthStore()
+const {optionNames} = useMailboxAiOptions()
 
 const mailboxes = ref<IMailbox[]>([])
 const mailboxId = ref<string | null>((route.query.mailbox as string) || null)
@@ -505,7 +507,7 @@ function keepCompatibleFilters() {
   const mailbox = selectedMailbox.value
   if (!mailbox) return
   const categories = new Set((mailbox.categories || []).map((item) => item.name))
-  const priorities = new Set(mailbox.priorities || [])
+  const priorities = new Set(optionNames(mailbox.priorities))
   const tags = new Set(mailbox.tags || [])
   const operators = new Set(mailboxOperatorIds(mailbox))
   filters.value = {
@@ -615,6 +617,7 @@ function notify(text: string, color = "info") {
           :error="listError"
           :density="density"
           :empty-text="emptyText"
+          :mailbox="selectedMailbox"
           @open="openEmail"
           @toggle-star="toggleStar"
           @retry="fetchList"

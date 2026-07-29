@@ -25,8 +25,17 @@ const MailboxSchema = new mongoose.Schema<IMailbox>({
             }],
             operators: [{type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: false, unique: false }],
             maxAssignableEmailsPerUser: {type: Number, required: false, index: false, unique: false, default: null },
-            sentiments: [{type: String, required: false}],
-            priorities: [{type: String, required: false}],
+            sentiments: [{
+                name: {type: String, required: true, index: false, unique: false},
+                emoji: {type: String, required: false, index: false, unique: false},
+                description: {type: String, required: false, index: false, unique: false}
+            }],
+            priorities: [{
+                name: {type: String, required: true, index: false, unique: false},
+                icon: {type: String, required: false, index: false, unique: false},
+                color: {type: String, required: false, index: false, unique: false},
+                description: {type: String, required: false, index: false, unique: false}
+            }],
             tags: [{type: String, required: false}],
             aiAnalysisEnabled: {type: Boolean, required: false, index: false, unique: false, default: true },
             isActive: {type: Boolean,   required: false, index: false, unique: false },

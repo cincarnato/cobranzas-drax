@@ -139,6 +139,7 @@ function aiLabel(status?: string) {
     case 'PROCESADO_CONFIABLE': return 'IA confiable'
     case 'PROCESADO_CON_DUDAS': return 'IA con dudas'
     case 'PROCESADO_INCOMPLETO': return 'IA incompleta'
+    case 'PROCESADO_SIN_IA': return 'Fallback sin IA'
     case 'ERROR_PROCESAMIENTO': return 'Error IA'
     default: return 'IA pendiente'
   }

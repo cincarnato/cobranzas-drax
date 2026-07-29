@@ -177,7 +177,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   {name: 'observations', type: 'longString', label: 'Observaciones', default: ''}
 ]},
 {name:'status',type:'enum',label:'status',default:'PENDIENTE_IA',enum:['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO']},
-{name:'aiStatus',type:'enum',label:'aiStatus',default:'PENDIENTE',enum:['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO']},
+{name:'aiStatus',type:'enum',label:'aiStatus',default:'PENDIENTE',enum:['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'PROCESADO_SIN_IA', 'ERROR_PROCESAMIENTO']},
 {name:'aiProcessedAt',type:'date',label:'aiProcessedAt',default:null},
 {name:'aiError',type:'string',label:'aiError',default:''},
 {name:'humanStatus',type:'enum',label:'humanStatus',default:'PENDIENTE',enum:['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO']},
@@ -200,7 +200,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'affiliates.documentNumber', type: 'string', label: 'DNI Afiliado', default: '', operator: 'like' },
       {name: 'operationNumber', type: 'string', label: 'Número Operacion', default: '', operator: 'eq' },
       {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
-      {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'ERROR_PROCESAMIENTO'] },
+      {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'PROCESADO_SIN_IA', 'ERROR_PROCESAMIENTO'] },
       {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },
     ]
   }

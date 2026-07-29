@@ -289,7 +289,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             return requestedNeedsHumanReview
         }
 
-        if (aiStatus === 'PROCESADO_CON_DUDAS' || aiStatus === 'PROCESADO_INCOMPLETO' || aiStatus === 'ERROR_PROCESAMIENTO') {
+        if (aiStatus === 'PROCESADO_CON_DUDAS' || aiStatus === 'PROCESADO_INCOMPLETO' || aiStatus === 'PROCESADO_SIN_IA' || aiStatus === 'ERROR_PROCESAMIENTO') {
             return true
         }
 

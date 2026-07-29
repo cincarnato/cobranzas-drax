@@ -18,6 +18,7 @@
     "test": "node --import tsx --test test/**/*.test* ",
     "recoveryAdmin": " node --env-file .env --loader ts-node/esm src/setup/scripts/RecoverAdminPassword.ts",
     "transferUpdateSchema": "node --env-file .env --loader ts-node/esm src/setup/scripts/TransferEmailUpdateSchema.ts",
+    "updateMailboxSentimentPrioritySchema": "node --env-file .env --loader ts-node/esm src/setup/scripts/UpdateMailboxSentimentPrioritySchema.ts",
     "initRootUserAndAdminRole": " node --env-file .env --loader ts-node/esm src/setup/scripts/CreateRootUserAndAdminRole.ts"
   },
   "author": "",

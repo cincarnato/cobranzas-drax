@@ -1422,8 +1422,8 @@ class InboundEmailMailboxProvider {
                 extraction.category,
                 (input.mailbox.categories || []).map((category) => category.name)
             ),
-            sentiment: this.sanitizeConfiguredOption(extraction.sentiment, input.mailbox.sentiments),
-            priority: this.sanitizeConfiguredOption(extraction.priority, input.mailbox.priorities),
+            sentiment: this.sanitizeConfiguredOption(extraction.sentiment, this.mailboxOptionNames(input.mailbox.sentiments)),
+            priority: this.sanitizeConfiguredOption(extraction.priority, this.mailboxOptionNames(input.mailbox.priorities)),
             summary: this.normalizeString(extraction.summary),
             tags,
             aiModel: this.resolveAiModelName(),
@@ -1452,6 +1452,8 @@ class InboundEmailMailboxProvider {
             name: entity.name,
             description: entity.description,
         }));
+        const mailboxSentiments = this.mailboxOptionsForAi(input.mailbox.sentiments);
+        const mailboxPriorities = this.mailboxOptionsForAi(input.mailbox.priorities);
 
         const response = await this.aiProvider.prompt({
             operationTitle: "Correo entrante",
@@ -1467,7 +1469,7 @@ class InboundEmailMailboxProvider {
                 "needsHumanReview debe ser true cuando haya ambiguedad relevante o falten datos clave para operar el correo.",
                 "source en extractedEntities debe ser uno de SUBJECT, BODY, ATTACHMENT o MANUAL.",
             ].join("\n"),
-            userInput: this.buildAiUserInput(input, mailboxCategories, mailboxEntities),
+            userInput: this.buildAiUserInput(input, mailboxCategories, mailboxSentiments, mailboxPriorities, mailboxEntities),
             zodSchema: inboundEmailAiSchema,
         });
 
@@ -1486,6 +1488,8 @@ class InboundEmailMailboxProvider {
             fromName?: string;
         },
         mailboxCategories: Array<{ name: string; description?: string }>,
+        mailboxSentiments: Array<{ name: string; description?: string }>,
+        mailboxPriorities: Array<{ name: string; description?: string }>,
         mailboxEntities: Array<{ name: string; description?: string }>
     ): string {
         const sections = [
@@ -1494,15 +1498,15 @@ class InboundEmailMailboxProvider {
                 `mailboxName: ${input.mailbox.name}`,
                 `mailboxEmail: ${input.mailbox.email}`,
                 `categories: ${this.formatOptionObjects(mailboxCategories)}`,
-                `sentiments: ${this.formatOptions(input.mailbox.sentiments)}`,
-                `priorities: ${this.formatOptions(input.mailbox.priorities)}`,
+                `sentiments: ${this.formatOptionObjects(mailboxSentiments)}`,
+                `priorities: ${this.formatOptionObjects(mailboxPriorities)}`,
                 `tags: ${this.formatOptions(input.mailbox.tags)}`,
                 `entities: ${this.formatOptionObjects(mailboxEntities)}`,
             ]),
             this.buildSection("OUTPUT RULES", [
                 "category: devolver exactamente un name de mailbox.categories o null; no incluir description.",
-                "sentiment: devolver exactamente una opcion de mailbox.sentiments o null.",
-                "priority: devolver exactamente una opcion de mailbox.priorities o null.",
+                "sentiment: devolver exactamente un name de mailbox.sentiments o null; usar description solo como contexto de decision.",
+                "priority: devolver exactamente un name de mailbox.priorities o null; usar description solo como contexto de decision.",
                 "tags: devolver un array; puede incluir tags existentes y tambien tags nuevos.",
                 "extractedEntities: usar labels de mailbox.entities cuando existan.",
             ]),
@@ -1678,6 +1682,19 @@ class InboundEmailMailboxProvider {
         return values
             .map((item) => item.description ? `name=${item.name}; description=${item.description}` : `name=${item.name}`)
             .join(" | ");
+    }
+
+    private mailboxOptionNames(values?: Array<string | { name: string }>): string[] {
+        return (values || [])
+            .map((item) => typeof item === "string" ? item : item.name)
+            .map((item) => this.normalizeString(item))
+            .filter(Boolean) as string[];
+    }
+
+    private mailboxOptionsForAi(values?: Array<string | { name: string; description?: string }>): Array<{ name: string; description?: string }> {
+        return (values || [])
+            .map((item) => typeof item === "string" ? {name: item} : {name: item.name, description: item.description})
+            .filter((item) => Boolean(this.normalizeString(item.name)));
     }
 
     private buildSection(title: string, lines: Array<string | undefined>): string {

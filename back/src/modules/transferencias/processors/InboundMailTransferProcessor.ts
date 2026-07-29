@@ -20,6 +20,7 @@ import type {
 import type {IPayer, IPayerLookupCriteria, PayerStrategy} from "../interfaces/IPayer.js";
 import TransferEmailService from "../services/TransferEmailService.js";
 import PayerService from "../services/PayerService.js";
+import {extractTransferEmailFallback} from "./TransferEmailFallbackExtractor.js";
 import {z} from "zod";
 
 type ProcessTransfersResult = {
@@ -121,6 +122,10 @@ const transferEmailAiSchema = z.object({
 });
 
 type TransferEmailAiResult = z.infer<typeof transferEmailAiSchema>;
+type TransferEmailExtractionResult = TransferEmailAiResult & {
+    extractionSource?: "AI" | "FALLBACK";
+    aiError?: string;
+};
 
 const DEFAULT_AI_PROVIDER = "OllamaAi";
 
@@ -573,13 +578,15 @@ class InboundMailTransferProcessor {
     }
 
     private async buildTransferEmailPayloadsResult(inboundEmail: IInboundEmail): Promise<BuildTransferEmailPayloadsResult> {
-        const extractionResult = await this.extractTransferDataWithAi(inboundEmail);
+        const extractionResult = await this.extractTransferData(inboundEmail);
 
         if (!extractionResult.isTransferProof) {
             return {
                 payloads: [],
-                reason: "not-transfer-proof",
-                message: "La IA analizó el mail y no encontró evidencia de un comprobante o aviso de transferencia bancaria.",
+                reason: extractionResult.extractionSource === "FALLBACK" ? "fallback-not-transfer-proof" : "not-transfer-proof",
+                message: extractionResult.extractionSource === "FALLBACK"
+                    ? "La IA no respondió y el fallback no encontró evidencia suficiente de un comprobante o aviso de transferencia bancaria."
+                    : "La IA analizó el mail y no encontró evidencia de un comprobante o aviso de transferencia bancaria.",
                 details: this.normalizeString(extractionResult.reasoning),
             };
         }
@@ -588,7 +595,9 @@ class InboundMailTransferProcessor {
             return {
                 payloads: [],
                 reason: "no-transfer-items",
-                message: "La IA detectó que el mail podría estar relacionado con transferencias, pero no pudo extraer ningún comprobante procesable.",
+                message: extractionResult.extractionSource === "FALLBACK"
+                    ? "La IA no respondió y el fallback detectó señales de transferencia, pero no pudo extraer ningún comprobante procesable."
+                    : "La IA detectó que el mail podría estar relacionado con transferencias, pero no pudo extraer ningún comprobante procesable.",
                 details: this.normalizeString(extractionResult.reasoning),
             };
         }
@@ -633,12 +642,14 @@ class InboundMailTransferProcessor {
                 affiliates: extractedAffiliates,
                 amount,
             });
-            const aiStatus = this.resolveAiStatus({
-                amount,
-                transferDate,
-                affiliates: affiliateResolution.affiliates,
-                needsHumanReview: Boolean(extraction.needsHumanReview),
-            });
+            const aiStatus = extractionResult.extractionSource === "FALLBACK"
+                ? "PROCESADO_SIN_IA"
+                : this.resolveAiStatus({
+                    amount,
+                    transferDate,
+                    affiliates: affiliateResolution.affiliates,
+                    needsHumanReview: Boolean(extraction.needsHumanReview),
+                });
             const aiProcessedAt = processDate;
 
             const payload: ITransferEmailBase = {
@@ -669,7 +680,7 @@ class InboundMailTransferProcessor {
                 affiliates: affiliateResolution.affiliates,
                 aiStatus,
                 aiProcessedAt,
-                aiError: undefined,
+                aiError: extractionResult.aiError,
                 humanStatus: "PENDIENTE",
                 status: "PENDIENTE_AUDITORIA",
                 needsHumanReview: this.resolveNeedsHumanReviewFromAiStatus(aiStatus),
@@ -968,6 +979,7 @@ class InboundMailTransferProcessor {
     private resolveNeedsHumanReviewFromAiStatus(aiStatus: TransferEmailAiStatus): boolean {
         return aiStatus === "PROCESADO_CON_DUDAS"
             || aiStatus === "PROCESADO_INCOMPLETO"
+            || aiStatus === "PROCESADO_SIN_IA"
             || aiStatus === "ERROR_PROCESAMIENTO";
     }
 
@@ -990,6 +1002,17 @@ class InboundMailTransferProcessor {
             this.logError("Error updating transfer email AI error state", updateError, {
                 transferEmailId: transferEmail._id,
             });
+        }
+    }
+
+    private async extractTransferData(inboundEmail: IInboundEmail): Promise<TransferEmailExtractionResult> {
+        try {
+            return {
+                ...await this.extractTransferDataWithAi(inboundEmail),
+                extractionSource: "AI",
+            };
+        } catch (error) {
+            return extractTransferEmailFallback(inboundEmail, this.serializeErrorMessage(error));
         }
     }
 

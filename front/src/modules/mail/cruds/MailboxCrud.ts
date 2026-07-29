@@ -184,8 +184,39 @@ class MailboxCrud extends EntityCrud implements IEntityCrud {
           {name: 'description', type: 'string', label: 'description', default: ''}
         ]
       },
-      {name: 'sentiments', type: 'array.string', label: 'sentiments', default: ['POSITIVO','NEGATIVO','NEUTRAL'], groupTab: 'Analisis IA'},
-      {name: 'priorities', type: 'array.string', label: 'priorities', default: ['BAJA', 'MEDIA','ALTA'], groupTab: 'Analisis IA'},
+      {
+        name: 'sentiments',
+        type: 'array.object',
+        label: 'sentiments',
+        default: [
+          {name: 'POSITIVO', emoji: '🙂', description: 'El correo expresa conformidad, agradecimiento o una experiencia favorable.'},
+          {name: 'NEGATIVO', emoji: '🙁', description: 'El correo expresa disconformidad, reclamo, enojo o frustración.'},
+          {name: 'NEUTRAL', emoji: '😐', description: 'El correo es informativo o no expresa una valoración emocional clara.'}
+        ],
+        groupTab: 'Analisis IA',
+        objectFields: [
+          {name: 'name', type: 'string', label: 'name', default: ''},
+          {name: 'emoji', type: 'string', label: 'emoji', default: ''},
+          {name: 'description', type: 'string', label: 'description', default: ''}
+        ]
+      },
+      {
+        name: 'priorities',
+        type: 'array.object',
+        label: 'priorities',
+        default: [
+          {name: 'BAJA', icon: 'mdi-chevron-down', color: 'success', description: 'No requiere respuesta inmediata y puede resolverse en flujo normal.'},
+          {name: 'MEDIA', icon: 'mdi-minus', color: 'warning', description: 'Requiere seguimiento en tiempos habituales de gestión.'},
+          {name: 'ALTA', icon: 'mdi-chevron-up', color: 'error', description: 'Requiere atención rápida por urgencia, reclamo crítico o posible impacto operativo.'}
+        ],
+        groupTab: 'Analisis IA',
+        objectFields: [
+          {name: 'name', type: 'string', label: 'name', default: ''},
+          {name: 'icon', type: 'string', label: 'icon', default: ''},
+          {name: 'color', type: 'string', label: 'color', default: ''},
+          {name: 'description', type: 'string', label: 'description', default: ''}
+        ]
+      },
       {name: 'tags', type: 'array.string', label: 'tags', default: [], groupTab: 'Analisis IA'},
       {name: 'isActive', type: 'boolean', label: 'isActive', default: true, groupTab: 'General'},
       {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailDensity, EmailManagementListItem} from "@/modules/mail/interfaces/IEmailManagement";
 import EmailListItem from "./EmailListItem.vue";
 
@@ -9,6 +10,7 @@ defineProps<{
   error?: string
   density: EmailDensity
   emptyText: string
+  mailbox: IMailbox | null
 }>()
 
 defineEmits<{
@@ -41,6 +43,7 @@ defineEmits<{
         :email="email"
         :density="density"
         :selected="selectedId === email._id"
+        :mailbox="mailbox"
         @open="$emit('open', $event)"
         @toggle-star="$emit('toggle-star', $event)"
       />

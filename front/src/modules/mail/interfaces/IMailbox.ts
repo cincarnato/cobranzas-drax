@@ -1,4 +1,17 @@
 
+interface IMailboxSentimentOption {
+    name: string
+    emoji?: string
+    description?: string
+}
+
+interface IMailboxPriorityOption {
+    name: string
+    icon?: string
+    color?: string
+    description?: string
+}
+
 interface IMailboxBase {
     name: string
     email: string
@@ -19,8 +32,8 @@ interface IMailboxBase {
     }>
     operators?: Array<string | any>
     maxAssignableEmailsPerUser?: number | null
-    sentiments?: Array<string>
-    priorities?: Array<string>
+    sentiments?: Array<IMailboxSentimentOption | string>
+    priorities?: Array<IMailboxPriorityOption | string>
     tags?: Array<string>
     aiAnalysisEnabled?: boolean
     isActive?: boolean
@@ -69,8 +82,8 @@ interface IMailbox {
     }>
     operators?: Array<string | any>
     maxAssignableEmailsPerUser?: number | null
-    sentiments?: Array<string>
-    priorities?: Array<string>
+    sentiments?: Array<IMailboxSentimentOption | string>
+    priorities?: Array<IMailboxPriorityOption | string>
     tags?: Array<string>
     aiAnalysisEnabled?: boolean
     isActive?: boolean
@@ -99,6 +112,8 @@ interface IMailbox {
 }
 
 export type {
-IMailboxBase, 
-IMailbox
+IMailboxBase,
+IMailbox,
+IMailboxSentimentOption,
+IMailboxPriorityOption
 }

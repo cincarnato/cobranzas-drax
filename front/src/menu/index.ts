@@ -115,6 +115,36 @@ const menu: MenuItem[] = [
     ],
   },
   {
+    icon: 'mdi-account-switch-outline',
+    text: 'Traspasos Internos',
+    description: 'Carga, seguimiento y exportacion de bonificaciones por traspasos internos',
+    gallery: true,
+    children: [
+
+      {
+        icon: 'mdi-ticket-percent-outline',
+        text: 'internaltransferbonus.menu',
+        link: { name: "InternalTransferBonusCrudPage" },
+        gallery: true,
+        permission: 'internaltransferbonus:view'
+      },
+      {
+        icon: 'mdi-view-dashboard-variant-outline',
+        text: 'Dashboard Bonificaciones TPI',
+        link: { name: "InternalTransferBonusDashboardPage" },
+        gallery: true,
+        permission: 'internaltransferbonus:view'
+      },
+      {
+        icon: 'mdi-file-excel-outline',
+        text: 'internaltransferbonus.exportMenu',
+        link: { name: "InternalTransferBonusExportPage" },
+        gallery: true,
+        permission: 'internaltransferbonus:export'
+      },
+    ],
+  },
+  {
     icon: 'mdi-bank-transfer',
     text: 'Transferencias',
     description: 'Conciliación, revisión de comprobantes y validación de cobros transferidos',

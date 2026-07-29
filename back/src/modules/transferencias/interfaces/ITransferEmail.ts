@@ -14,7 +14,7 @@ interface ITransferEmailAdditionalAffiliate {
 }
 
 type TransferEmailAffiliateStrategy = 'EMAIL_FROM' | 'DNI_CUIL' | 'CBU_CVU' | 'NRO_CUENTA' | 'EMAIL_DATA'
-type TransferEmailAiStatus = 'PENDIENTE' | 'PROCESADO_CONFIABLE' | 'PROCESADO_CON_DUDAS' | 'PROCESADO_INCOMPLETO' | 'ERROR_PROCESAMIENTO'
+type TransferEmailAiStatus = 'PENDIENTE' | 'PROCESADO_CONFIABLE' | 'PROCESADO_CON_DUDAS' | 'PROCESADO_INCOMPLETO' | 'PROCESADO_SIN_IA' | 'ERROR_PROCESAMIENTO'
 type TransferEmailHumanStatus = 'PENDIENTE' | 'VALIDADO' | 'CORREGIDO' | 'DESCARTADO'
 type TransferEmailStatus = 'PENDIENTE_IA' | 'PENDIENTE_AUDITORIA' | 'AUDITADO'
 
