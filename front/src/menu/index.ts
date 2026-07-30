@@ -208,6 +208,13 @@ const menu: MenuItem[] = [
     gallery: true,
     children: [
       {
+        icon: 'mdi-email-outline',
+        text: 'mail.module.menu',
+        link: { name: "MailModulePage" },
+        gallery: true,
+        permission: 'inboundemail:view'
+      },
+      {
         icon: 'mdi-inbox-multiple-outline',
         text: 'Gestión de correos',
         link: { name: "EmailManagementPage" },

@@ -8,8 +8,12 @@ import InboundEmailDashboardRoute from "./InboundEmailDashboardRoute"
 import OutboundEmailCrudRoute from "./OutboundEmailCrudRoute"
 import EmailManagementRoute from "./EmailManagementRoute"
 import EmailSupervisionRoute from "./EmailSupervisionRoute"
+import MailModuleRoute from "./MailModuleRoute"
+import MailModuleGuideRoute from "./MailModuleGuideRoute"
 
 export const routes = [
+    ...MailModuleRoute,
+    ...MailModuleGuideRoute,
     ...EmailManagementRoute,
     ...EmailSupervisionRoute,
     ...InboundEmailCrudRoute,
