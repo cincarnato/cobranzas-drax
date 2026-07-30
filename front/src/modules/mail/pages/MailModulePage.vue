@@ -46,6 +46,14 @@ const cards: MailModuleCard[] = [
     permission: "mailbox:manage",
   },
   {
+    titleKey: "mail.module.cards.dashboard.title",
+    descriptionKey: "mail.module.cards.dashboard.description",
+    icon: "mdi-view-dashboard-variant-outline",
+    color: "purple",
+    routeName: "InboundEmailDashboardPage",
+    permission: "inboundemail:view",
+  },
+  {
     titleKey: "mail.module.cards.inbound.title",
     descriptionKey: "mail.module.cards.inbound.description",
     icon: "mdi-email-arrow-left-outline",
@@ -61,14 +69,7 @@ const cards: MailModuleCard[] = [
     routeName: "OutboundEmailCrudPage",
     permission: "outboundemail:manage",
   },
-  {
-    titleKey: "mail.module.cards.dashboard.title",
-    descriptionKey: "mail.module.cards.dashboard.description",
-    icon: "mdi-view-dashboard-variant-outline",
-    color: "purple",
-    routeName: "InboundEmailDashboardPage",
-    permission: "inboundemail:view",
-  },
+
   {
     titleKey: "mail.module.cards.sync.title",
     descriptionKey: "mail.module.cards.sync.description",

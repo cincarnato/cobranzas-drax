@@ -227,12 +227,12 @@ const messages = {
       module: {
         menu: "Presentacion del modulo",
         eyebrow: "GESTIÓN DE CORREOS",
-        title: "Gestión de casillas compartidas",
-        intro: "Centraliza las casillas corporativas y gestiona cada correo desde un solo lugar: asígnalo, respóndelo, clasifícalo y ciérralo con total trazabilidad.",
+        title: "Gestión de Correo Corporativo",
+        intro: "Centraliza el correo corporativo y gestiona cada correo desde un solo lugar: asígnalo, respóndelo, clasifícalo y ciérralo con total trazabilidad.",
         problem: "Organiza el trabajo de equipos que administran cuentas con alto volumen de correos, evita respuestas duplicadas y ofrece visibilidad sobre los casos pendientes, asignados y finalizados.",
         benefitsTitle: "¿Qué problemas ayuda a resolver?",
         benefits: {
-          sharedInbox: "Trabajo ordenado en casillas corporativas compartidas.",
+          sharedInbox: "Trabajo ordenado en correo corporativo compartido.",
           traceability: "Trazabilidad de quién tomó, respondió y cerró cada correo.",
           metrics: "Métricas sobre carga de trabajo, actividad y resultados.",
           ai: "Asistencia de inteligencia artificial para resumir, priorizar, clasificar y detectar datos relevantes.",
@@ -252,8 +252,8 @@ const messages = {
             description: "Monitorea en tiempo real la actividad de los operadores, la carga de trabajo y los casos pendientes o en curso.",
           },
           mailboxes: {
-            title: "Configuración de casillas",
-            description: "Administra las casillas corporativas, su conexión al servidor, los operadores, las categorías, las reglas de cierre y el análisis con inteligencia artificial.",
+            title: "Configuración de correo",
+            description: "Administra el correo corporativo, su conexión al servidor, los operadores, las categorías, las reglas de cierre y el análisis con inteligencia artificial.",
           },
           inbound: {
             title: "Correos entrantes",
@@ -269,7 +269,7 @@ const messages = {
           },
           sync: {
             title: "Sincronizar correos",
-            description: "Procesa manualmente las casillas habilitadas e incorpora nuevos correos entrantes a la plataforma.",
+            description: "Procesa manualmente el correo habilitado e incorpora nuevos correos entrantes a la plataforma.",
           },
           guide: {
             title: "Guía de uso",
