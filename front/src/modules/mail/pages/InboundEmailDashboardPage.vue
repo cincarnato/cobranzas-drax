@@ -5,14 +5,20 @@ import {VDateInput} from "vuetify/labs/VDateInput";
 import {useTheme} from "vuetify";
 import InboundEmailProvider from "../providers/InboundEmailProvider";
 
-type InboundDimension = "total" | "category" | "sentiment" | "isDuplicate" | "hasAttachments"
-type Accent = "total" | "category" | "sentiment" | "duplicate" | "attachments"
+type InboundDimension = "total" | "category" | "assignedTo" | "closedBy" | "sentiment" | "priority" | "isDuplicate" | "hasAttachments"
+type Accent = "total" | "category" | "replied" | "closed" | "sentiment" | "priority" | "duplicate" | "attachments"
 type DateGroupFormat = "day" | "month" | "year"
+type DateGroupField = "receivedAt" | "lastRepliedAt" | "closedAt"
 
 type InboundGroupByRow = {
   receivedAt?: unknown
+  lastRepliedAt?: unknown
+  closedAt?: unknown
   category?: unknown
+  assignedTo?: unknown
+  closedBy?: unknown
   sentiment?: unknown
+  priority?: unknown
   isDuplicate?: unknown
   hasAttachments?: unknown
   count?: number
@@ -29,6 +35,7 @@ type CardConfig = {
   title: string
   label: string
   dimension: InboundDimension
+  dateField: DateGroupField
   icon: string
   accent: Accent
   rows: SummaryRow[]
@@ -43,7 +50,10 @@ const toDate = ref<Date | null>(today);
 const dateGroupFormat = ref<DateGroupFormat>("day");
 const totalRows = ref<SummaryRow[]>([]);
 const categoryRows = ref<SummaryRow[]>([]);
+const repliedByUserRows = ref<SummaryRow[]>([]);
+const closedByUserRows = ref<SummaryRow[]>([]);
 const sentimentRows = ref<SummaryRow[]>([]);
+const priorityRows = ref<SummaryRow[]>([]);
 const duplicateRows = ref<SummaryRow[]>([]);
 const attachmentsRows = ref<SummaryRow[]>([]);
 const loading = ref(false);
@@ -79,6 +89,7 @@ const cards = computed<CardConfig[]>(() => [
     title: `Total de correos por ${dateGroupLabel.value}`,
     label: "Total",
     dimension: "total",
+    dateField: "receivedAt",
     icon: "mdi-email-multiple-outline",
     accent: "total",
     rows: totalRows.value,
@@ -87,22 +98,52 @@ const cards = computed<CardConfig[]>(() => [
     title: `Correos por ${dateGroupLabel.value} y categoría`,
     label: "Categoría",
     dimension: "category",
+    dateField: "receivedAt",
     icon: "mdi-shape-outline",
     accent: "category",
     rows: categoryRows.value,
   },
   {
+    title: `Correos respondidos por ${dateGroupLabel.value} y usuario`,
+    label: "Usuario",
+    dimension: "assignedTo",
+    dateField: "lastRepliedAt",
+    icon: "mdi-reply-check-outline",
+    accent: "replied",
+    rows: repliedByUserRows.value,
+  },
+  {
+    title: `Correos cerrados por ${dateGroupLabel.value} y usuario`,
+    label: "Usuario",
+    dimension: "closedBy",
+    dateField: "closedAt",
+    icon: "mdi-email-check-outline",
+    accent: "closed",
+    rows: closedByUserRows.value,
+  },
+  {
     title: `Correos por ${dateGroupLabel.value} y sentimiento`,
     label: "Sentimiento",
     dimension: "sentiment",
+    dateField: "receivedAt",
     icon: "mdi-emoticon-outline",
     accent: "sentiment",
     rows: sentimentRows.value,
   },
   {
+    title: `Correos por ${dateGroupLabel.value} y prioridad`,
+    label: "Prioridad",
+    dimension: "priority",
+    dateField: "receivedAt",
+    icon: "mdi-flag-outline",
+    accent: "priority",
+    rows: priorityRows.value,
+  },
+  {
     title: `Correos duplicados por ${dateGroupLabel.value}`,
     label: "Duplicado",
     dimension: "isDuplicate",
+    dateField: "receivedAt",
     icon: "mdi-content-duplicate",
     accent: "duplicate",
     rows: duplicateRows.value,
@@ -111,6 +152,7 @@ const cards = computed<CardConfig[]>(() => [
     title: `Correos con adjuntos por ${dateGroupLabel.value}`,
     label: "Adjuntos",
     dimension: "hasAttachments",
+    dateField: "receivedAt",
     icon: "mdi-paperclip",
     accent: "attachments",
     rows: attachmentsRows.value,
@@ -129,15 +171,15 @@ function getEndOfDay(value: Date): Date {
   return date;
 }
 
-function buildFilters(): IDraxFieldFilter[] {
+function buildDateFilters(dateField: DateGroupField): IDraxFieldFilter[] {
   const filters: IDraxFieldFilter[] = [];
 
   if (fromDate.value) {
-    filters.push({field: "receivedAt", operator: "gte", value: getStartOfDay(fromDate.value)});
+    filters.push({field: dateField, operator: "gte", value: getStartOfDay(fromDate.value)});
   }
 
   if (toDate.value) {
-    filters.push({field: "receivedAt", operator: "lte", value: getEndOfDay(toDate.value)});
+    filters.push({field: dateField, operator: "lte", value: getEndOfDay(toDate.value)});
   }
 
   return filters;
@@ -196,16 +238,16 @@ function getDateGroupSortTime(value: unknown): number {
   return Number.isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime();
 }
 
-function toSummaryRows(rows: InboundGroupByRow[], dimension: InboundDimension): SummaryRow[] {
+function toSummaryRows(rows: InboundGroupByRow[], dimension: InboundDimension, dateField: DateGroupField): SummaryRow[] {
   const totalCount = rows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
 
   return [...rows]
-    .sort((a, b) => getDateGroupSortTime(a.receivedAt) - getDateGroupSortTime(b.receivedAt))
+    .sort((a, b) => getDateGroupSortTime(a[dateField]) - getDateGroupSortTime(b[dateField]))
     .map(row => {
       const count = Number(row.count ?? 0);
 
       return {
-        day: formatDateGroup(row.receivedAt),
+        day: formatDateGroup(row[dateField]),
         label: dimension === "total" ? "Total" : getDisplayValue(row[dimension]),
         count,
         percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
@@ -224,7 +266,10 @@ function getRowKey(row: SummaryRow): string {
 function clearDashboardRows() {
   totalRows.value = [];
   categoryRows.value = [];
+  repliedByUserRows.value = [];
+  closedByUserRows.value = [];
   sentimentRows.value = [];
+  priorityRows.value = [];
   duplicateRows.value = [];
   attachmentsRows.value = [];
 }
@@ -235,23 +280,43 @@ async function fetchDashboardData() {
   error.value = "";
 
   try {
-    const filters = buildFilters();
+    const receivedAtFilters = buildDateFilters("receivedAt");
+    const repliedAtFilters: IDraxFieldFilter[] = [
+      ...buildDateFilters("lastRepliedAt"),
+      {field: "replyCount", operator: "gt", value: 0},
+    ];
+    const closedAtFilters = buildDateFilters("closedAt");
     const dateFormat = dateGroupFormat.value;
-    const [totalData, categoryData, sentimentData, duplicateData, attachmentsData] = await Promise.all([
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt"], filters, dateFormat}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "category"], filters, dateFormat}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "sentiment"], filters, dateFormat}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "isDuplicate"], filters, dateFormat}),
-      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "hasAttachments"], filters, dateFormat}),
+    const [
+      totalData,
+      categoryData,
+      repliedByUserData,
+      closedByUserData,
+      sentimentData,
+      priorityData,
+      duplicateData,
+      attachmentsData,
+    ] = await Promise.all([
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt"], filters: receivedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "category"], filters: receivedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["lastRepliedAt", "assignedTo"], filters: repliedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["closedAt", "closedBy"], filters: closedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "sentiment"], filters: receivedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "priority"], filters: receivedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "isDuplicate"], filters: receivedAtFilters, dateFormat}),
+      InboundEmailProvider.instance.groupBy({fields: ["receivedAt", "hasAttachments"], filters: receivedAtFilters, dateFormat}),
     ]);
 
     if (currentRequestId !== requestId) return;
 
-    totalRows.value = toSummaryRows(totalData as InboundGroupByRow[], "total");
-    categoryRows.value = toSummaryRows(categoryData as InboundGroupByRow[], "category");
-    sentimentRows.value = toSummaryRows(sentimentData as InboundGroupByRow[], "sentiment");
-    duplicateRows.value = toSummaryRows(duplicateData as InboundGroupByRow[], "isDuplicate");
-    attachmentsRows.value = toSummaryRows(attachmentsData as InboundGroupByRow[], "hasAttachments");
+    totalRows.value = toSummaryRows(totalData as InboundGroupByRow[], "total", "receivedAt");
+    categoryRows.value = toSummaryRows(categoryData as InboundGroupByRow[], "category", "receivedAt");
+    repliedByUserRows.value = toSummaryRows(repliedByUserData as InboundGroupByRow[], "assignedTo", "lastRepliedAt");
+    closedByUserRows.value = toSummaryRows(closedByUserData as InboundGroupByRow[], "closedBy", "closedAt");
+    sentimentRows.value = toSummaryRows(sentimentData as InboundGroupByRow[], "sentiment", "receivedAt");
+    priorityRows.value = toSummaryRows(priorityData as InboundGroupByRow[], "priority", "receivedAt");
+    duplicateRows.value = toSummaryRows(duplicateData as InboundGroupByRow[], "isDuplicate", "receivedAt");
+    attachmentsRows.value = toSummaryRows(attachmentsData as InboundGroupByRow[], "hasAttachments", "receivedAt");
   } catch (fetchError) {
     if (currentRequestId !== requestId) return;
 
@@ -505,10 +570,28 @@ watch([fromDate, toDate, dateGroupFormat], () => {
   --dashboard-accent-text: #00695c;
 }
 
+.email-dashboard__card--replied {
+  --dashboard-accent: #2e7d32;
+  --dashboard-accent-soft: #e8f5e9;
+  --dashboard-accent-text: #1b5e20;
+}
+
+.email-dashboard__card--closed {
+  --dashboard-accent: #5e35b1;
+  --dashboard-accent-soft: #ede7f6;
+  --dashboard-accent-text: #4527a0;
+}
+
 .email-dashboard__card--sentiment {
   --dashboard-accent: #1976d2;
   --dashboard-accent-soft: #e3f2fd;
   --dashboard-accent-text: #0d47a1;
+}
+
+.email-dashboard__card--priority {
+  --dashboard-accent: #c62828;
+  --dashboard-accent-soft: #ffebee;
+  --dashboard-accent-text: #b71c1c;
 }
 
 .email-dashboard__card--duplicate {
