@@ -19,6 +19,7 @@ import { CovenantPermissions } from "../modules/collections/permissions/Covenant
 import { GroupZonePermissions } from "../modules/collections/permissions/GroupZonePermissions.js";
 import { InboundEmailPermissions } from "../modules/mail/permissions/InboundEmailPermissions.js";
 import { MailboxPermissions } from "../modules/mail/permissions/MailboxPermissions.js";
+import { MailboxUserSettingPermissions } from "../modules/mail/permissions/MailboxUserSettingPermissions.js";
 import { OutboundEmailPermissions } from "../modules/mail/permissions/OutboundEmailPermissions.js";
 import { SessionEmailPermissions } from "../modules/mail/permissions/SessionEmailPermissions.js";
 import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
@@ -60,6 +61,7 @@ function InitializePermissions() {
         ...Object.values(GroupZonePermissions),
         ...Object.values(InboundEmailPermissions),
         ...Object.values(MailboxPermissions),
+        ...Object.values(MailboxUserSettingPermissions),
         ...Object.values(OutboundEmailPermissions),
         ...Object.values(SessionEmailPermissions),
         ...Object.values(AffiliatePermissions),
