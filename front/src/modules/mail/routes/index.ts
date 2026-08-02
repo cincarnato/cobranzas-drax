@@ -4,6 +4,7 @@ import OCRTestRoute from "./OCRTestRoute"
 import InboundEmailSyncRoute from "./InboundEmailSyncRoute"
 import InboundEmailViewRoute from "./InboundEmailViewRoute"
 import MailboxCrudRoute from "./MailboxCrudRoute"
+import MailboxUserSettingCrudRoute from "./MailboxUserSettingCrudRoute"
 import InboundEmailDashboardRoute from "./InboundEmailDashboardRoute"
 import OutboundEmailCrudRoute from "./OutboundEmailCrudRoute"
 import EmailManagementRoute from "./EmailManagementRoute"
@@ -21,6 +22,7 @@ export const routes = [
     ...InboundEmailSyncRoute,
     ...InboundEmailViewRoute,
     ...MailboxCrudRoute,
+    ...MailboxUserSettingCrudRoute,
     ...InboundEmailDashboardRoute,
     ...OutboundEmailCrudRoute
 ]

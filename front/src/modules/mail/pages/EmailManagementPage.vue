@@ -4,6 +4,7 @@ import {useRoute, useRouter} from "vue-router";
 import {useAuth, useAuthStore} from "@drax/identity-vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {IOutboundEmail} from "@/modules/mail/interfaces/IOutboundEmail";
+import type {IMailboxUserSetting} from "@/modules/mail/interfaces/IMailboxUserSetting";
 import type {
   EmailDensity,
   EmailManagementDetail,
@@ -14,6 +15,7 @@ import type {
 import MailboxProvider from "@/modules/mail/providers/MailboxProvider";
 import EmailManagementProvider from "@/modules/mail/providers/EmailManagementProvider";
 import OutboundEmailProvider from "@/modules/mail/providers/OutboundEmailProvider";
+import MailboxUserSettingProvider from "@/modules/mail/providers/MailboxUserSettingProvider";
 import SessionEmailProvider from "@/modules/mail/providers/SessionEmailProvider";
 import type {SessionEmailState} from "@/modules/mail/interfaces/ISessionEmail";
 import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
@@ -24,6 +26,7 @@ import OutboundEmailList from "@/modules/mail/components/mailbox/OutboundEmailLi
 import OutboundEmailDetail from "@/modules/mail/components/mailbox/OutboundEmailDetail.vue";
 import EmailDetail from "@/modules/mail/components/mailbox/EmailDetail.vue";
 import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
+import MailboxUserSettingsDialog from "@/modules/mail/components/mailbox/MailboxUserSettingsDialog.vue";
 
 const route = useRoute()
 const router = useRouter()
@@ -67,6 +70,10 @@ const sessionEmailState = ref<SessionEmailState | null>(null)
 const sessionEmailLoading = ref(false)
 const closeSessionEmailDialog = ref(false)
 const composeOpen = ref(false)
+const mailboxSettingsDialog = ref(false)
+const mailboxUserSettings = ref<IMailboxUserSetting | null>(null)
+const mailboxUserSettingsLoading = ref(false)
+const mailboxUserSettingsSaving = ref(false)
 const listError = ref("")
 const detailError = ref("")
 const snackbar = ref({show: false, text: "", color: "info"})
@@ -131,6 +138,8 @@ watch(mailboxId, () => {
   closeCompose()
   keepCompatibleFilters()
   void fetchSessionEmail()
+  void fetchMailboxUserSettings()
+  mailboxSettingsDialog.value = false
   void fetchCounts()
 })
 
@@ -140,6 +149,7 @@ onMounted(async () => {
     await openInboundEmailFromRoute(routeInboundEmailId.value)
   }
   if (!routeInboundEmailId.value && !mailboxId.value && mailboxes.value[0]) mailboxId.value = mailboxes.value[0]._id
+  await fetchMailboxUserSettings()
   await fetchSessionEmail()
   await fetchList()
   await fetchCounts()
@@ -169,6 +179,19 @@ async function fetchSessionEmail() {
     sessionEmailState.value = await SessionEmailProvider.instance.current(mailboxId.value)
   } catch {
     sessionEmailState.value = null
+  }
+}
+
+async function fetchMailboxUserSettings(showError = false) {
+  if (!mailboxId.value) {
+    mailboxUserSettings.value = null
+    return
+  }
+  try {
+    mailboxUserSettings.value = await MailboxUserSettingProvider.instance.current(mailboxId.value)
+  } catch {
+    mailboxUserSettings.value = null
+    if (showError) notify("No se pudo cargar la configuración del mailbox.", "error")
   }
 }
 
@@ -493,6 +516,37 @@ function closeCompose() {
   composeOpen.value = false
 }
 
+async function openMailboxSettings() {
+  if (!mailboxId.value || !selectedMailbox.value) {
+    notify("Seleccioná un mailbox para configurar.", "warning")
+    return
+  }
+  mailboxSettingsDialog.value = true
+  mailboxUserSettingsLoading.value = true
+  try {
+    await fetchMailboxUserSettings(true)
+  } catch {
+    mailboxUserSettings.value = null
+    notify("No se pudo cargar la configuración del mailbox.", "error")
+  } finally {
+    mailboxUserSettingsLoading.value = false
+  }
+}
+
+async function saveMailboxSettings(payload: {signatureHtml: string; signatureText: string}) {
+  if (!mailboxId.value) return
+  mailboxUserSettingsSaving.value = true
+  try {
+    mailboxUserSettings.value = await MailboxUserSettingProvider.instance.saveCurrent(mailboxId.value, payload)
+    mailboxSettingsDialog.value = false
+    notify("Configuración guardada.", "success")
+  } catch {
+    notify("No se pudo guardar la configuración.", "error")
+  } finally {
+    mailboxUserSettingsSaving.value = false
+  }
+}
+
 async function onStandaloneEmailSent() {
   closeCompose()
   closeDetail()
@@ -574,6 +628,7 @@ function notify(text: string, color = "info") {
           @update:view="selectSidebarView"
           @update:category="selectSidebarCategory"
           @compose="openCompose"
+          @configure="openMailboxSettings"
           @session-email:start="startSessionEmail"
           @session-email:pause="pauseSessionEmail"
           @session-email:resume="resumeSessionEmail"
@@ -631,6 +686,8 @@ function notify(text: string, color = "info") {
             :permissions="detailPermissions"
             :action-loading="actionLoading"
             :saving="saving"
+            :signature-html="mailboxUserSettings?.signatureHtml || ''"
+            :signature-text="mailboxUserSettings?.signatureText || ''"
             @back="closeDetail"
             @retry="fetchDetail()"
             @assign="assignToMe"
@@ -653,6 +710,8 @@ function notify(text: string, color = "info") {
               mode="new"
               :inbound-email="null"
               :mailbox="selectedMailbox"
+              :signature-html="mailboxUserSettings?.signatureHtml || ''"
+              :signature-text="mailboxUserSettings?.signatureText || ''"
               @cancel="closeCompose"
               @sent="onStandaloneEmailSent"
             />
@@ -674,6 +733,14 @@ function notify(text: string, color = "info") {
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <MailboxUserSettingsDialog
+      v-model="mailboxSettingsDialog"
+      :mailbox="selectedMailbox"
+      :settings="mailboxUserSettings"
+      :loading="mailboxUserSettingsLoading"
+      :saving="mailboxUserSettingsSaving"
+      @save="saveMailboxSettings"
+    />
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
       {{ snackbar.text }}
     </v-snackbar>

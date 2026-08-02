@@ -21,6 +21,8 @@ const props = defineProps<{
   permissions: EmailManagementPermissions
   actionLoading?: boolean
   saving?: boolean
+  signatureHtml?: string
+  signatureText?: string
 }>()
 
 const {t} = useI18n()
@@ -251,6 +253,8 @@ function isAbsoluteUrl(url: string) {
               ref="replyComposerRef"
               :inbound-email="email as IInboundEmail"
               :mailbox="detail.mailbox"
+              :signature-html="signatureHtml"
+              :signature-text="signatureText"
               class="mt-3"
               @sent="$emit('reply-sent', $event)"
             />

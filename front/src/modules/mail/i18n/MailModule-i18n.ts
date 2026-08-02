@@ -54,6 +54,13 @@ const messages = {
           },
         },
       },
+      settings: {
+        button: "Settings",
+        title: "Mailbox settings",
+        signature: "Signature",
+        close: "Close",
+        save: "Save",
+      },
       moduleGuide: {
         eyebrow: "User guide",
         title: "How to use the mail module",
@@ -276,6 +283,13 @@ const messages = {
             description: "Consulta los conceptos principales, el flujo recomendado y las buenas prácticas para utilizar la gestión de correos.",
           },
         },
+      },
+      settings: {
+        button: "Configuracion",
+        title: "Configuracion del mailbox",
+        signature: "Firma",
+        close: "Cerrar",
+        save: "Guardar",
       },
       moduleGuide: {
         eyebrow: "Guia de uso",

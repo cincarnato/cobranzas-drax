@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {useI18n} from "vue-i18n";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {EmailManagementView} from "@/modules/mail/interfaces/IEmailManagement";
 import MailboxSelector from "./MailboxSelector.vue";
@@ -24,11 +25,14 @@ defineEmits<{
   (e: "update:view", value: EmailManagementView): void
   (e: "update:category", value?: string): void
   (e: "compose"): void
+  (e: "configure"): void
   (e: "session-email:start"): void
   (e: "session-email:pause"): void
   (e: "session-email:resume"): void
   (e: "session-email:close"): void
 }>()
+
+const {t} = useI18n()
 </script>
 
 <template>
@@ -39,6 +43,17 @@ defineEmits<{
       :loading="loadingMailboxes"
       @update:model-value="$emit('update:mailboxId', $event)"
     />
+    <v-btn
+      variant="tonal"
+      color="secondary"
+      prepend-icon="mdi-cog-outline"
+      block
+      class="settings-button"
+      :disabled="!mailboxId"
+      @click="$emit('configure')"
+    >
+      {{ t('mail.settings.button') }}
+    </v-btn>
     <v-btn color="primary" prepend-icon="mdi-pencil-outline" block class="compose-button" @click="$emit('compose')">
       Redactar
     </v-btn>
@@ -58,7 +73,8 @@ defineEmits<{
 </template>
 
 <style scoped>
-.compose-button {
+.compose-button,
+.settings-button {
   flex: 0 0 auto;
   height: 40px;
   min-height: 40px;
