@@ -73,6 +73,7 @@ const role = {
 
         MailboxPermissions.View,
         OutboundEmailPermissions.View,
+        OutboundEmailPermissions.Create,
 
 
     ],

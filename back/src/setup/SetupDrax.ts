@@ -8,6 +8,7 @@ import InitializeAudit from "./InitializeAudit.js";
 import {projectPasswordPolicy} from "./data/policies/PasswordPolicy.js";
 import updateMailboxSentimentPrioritySchema from "./scripts/UpdateMailboxSentimentPrioritySchema.js";
 import seedInboundEmailAtentionStatus from "./scripts/SeedInboundEmailAtentionStatus.js";
+import updateInboundEmailManagementIndexes from "./scripts/UpdateInboundEmailManagementIndexes.js";
 
 async function SetupDrax(){
 
@@ -43,6 +44,7 @@ async function SetupDrax(){
     if(DraxConfig.getOrLoad(CommonConfig.DbEngine) === 'mongo'){
         await updateMailboxSentimentPrioritySchema()
         await seedInboundEmailAtentionStatus()
+        await updateInboundEmailManagementIndexes()
     }
 
 }

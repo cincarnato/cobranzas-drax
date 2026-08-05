@@ -10,6 +10,8 @@ async function InboundEmailFastifyRoutes(fastify, options) {
 
     fastify.get('/api/inbound-emails/management', (req,rep) => controller.managementPaginate(req as any,rep))
 
+    fastify.get('/api/inbound-emails/management-counts', (req,rep) => controller.managementCounts(req as any,rep))
+
     fastify.get('/api/inbound-emails', {schema: schemas.paginateSchema}, (req,rep) => controller.paginate(req,rep))
     
     fastify.get('/api/inbound-emails/find', {schema: schemas.findSchema}, (req,rep) => controller.find(req,rep))

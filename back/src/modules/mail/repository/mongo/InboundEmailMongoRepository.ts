@@ -5,11 +5,14 @@ import type {
     FindInboundEmailsByProcessMarkOptions,
     IInboundEmailRepository,
     InboundEmailClassificationUpdate,
+    InboundEmailManagementCounts,
+    InboundEmailManagementCountsOptions,
     InboundEmailManagementListOptions,
     InboundEmailManagementListResult
 } from '../../interfaces/IInboundEmailRepository'
 import type {IInboundEmail, IInboundEmailBase} from "../../interfaces/IInboundEmail";
 import {EmailUserStateModel} from "../../models/EmailUserStateModel.js";
+import {mongoose} from "@drax/common-back";
 
 
 class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail, IInboundEmailBase, IInboundEmailBase> implements IInboundEmailRepository {
@@ -96,6 +99,77 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             totalItems,
             totalPages: Math.max(Math.ceil(totalItems / pageSize), 1),
         };
+    }
+
+    async managementCounts(options: InboundEmailManagementCountsOptions): Promise<InboundEmailManagementCounts> {
+        if (!options.mailboxValues.length) {
+            return {PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0};
+        }
+
+        const userObjectId = this.toObjectId(options.currentUserId);
+        if (!userObjectId) {
+            return {PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0};
+        }
+
+        const [result] = await this._model.aggregate([
+            {
+                $match: {
+                    mailbox: {$in: options.mailboxValues},
+                    attentionStatus: {$in: ["PENDING", "ASSIGNED"]},
+                },
+            },
+            {
+                $facet: {
+                    pending: [
+                        {$match: {attentionStatus: "PENDING"}},
+                        {$count: "count"},
+                    ],
+                    assignedToMe: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                assignedTo: userObjectId,
+                                $or: [
+                                    {assignmentMode: "MANUAL"},
+                                    {assignmentMode: null},
+                                    {assignmentMode: {$exists: false}},
+                                ],
+                            },
+                        },
+                        {$count: "count"},
+                    ],
+                    assignedInAttention: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                assignedTo: userObjectId,
+                                assignmentMode: "AUTO",
+                            },
+                        },
+                        {$count: "count"},
+                    ],
+                    assigned: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                ...(options.isSupervisor ? {} : {assignedTo: userObjectId}),
+                            },
+                        },
+                        {$count: "count"},
+                    ],
+                },
+            },
+            {
+                $project: {
+                    PENDING: {$ifNull: [{$arrayElemAt: ["$pending.count", 0]}, 0]},
+                    ASSIGNED_TO_ME: {$ifNull: [{$arrayElemAt: ["$assignedToMe.count", 0]}, 0]},
+                    ASSIGNED_IN_ATTENTION: {$ifNull: [{$arrayElemAt: ["$assignedInAttention.count", 0]}, 0]},
+                    ASSIGNED: {$ifNull: [{$arrayElemAt: ["$assigned.count", 0]}, 0]},
+                },
+            },
+        ]).exec() as InboundEmailManagementCounts[];
+
+        return result || {PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0};
     }
 
     async findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]> {
@@ -384,6 +458,12 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
 
     private escapeRegExp(value: string) {
         return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    private toObjectId(value?: string) {
+        return value && mongoose.Types.ObjectId.isValid(value)
+            ? new mongoose.Types.ObjectId(value)
+            : null;
     }
 
 }

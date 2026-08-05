@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {useAuth, useAuthStore} from "@drax/identity-vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
@@ -79,6 +79,7 @@ const detailError = ref("")
 const snackbar = ref({show: false, text: "", color: "info"})
 const routeInboundEmailId = ref(queryParamToString(route.query.inboundEmail))
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+let countsTimer: ReturnType<typeof setInterval> | null = null
 
 const currentUser = computed(() => authStore.authUser)
 const currentUserId = computed(() => (currentUser.value as any)?._id || currentUser.value?.id)
@@ -141,6 +142,7 @@ watch(mailboxId, () => {
   void fetchMailboxUserSettings()
   mailboxSettingsDialog.value = false
   void fetchCounts()
+  startCountsPolling()
 })
 
 onMounted(async () => {
@@ -153,6 +155,12 @@ onMounted(async () => {
   await fetchSessionEmail()
   await fetchList()
   await fetchCounts()
+  startCountsPolling()
+})
+
+onUnmounted(() => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (countsTimer) clearInterval(countsTimer)
 })
 
 async function fetchMailboxes() {
@@ -235,21 +243,28 @@ async function fetchList() {
 }
 
 async function fetchCounts() {
+  const currentMailboxId = mailboxId.value
+  if (!currentMailboxId) {
+    counts.value = {}
+    return
+  }
+  try {
+    const nextCounts = await EmailManagementProvider.instance.counts(currentMailboxId)
+    if (mailboxId.value === currentMailboxId) counts.value = nextCounts
+  } catch {
+    // Keep the last known counters; the list refresh path reports its own errors.
+  }
+}
+
+function startCountsPolling() {
+  if (countsTimer) {
+    clearInterval(countsTimer)
+    countsTimer = null
+  }
   if (!mailboxId.value) return
-  const views: EmailManagementView[] = ["PENDING", "ASSIGNED_TO_ME", "ASSIGNED_IN_ATTENTION", "ASSIGNED"]
-  const nextCounts: Record<string, number> = {}
-  await Promise.all(views.map(async (countView) => {
-    const result = await EmailManagementProvider.instance.list({
-      mailboxId: mailboxId.value || undefined,
-      view: countView,
-      page: 1,
-      pageSize: 1,
-      priorities: [],
-      tags: [],
-    })
-    nextCounts[countView] = result.totalItems || 0
-  }))
-  counts.value = nextCounts
+  countsTimer = setInterval(() => {
+    void fetchCounts()
+  }, 60000)
 }
 
 async function openEmail(email: EmailManagementListItem) {
@@ -651,7 +666,7 @@ function notify(text: string, color = "info") {
           @update:page-size="pageSize = $event; page = 1"
           @update:density="density = $event"
           @clear="clearFilters"
-          @refresh="fetchList(); fetchCounts()"
+          @refresh="fetchList"
         />
         <div class="px-3 py-2 text-caption text-medium-emphasis border-b">{{ totalItems }} correos</div>
         <OutboundEmailList

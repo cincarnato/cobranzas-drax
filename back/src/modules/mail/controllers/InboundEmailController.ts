@@ -90,6 +90,18 @@ class InboundEmailController extends AbstractFastifyController<IInboundEmail, II
         }
     }
 
+    async managementCounts(request: CustomRequest, reply: FastifyReply) {
+        request.rbac.assertAuthenticated();
+        request.rbac.assertPermission(InboundEmailPermissions.View);
+        const query = request.query as Record<string, any>;
+        const result = await InboundEmailServiceFactory.instance.managementCounts(
+            query.mailboxId,
+            request.rbac.userId,
+            request.rbac.hasPermission(InboundEmailPermissions.Manage),
+        );
+        return reply.send(result);
+    }
+
     async managementDetail(request: CustomRequest, reply: FastifyReply) {
         request.rbac.assertAuthenticated();
         request.rbac.assertPermission(InboundEmailPermissions.View);

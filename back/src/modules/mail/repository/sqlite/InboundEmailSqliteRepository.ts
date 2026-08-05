@@ -4,6 +4,8 @@ import type {
     IInboundEmailRepository,
     InboundEmailClassificationUpdate,
     InboundEmailAssignedLite,
+    InboundEmailManagementCounts,
+    InboundEmailManagementCountsOptions,
     InboundEmailManagementListOptions,
     InboundEmailManagementListResult,
     InboundEmailSupervisionCounts
@@ -190,6 +192,41 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
             pageSize,
             totalItems,
             totalPages: Math.max(Math.ceil(totalItems / pageSize), 1),
+        };
+    }
+
+    async managementCounts(options: InboundEmailManagementCountsOptions): Promise<InboundEmailManagementCounts> {
+        if (!options.mailboxValues.length || !options.currentUserId) {
+            return {PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0};
+        }
+
+        const placeholders = options.mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
+        const params: Record<string, unknown> = {
+            userId: options.currentUserId,
+        };
+        options.mailboxValues.forEach((value, index) => {
+            params[`mailbox${index}`] = value;
+        });
+
+        const assignedCondition = options.isSupervisor
+            ? "attentionStatus = 'ASSIGNED'"
+            : "attentionStatus = 'ASSIGNED' AND assignedTo = @userId";
+        const result = this.db
+            .prepare(`SELECT
+                          SUM(CASE WHEN attentionStatus = 'PENDING' THEN 1 ELSE 0 END) AS pending,
+                          SUM(CASE WHEN attentionStatus = 'ASSIGNED' AND assignedTo = @userId AND (assignmentMode = 'MANUAL' OR assignmentMode IS NULL OR assignmentMode = '') THEN 1 ELSE 0 END) AS assignedToMe,
+                          SUM(CASE WHEN attentionStatus = 'ASSIGNED' AND assignedTo = @userId AND assignmentMode = 'AUTO' THEN 1 ELSE 0 END) AS assignedInAttention,
+                          SUM(CASE WHEN ${assignedCondition} THEN 1 ELSE 0 END) AS assigned
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus IN ('PENDING', 'ASSIGNED')`)
+            .get(params) as {pending?: number, assignedToMe?: number, assignedInAttention?: number, assigned?: number};
+
+        return {
+            PENDING: Number(result?.pending || 0),
+            ASSIGNED_TO_ME: Number(result?.assignedToMe || 0),
+            ASSIGNED_IN_ATTENTION: Number(result?.assignedInAttention || 0),
+            ASSIGNED: Number(result?.assigned || 0),
         };
     }
 

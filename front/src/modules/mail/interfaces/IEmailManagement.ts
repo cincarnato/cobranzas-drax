@@ -27,6 +27,13 @@ type EmailManagementListResult = {
   totalPages: number
 }
 
+type EmailManagementCounts = {
+  PENDING: number
+  ASSIGNED_TO_ME: number
+  ASSIGNED_IN_ATTENTION: number
+  ASSIGNED: number
+}
+
 type EmailThreadEntry = {
   id: string
   type: "INBOUND" | "OUTBOUND"
@@ -61,6 +68,7 @@ export type {
   EmailManagementFilters,
   EmailManagementListItem,
   EmailManagementListResult,
+  EmailManagementCounts,
   EmailManagementPermissions,
   EmailManagementView,
   EmailThreadEntry,

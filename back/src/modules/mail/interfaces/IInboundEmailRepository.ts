@@ -20,6 +20,7 @@ interface IInboundEmailRepository extends IDraxCrudRepository<IInboundEmail, IIn
     findByProcessMarkStatus(options: FindInboundEmailsByProcessMarkOptions): Promise<IInboundEmail[]>
     findByMessageIds(messageIds: string[], mailboxValues?: string[]): Promise<IInboundEmail[]>
     managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult>
+    managementCounts(options: InboundEmailManagementCountsOptions): Promise<InboundEmailManagementCounts>
     findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]>
     assignToMe(id: string, userId: string, force?: boolean): Promise<IInboundEmail | null>
     assignNextPendingAuto(mailboxValues: string[], userId: string, sessionId: string): Promise<IInboundEmail | null>
@@ -64,6 +65,19 @@ type InboundEmailManagementListResult = {
     totalPages: number
 }
 
+type InboundEmailManagementCountsOptions = {
+    mailboxValues: string[]
+    currentUserId: string
+    isSupervisor: boolean
+}
+
+type InboundEmailManagementCounts = {
+    PENDING: number
+    ASSIGNED_TO_ME: number
+    ASSIGNED_IN_ATTENTION: number
+    ASSIGNED: number
+}
+
 type InboundEmailClassificationUpdate = {
     category?: string | null
     closeReason?: string | null
@@ -103,6 +117,8 @@ export type {
     FindInboundEmailsByProcessMarkOptions,
     InboundEmailManagementListOptions,
     InboundEmailManagementListResult,
+    InboundEmailManagementCountsOptions,
+    InboundEmailManagementCounts,
     InboundEmailClassificationUpdate,
     InboundEmailManagementDetail,
     InboundEmailSupervisionCounts,

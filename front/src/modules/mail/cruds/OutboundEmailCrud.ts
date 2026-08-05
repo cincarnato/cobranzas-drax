@@ -5,7 +5,7 @@ import type{
   IEntityCrud,
   IEntityCrudField,
   IEntityCrudFilter,
-  IEntityCrudHeader, 
+  IEntityCrudHeader,
   IEntityCrudPermissions,
   IEntityCrudRefs,
   IEntityCrudRules
@@ -25,7 +25,7 @@ class OutboundEmailCrud extends EntityCrud implements IEntityCrud {
     super();
     this.name = 'OutboundEmail'
   }
-  
+
   static get instance(): OutboundEmailCrud {
     if(!OutboundEmailCrud.singleton){
       OutboundEmailCrud.singleton = new OutboundEmailCrud()
@@ -35,10 +35,10 @@ class OutboundEmailCrud extends EntityCrud implements IEntityCrud {
 
   get permissions(): IEntityCrudPermissions{
     return {
-      manage: 'outboundemail:manage', 
-      view: 'outboundemail:view', 
-      create: 'outboundemail:create', 
-      update: 'outboundemail:update', 
+      manage: 'outboundemail:manage',
+      view: 'outboundemail:view',
+      create: 'outboundemail:create',
+      update: 'outboundemail:update',
       delete: 'outboundemail:delete'
     }
   }
@@ -56,11 +56,11 @@ class OutboundEmailCrud extends EntityCrud implements IEntityCrud {
 {title: 'attempts',key:'attempts', align: 'start'}
     ]
   }
-  
+
   get selectedHeaders(): string[] {
     return this.headers.map(header => header.key)
   }
-  
+
   get actionHeaders():IEntityCrudHeader[]{
     return [
       {
@@ -77,12 +77,12 @@ class OutboundEmailCrud extends EntityCrud implements IEntityCrud {
   get provider(): IDraxCrudProvider<any, any, any>{
     return OutboundEmailProvider.instance
   }
-  
+
   get refs(): IEntityCrudRefs{
     return {
       InboundEmail: InboundEmailCrud.instance ,
 Mailbox: MailboxCrud.instance ,
-User: UserCrud.instance 
+User: UserCrud.instance
     }
   }
 
@@ -119,27 +119,27 @@ status: [(v: any) => !!v || 'validation.required']
 {name:'attempts',type:'number',label:'attempts',default:0,groupTab: 'Envio'}
     ]
   }
-  
+
   get filters():IEntityCrudFilter[]{
     return [
       //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
     ]
   }
-  
+
   get isViewable(){
     return true
   }
 
   get isEditable(){
-    return true
+    return false
   }
 
   get isCreatable(){
-    return true
+    return false
   }
 
   get isDeletable(){
-    return true
+    return false
   }
 
   get isExportable(){
@@ -157,7 +157,7 @@ status: [(v: any) => !!v || 'validation.required']
   get isImportable(){
     return false
   }
-  
+
   get isColumnSelectable() {
     return true
   }
@@ -173,19 +173,19 @@ status: [(v: any) => !!v || 'validation.required']
   get dialogFullscreen(){
     return false
   }
-  
+
   get tabs() {
     return [
      'General', 'Destinatarios', 'Contenido', 'Adjuntos', 'Envio'
     ]
   }
-  
+
   get menus() {
     return [
-     
+
     ]
   }
-  
+
   get searchEnable() {
     return true
   }

@@ -1,6 +1,7 @@
 import {HttpRestClientFactory, type IHttpClient} from "@drax/common-front";
 import type {
   EmailManagementDetail,
+  EmailManagementCounts,
   EmailManagementFilters,
   EmailManagementListResult,
   EmailManagementView,
@@ -34,6 +35,10 @@ class EmailManagementProvider {
 
   async list(params: ListParams): Promise<EmailManagementListResult> {
     return await this.httpClient.get(`${this.basePath}/management`, {params: this.cleanParams(params)}) as EmailManagementListResult
+  }
+
+  async counts(mailboxId?: string): Promise<EmailManagementCounts> {
+    return await this.httpClient.get(`${this.basePath}/management-counts`, {params: this.cleanParams({mailboxId})}) as EmailManagementCounts
   }
 
   async detail(id: string): Promise<EmailManagementDetail> {

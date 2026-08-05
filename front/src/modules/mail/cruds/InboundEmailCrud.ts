@@ -299,7 +299,7 @@ class InboundEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get isDeletable() {
-    return true
+    return false
   }
 
   get isExportable() {
