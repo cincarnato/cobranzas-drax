@@ -1,6 +1,7 @@
 import { AbstractMongoRepository } from "@drax/crud-back";
 import { InboundEmailModel } from "../../models/InboundEmailModel.js";
 import { EmailUserStateModel } from "../../models/EmailUserStateModel.js";
+import { mongoose } from "@drax/common-back";
 class InboundEmailMongoRepository extends AbstractMongoRepository {
     constructor() {
         super();
@@ -67,6 +68,73 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
             totalItems,
             totalPages: Math.max(Math.ceil(totalItems / pageSize), 1),
         };
+    }
+    async managementCounts(options) {
+        if (!options.mailboxValues.length) {
+            return { PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0 };
+        }
+        const userObjectId = this.toObjectId(options.currentUserId);
+        if (!userObjectId) {
+            return { PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0 };
+        }
+        const [result] = await this._model.aggregate([
+            {
+                $match: {
+                    mailbox: { $in: options.mailboxValues },
+                    attentionStatus: { $in: ["PENDING", "ASSIGNED"] },
+                },
+            },
+            {
+                $facet: {
+                    pending: [
+                        { $match: { attentionStatus: "PENDING" } },
+                        { $count: "count" },
+                    ],
+                    assignedToMe: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                assignedTo: userObjectId,
+                                $or: [
+                                    { assignmentMode: "MANUAL" },
+                                    { assignmentMode: null },
+                                    { assignmentMode: { $exists: false } },
+                                ],
+                            },
+                        },
+                        { $count: "count" },
+                    ],
+                    assignedInAttention: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                assignedTo: userObjectId,
+                                assignmentMode: "AUTO",
+                            },
+                        },
+                        { $count: "count" },
+                    ],
+                    assigned: [
+                        {
+                            $match: {
+                                attentionStatus: "ASSIGNED",
+                                ...(options.isSupervisor ? {} : { assignedTo: userObjectId }),
+                            },
+                        },
+                        { $count: "count" },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    PENDING: { $ifNull: [{ $arrayElemAt: ["$pending.count", 0] }, 0] },
+                    ASSIGNED_TO_ME: { $ifNull: [{ $arrayElemAt: ["$assignedToMe.count", 0] }, 0] },
+                    ASSIGNED_IN_ATTENTION: { $ifNull: [{ $arrayElemAt: ["$assignedInAttention.count", 0] }, 0] },
+                    ASSIGNED: { $ifNull: [{ $arrayElemAt: ["$assigned.count", 0] }, 0] },
+                },
+            },
+        ]).exec();
+        return result || { PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0 };
     }
     async findThread(inboundEmail) {
         const parentInboundEmailId = this.resolveEntityId(inboundEmail.parentInboundEmail);
@@ -337,6 +405,11 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
     }
     escapeRegExp(value) {
         return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+    toObjectId(value) {
+        return value && mongoose.Types.ObjectId.isValid(value)
+            ? new mongoose.Types.ObjectId(value)
+            : null;
     }
 }
 export default InboundEmailMongoRepository;

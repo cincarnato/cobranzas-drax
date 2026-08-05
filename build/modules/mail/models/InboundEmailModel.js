@@ -76,7 +76,7 @@ const InboundEmailSchema = new mongoose.Schema({
     processedAt: { type: Date, required: false, index: false, unique: false },
 }, { timestamps: true });
 InboundEmailSchema.index({ mailbox: 1, attentionStatus: 1, receivedAt: 1 });
-InboundEmailSchema.index({ mailbox: 1, assignedTo: 1, attentionStatus: 1 });
+InboundEmailSchema.index({ mailbox: 1, assignedTo: 1, attentionStatus: 1, assignmentMode: 1, receivedAt: -1 });
 InboundEmailSchema.index({ mailbox: 1, attentionStatus: 1, closedAt: 1 });
 InboundEmailSchema.plugin(uniqueValidator, { message: 'validation.unique' });
 InboundEmailSchema.plugin(mongoosePaginate);

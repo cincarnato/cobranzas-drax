@@ -29,40 +29,31 @@ class InboundEmailService extends AbstractService {
         return validatedItems;
     }
     async managementPaginate(options) {
-        const mailbox = options.mailboxValues?.[0] ? await this.resolveMailbox(options.mailboxValues[0]) : null;
         const currentUserId = options.currentUserId || "";
-        let mailboxValues = options.mailboxValues;
-        if (mailbox) {
-            this.assertMailboxOperator(mailbox, currentUserId);
-            this.assertAssignableOperator(mailbox, options.assignedTo || null);
-            mailboxValues = this.getMailboxValues(mailbox);
-        }
-        else {
-            const mailboxes = await MailboxServiceFactory.instance.find({ limit: 1000 });
-            const accessibleMailboxes = mailboxes.filter((item) => {
-                try {
-                    this.assertMailboxOperator(item, currentUserId);
-                    this.assertAssignableOperator(item, options.assignedTo || null);
-                    return true;
-                }
-                catch {
-                    return false;
-                }
-            });
-            mailboxValues = accessibleMailboxes.flatMap((item) => this.getMailboxValues(item));
-            if (!mailboxValues.length) {
-                return {
-                    items: [],
-                    page: Math.max(Number(options.page || 1), 1),
-                    pageSize: Math.min(Math.max(Number(options.pageSize || 25), 1), 100),
-                    totalItems: 0,
-                    totalPages: 1,
-                };
-            }
+        const mailboxValues = await this.resolveManagementMailboxValues(options.mailboxValues?.[0], currentUserId, options.assignedTo || null);
+        if (!mailboxValues.length) {
+            return {
+                items: [],
+                page: Math.max(Number(options.page || 1), 1),
+                pageSize: Math.min(Math.max(Number(options.pageSize || 25), 1), 100),
+                totalItems: 0,
+                totalPages: 1,
+            };
         }
         return await this.repository.managementPaginate({
             ...options,
             mailboxValues,
+        });
+    }
+    async managementCounts(mailboxValue, currentUserId, isSupervisor) {
+        const mailboxValues = await this.resolveManagementMailboxValues(mailboxValue, currentUserId, null);
+        if (!mailboxValues.length) {
+            return { PENDING: 0, ASSIGNED_TO_ME: 0, ASSIGNED_IN_ATTENTION: 0, ASSIGNED: 0 };
+        }
+        return await this.repository.managementCounts({
+            mailboxValues,
+            currentUserId,
+            isSupervisor,
         });
     }
     async managementDetail(id, currentUserId) {
@@ -241,6 +232,26 @@ class InboundEmailService extends AbstractService {
     }
     getMailboxValues(mailbox) {
         return [mailbox._id?.toString(), mailbox.email].filter(Boolean);
+    }
+    async resolveManagementMailboxValues(mailboxValue, currentUserId, assignedTo) {
+        const mailbox = mailboxValue ? await this.resolveMailbox(mailboxValue) : null;
+        if (mailbox) {
+            this.assertMailboxOperator(mailbox, currentUserId);
+            this.assertAssignableOperator(mailbox, assignedTo);
+            return this.getMailboxValues(mailbox);
+        }
+        const mailboxes = await MailboxServiceFactory.instance.find({ limit: 1000 });
+        const accessibleMailboxes = mailboxes.filter((item) => {
+            try {
+                this.assertMailboxOperator(item, currentUserId);
+                this.assertAssignableOperator(item, assignedTo);
+                return true;
+            }
+            catch {
+                return false;
+            }
+        });
+        return accessibleMailboxes.flatMap((item) => this.getMailboxValues(item));
     }
     async resolveMailbox(mailboxValue) {
         if (!mailboxValue)

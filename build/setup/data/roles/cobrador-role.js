@@ -55,6 +55,7 @@ const role = {
         InboundEmailPermissions.Update,
         MailboxPermissions.View,
         OutboundEmailPermissions.View,
+        OutboundEmailPermissions.Create,
     ],
     childRoles: [],
     readonly: true
