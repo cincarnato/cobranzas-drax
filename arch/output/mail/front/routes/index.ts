@@ -2,15 +2,15 @@
 import InboundEmailCrudRoute from "./InboundEmailCrudRoute"
 import MailboxCrudRoute from "./MailboxCrudRoute"
 import MailboxUserSettingCrudRoute from "./MailboxUserSettingCrudRoute"
-import SessionEmailCrudRoute from "./SessionEmailCrudRoute"
 import OutboundEmailCrudRoute from "./OutboundEmailCrudRoute"
+import TemplateEmailCrudRoute from "./TemplateEmailCrudRoute"
 
 export const routes = [
-    ...InboundEmailCrudRoute,
+...InboundEmailCrudRoute,
 ...MailboxCrudRoute,
 ...MailboxUserSettingCrudRoute,
-...SessionEmailCrudRoute,
-...OutboundEmailCrudRoute
+...OutboundEmailCrudRoute,
+...TemplateEmailCrudRoute
 ]
 
 export default routes

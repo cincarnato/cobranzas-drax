@@ -30,6 +30,7 @@ import { MailboxPermissions } from "../modules/mail/permissions/MailboxPermissio
 import { MailboxUserSettingPermissions } from "../modules/mail/permissions/MailboxUserSettingPermissions.js";
 import { OutboundEmailPermissions } from "../modules/mail/permissions/OutboundEmailPermissions.js";
 import { SessionEmailPermissions } from "../modules/mail/permissions/SessionEmailPermissions.js";
+import { TemplateEmailPermissions } from "../modules/mail/permissions/TemplateEmailPermissions.js";
 import { BankMovementPermissions } from "../modules/transferencias/permissions/BankMovementPermissions.js";
 import { PayerPermissions } from "../modules/transferencias/permissions/PayerPermissions.js";
 import { TransferEmailPermissions } from "../modules/transferencias/permissions/TransferEmailPermissions.js";
@@ -75,6 +76,7 @@ function InitializePermissions() {
         ...Object.values(MailboxUserSettingPermissions),
         ...Object.values(OutboundEmailPermissions),
         ...Object.values(SessionEmailPermissions),
+        ...Object.values(TemplateEmailPermissions),
         ...Object.values(AffiliatePermissions),
         ...Object.values(AffiliateTypePermissions),
         ...Object.values(BankMovementPermissions),

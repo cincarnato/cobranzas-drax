@@ -17,6 +17,7 @@ import PayerPermissions from "../../../modules/transferencias/permissions/PayerP
 import InboundEmailPermissions from "../../../modules/mail/permissions/InboundEmailPermissions.js";
 import MailboxPermissions from "../../../modules/mail/permissions/MailboxPermissions.js";
 import OutboundEmailPermissions from "../../../modules/mail/permissions/OutboundEmailPermissions.js";
+import TemplateEmailPermissions from "../../../modules/mail/permissions/TemplateEmailPermissions.js";
 
 const role = {
     name: "Cobrador",
@@ -74,6 +75,10 @@ const role = {
         MailboxPermissions.View,
         OutboundEmailPermissions.View,
         OutboundEmailPermissions.Create,
+
+        TemplateEmailPermissions.View,
+        TemplateEmailPermissions.Create,
+        TemplateEmailPermissions.Update,
 
 
     ],

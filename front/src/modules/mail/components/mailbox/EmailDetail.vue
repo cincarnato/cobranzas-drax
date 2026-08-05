@@ -23,6 +23,9 @@ const props = defineProps<{
   saving?: boolean
   signatureHtml?: string
   signatureText?: string
+  canNavigatePrevious?: boolean
+  canNavigateNext?: boolean
+  navigationLoading?: boolean
 }>()
 
 const {t} = useI18n()
@@ -37,9 +40,10 @@ const emit = defineEmits<{
   (e: "reassign", userId: string | null): void
   (e: "close", closeReason?: string | null): void
   (e: "reply-sent", value: any): void
+  (e: "navigate-previous"): void
+  (e: "navigate-next"): void
 }>()
 
-const showPanel = ref(true)
 const closeDialog = ref(false)
 const takeDialog = ref(false)
 const replyComposerRef = ref<{focusEditor: () => void} | null>(null)
@@ -230,7 +234,18 @@ function isAbsoluteUrl(url: string) {
                 :loading="loading"
                 @click="$emit('retry')"
               />
-              <v-btn :icon="showPanel ? 'mdi-dock-right' : 'mdi-dock-window'" variant="text" @click="showPanel = !showPanel" />
+              <v-btn
+                icon="mdi-chevron-left"
+                variant="text"
+                :disabled="!canNavigatePrevious || navigationLoading"
+                @click="$emit('navigate-previous')"
+              />
+              <v-btn
+                icon="mdi-chevron-right"
+                variant="text"
+                :disabled="!canNavigateNext || navigationLoading"
+                @click="$emit('navigate-next')"
+              />
             </div>
           </div>
 
@@ -294,7 +309,7 @@ function isAbsoluteUrl(url: string) {
             </v-alert>
           </div>
         </div>
-        <aside v-if="showPanel" class="management-panel border-s overflow-auto">
+        <aside class="management-panel border-s overflow-auto">
           <EmailManagementPanel
             :email="email"
             :mailbox="detail.mailbox"

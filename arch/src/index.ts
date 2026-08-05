@@ -14,6 +14,7 @@ import MailboxSchema from './schemas/mail/MailboxSchema';
 import MailboxUserSettingSchema from './schemas/mail/MailboxUserSettingSchema';
 import SessionEmailSchema from './schemas/mail/SessionEmailSchema';
 import OutboundEmailSchema from './schemas/mail/OutboundEmailSchema';
+import TemplateEmailSchema from './schemas/mail/TemplateEmailSchema';
 import AffiliateSchema from './schemas/premedic/AffiliateSchema';
 import AffiliateTypeSchema from './schemas/premedic/AffiliateTypeSchema';
 import BonusSchema from './schemas/bajas/BonusSchema';
@@ -44,6 +45,7 @@ const schemas = [
     MailboxUserSettingSchema,
     SessionEmailSchema,
     OutboundEmailSchema,
+    TemplateEmailSchema,
 
     //Premedic
     AffiliateSchema,

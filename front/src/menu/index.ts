@@ -250,6 +250,13 @@ const menu: MenuItem[] = [
         permission: 'outboundemail:manage'
       },
       {
+        icon: 'mdi-email-edit-outline',
+        text: 'templateemail.menu',
+        link: { name: "TemplateEmailCrudPage" },
+        gallery: true,
+        permission: 'templateemail:manage'
+      },
+      {
         icon: 'mdi-view-dashboard-variant-outline',
         text: 'Dashboard Correos Entrantes',
         link: { name: "InboundEmailDashboardPage" },

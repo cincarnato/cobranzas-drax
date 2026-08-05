@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import {computed, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
+import {useAuth} from "@drax/identity-vue";
 import {MediaSystemFactory} from "@drax/media-front";
 import type {IInboundEmail} from "@/modules/mail/interfaces/IInboundEmail";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import type {IOutboundEmailAttachment} from "@/modules/mail/interfaces/IOutboundEmail";
+import type {ITemplateEmail} from "@/modules/mail/interfaces/ITemplateEmail";
 import MailReplyProvider, {type MailReplyResult, type MailSendResult} from "@/modules/mail/providers/MailReplyProvider";
+import TemplateEmailProvider from "@/modules/mail/providers/TemplateEmailProvider";
 import MailRichTextEditor from "@/modules/mail/components/MailRichTextEditor.vue";
 
 type EmailField = "to" | "cc" | "bcc"
@@ -43,11 +46,18 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const editorComponentRef = ref<{focusEditor: () => void} | null>(null)
 const editorTouched = ref(false)
 const attachments = ref<IOutboundEmailAttachment[]>([])
+const templateEmails = ref<ITemplateEmail[]>([])
+const selectedTemplateEmail = ref<ITemplateEmail | null>(null)
+const templateEmailLoading = ref(false)
+const templateEmailError = ref("")
 
 const {t} = useI18n()
+const auth = useAuth()
 const mediaSystem = MediaSystemFactory.getInstance()
 const composerMode = computed(() => props.mode || "reply")
 const isNewEmail = computed(() => composerMode.value === "new")
+const canViewTemplateEmails = computed(() => auth.hasPermission("templateemail:view") || auth.hasPermission("templateemail:manage"))
+const showTemplateEmailSelector = computed(() => Boolean(props.mailbox?._id && canViewTemplateEmails.value))
 
 const emailDelimiters = [",", ";", " ", "\n", "\t"]
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -105,11 +115,27 @@ watch(
     bccEmailSearch.value = ""
     bodyHtml.value = initialBodyHtml(props.signatureHtml)
     bodyText.value = initialBodyText(props.signatureText)
+    selectedTemplateEmail.value = null
     attachments.value = []
     attachmentError.value = ""
+    templateEmailError.value = ""
     editorTouched.value = false
     closeAfterSend.value = false
     closeReason.value = props.inboundEmail?.closeReason || null
+  },
+  {immediate: true}
+)
+
+watch(
+  () => [props.mailbox?._id, canViewTemplateEmails.value],
+  () => {
+    selectedTemplateEmail.value = null
+    templateEmailError.value = ""
+    if (showTemplateEmailSelector.value) {
+      void fetchTemplateEmails()
+    } else {
+      templateEmails.value = []
+    }
   },
   {immediate: true}
 )
@@ -280,6 +306,59 @@ function initialBodyText(signatureText?: string) {
   const signature = signatureText?.trim() || ""
   if (!signature) return ""
   return `\n\n${signature}`
+}
+
+function buildBodyWithTemplate(templateContent: string) {
+  const content = templateContent.trim()
+  const signature = props.signatureHtml?.trim() || ""
+  if (!signature) return content
+  return `${content}<div><br></div><div><br></div>${signature}`
+}
+
+function htmlToText(value: string) {
+  return value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
+
+async function fetchTemplateEmails() {
+  if (!props.mailbox?._id || !canViewTemplateEmails.value) {
+    templateEmails.value = []
+    return
+  }
+  templateEmailLoading.value = true
+  templateEmailError.value = ""
+  try {
+    const result = await TemplateEmailProvider.instance.paginate({
+      page: 1,
+      limit: 200,
+      orderBy: "name",
+      order: "asc",
+      filters: [{field: "mailbox", operator: "eq", value: props.mailbox._id}],
+    })
+    templateEmails.value = result.items || []
+  } catch {
+    templateEmails.value = []
+    templateEmailError.value = t("mail.reply.templateLoadError")
+  } finally {
+    templateEmailLoading.value = false
+  }
+}
+
+function applyTemplateEmail(templateEmail: ITemplateEmail | null) {
+  if (!templateEmail) return
+  bodyHtml.value = buildBodyWithTemplate(templateEmail.content || "")
+  bodyText.value = htmlToText(bodyHtml.value)
+  editorTouched.value = true
 }
 
 function focusEditor() {
@@ -502,6 +581,25 @@ function userFriendlyError(message?: string) {
                 >
                   {{ t('mail.reply.attachFiles') }}
                 </v-btn>
+                <v-select
+                  v-if="showTemplateEmailSelector"
+                  v-model="selectedTemplateEmail"
+                  :items="templateEmails"
+                  :label="t('mail.reply.preparedMessage')"
+                  :loading="templateEmailLoading"
+                  :no-data-text="t('mail.reply.noPreparedMessages')"
+                  item-title="name"
+                  return-object
+                  clearable
+                  hide-details
+                  density="compact"
+                  variant="outlined"
+                  color="deep-purple"
+                  base-color="deep-purple"
+                  prepend-inner-icon="mdi-email-edit-outline"
+                  class="prepared-message-select"
+                  @update:model-value="applyTemplateEmail"
+                />
                 <span v-if="attachments.length" class="text-caption text-medium-emphasis">
                   {{ t('mail.reply.attachmentsCount', {count: attachments.length}) }}
                 </span>
@@ -514,6 +612,15 @@ function userFriendlyError(message?: string) {
                 class="mt-2"
               >
                 {{ attachmentError }}
+              </v-alert>
+              <v-alert
+                v-if="templateEmailError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                class="mt-2"
+              >
+                {{ templateEmailError }}
               </v-alert>
               <div v-if="attachments.length" class="d-flex flex-wrap ga-2 mt-3">
                 <v-chip
@@ -582,5 +689,11 @@ function userFriendlyError(message?: string) {
 .mail-reply-composer-card {
   border: 1px solid rgba(var(--v-border-color), 0.18);
   box-shadow: 0 8px 28px rgba(60, 64, 67, 0.18);
+}
+
+.prepared-message-select {
+  flex: 1 1 260px;
+  max-width: 360px;
+  min-width: 220px;
 }
 </style>

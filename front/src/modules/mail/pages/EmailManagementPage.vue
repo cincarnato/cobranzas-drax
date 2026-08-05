@@ -66,6 +66,7 @@ const loadingList = ref(false)
 const loadingDetail = ref(false)
 const actionLoading = ref(false)
 const saving = ref(false)
+const detailNavigationLoading = ref(false)
 const sessionEmailState = ref<SessionEmailState | null>(null)
 const sessionEmailLoading = ref(false)
 const closeSessionEmailDialog = ref(false)
@@ -80,10 +81,14 @@ const snackbar = ref({show: false, text: "", color: "info"})
 const routeInboundEmailId = ref(queryParamToString(route.query.inboundEmail))
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let countsTimer: ReturnType<typeof setInterval> | null = null
+let skipNextListWatch = false
 
 const currentUser = computed(() => authStore.authUser)
 const currentUserId = computed(() => (currentUser.value as any)?._id || currentUser.value?.id)
 const selectedMailbox = computed(() => mailboxes.value.find((item) => item._id === mailboxId.value) || null)
+const selectedListIndex = computed(() => selectedId.value ? items.value.findIndex((item) => item._id === selectedId.value) : -1)
+const canNavigatePreviousEmail = computed(() => view.value !== "SENT" && selectedListIndex.value !== -1 && (selectedListIndex.value > 0 || page.value > 1))
+const canNavigateNextEmail = computed(() => view.value !== "SENT" && selectedListIndex.value !== -1 && (selectedListIndex.value < items.value.length - 1 || page.value < totalPages.value))
 const isSupervisor = computed(() => auth.hasPermission("inboundemail:manage"))
 const baseCanUpdate = computed(() => auth.hasPermission("inboundemail:update") || isSupervisor.value)
 const canAssignOperator = computed(() => auth.hasPermission("inboundemail:assign") || isSupervisor.value)
@@ -120,6 +125,11 @@ watch(search, (value) => {
 })
 
 watch([mailboxId, view, page, pageSize, debouncedSearch, filters], () => {
+  if (skipNextListWatch) {
+    skipNextListWatch = false
+    syncRoute()
+    return
+  }
   syncRoute()
   void fetchList()
 }, {deep: true})
@@ -273,6 +283,44 @@ async function openEmail(email: EmailManagementListItem) {
     email.userState = await EmailManagementProvider.instance.updateUserState(email._id, {isRead: true})
   }
   await fetchDetail(email._id)
+}
+
+async function navigateDetail(direction: "previous" | "next") {
+  if (detailNavigationLoading.value || loadingList.value || loadingDetail.value || view.value === "SENT") return
+
+  const currentIndex = selectedListIndex.value
+  if (currentIndex === -1) return
+
+  detailNavigationLoading.value = true
+  try {
+    if (direction === "previous") {
+      if (currentIndex > 0) {
+        await openEmail(items.value[currentIndex - 1])
+        return
+      }
+      if (page.value <= 1) return
+      await openAdjacentEmailFromPage(page.value - 1, "last")
+      return
+    }
+
+    if (currentIndex < items.value.length - 1) {
+      await openEmail(items.value[currentIndex + 1])
+      return
+    }
+    if (page.value >= totalPages.value) return
+    await openAdjacentEmailFromPage(page.value + 1, "first")
+  } finally {
+    detailNavigationLoading.value = false
+  }
+}
+
+async function openAdjacentEmailFromPage(targetPage: number, position: "first" | "last") {
+  skipNextListWatch = true
+  page.value = targetPage
+  await nextTick()
+  await fetchList()
+  const target = position === "first" ? items.value[0] : items.value[items.value.length - 1]
+  if (target) await openEmail(target)
 }
 
 async function fetchDetail(id = selectedId.value) {
@@ -703,8 +751,13 @@ function notify(text: string, color = "info") {
             :saving="saving"
             :signature-html="mailboxUserSettings?.signatureHtml || ''"
             :signature-text="mailboxUserSettings?.signatureText || ''"
+            :can-navigate-previous="canNavigatePreviousEmail"
+            :can-navigate-next="canNavigateNextEmail"
+            :navigation-loading="detailNavigationLoading"
             @back="closeDetail"
             @retry="fetchDetail()"
+            @navigate-previous="navigateDetail('previous')"
+            @navigate-next="navigateDetail('next')"
             @assign="assignToMe"
             @reopen-and-assign="reopenAndAssignToMe"
             @save-classification="saveClassification"
