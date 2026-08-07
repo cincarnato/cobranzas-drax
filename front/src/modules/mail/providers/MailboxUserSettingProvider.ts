@@ -21,7 +21,7 @@ class MailboxUserSettingProvider extends AbstractCrudRestProvider<IMailboxUserSe
     return await this.httpClient.get(`/api/mailboxes/${mailboxId}/user-settings/current`) as IMailboxUserSetting | null
   }
 
-  async saveCurrent(mailboxId: string, data: Pick<IMailboxUserSettingBase, "signatureHtml" | "signatureText">): Promise<IMailboxUserSetting> {
+  async saveCurrent(mailboxId: string, data: Pick<IMailboxUserSettingBase, "signatureHtml" | "signatureText" | "autoAdvanceOnClose">): Promise<IMailboxUserSetting> {
     return await this.httpClient.put(`/api/mailboxes/${mailboxId}/user-settings/current`, data) as IMailboxUserSetting
   }
 

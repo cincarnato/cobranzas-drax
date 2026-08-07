@@ -24,11 +24,12 @@ class MailboxUserSettingService extends AbstractService<IMailboxUserSetting, IMa
         return await this.repository.findByMailboxAndUser(mailbox._id, userId);
     }
 
-    async saveCurrent(mailboxId: string, userId: string, data: Pick<IMailboxUserSettingBase, "signatureHtml" | "signatureText">): Promise<IMailboxUserSetting> {
+    async saveCurrent(mailboxId: string, userId: string, data: Pick<IMailboxUserSettingBase, "signatureHtml" | "signatureText" | "autoAdvanceOnClose">): Promise<IMailboxUserSetting> {
         const mailbox = await this.assertMailboxOperator(mailboxId, userId);
         return await this.repository.upsertForMailboxAndUser(mailbox._id, userId, {
             signatureHtml: data.signatureHtml || "",
             signatureText: data.signatureText || "",
+            autoAdvanceOnClose: Boolean(data.autoAdvanceOnClose),
         });
     }
 

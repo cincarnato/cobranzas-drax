@@ -11,6 +11,7 @@ import type {IMailboxUserSetting, IMailboxUserSettingBase} from "../interfaces/I
 const SaveMailboxUserSettingSchema = z.object({
     signatureHtml: z.string().optional(),
     signatureText: z.string().optional(),
+    autoAdvanceOnClose: z.boolean().optional(),
 });
 
 class MailboxUserSettingController extends AbstractFastifyController<IMailboxUserSetting, IMailboxUserSettingBase, IMailboxUserSettingBase>   {
@@ -49,6 +50,7 @@ class MailboxUserSettingController extends AbstractFastifyController<IMailboxUse
             return reply.send(await MailboxUserSettingServiceFactory.instance.saveCurrent(mailboxId, this.getUserId(request), {
                 signatureHtml: body?.signatureHtml || "",
                 signatureText: body?.signatureText || "",
+                autoAdvanceOnClose: Boolean(body?.autoAdvanceOnClose),
             }))
         } catch (error) {
             return this.handleMailboxUserSettingError(error, reply)

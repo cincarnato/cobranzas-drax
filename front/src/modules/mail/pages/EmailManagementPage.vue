@@ -67,6 +67,7 @@ const loadingDetail = ref(false)
 const actionLoading = ref(false)
 const saving = ref(false)
 const detailNavigationLoading = ref(false)
+const autoAdvanceLoading = ref(false)
 const sessionEmailState = ref<SessionEmailState | null>(null)
 const sessionEmailLoading = ref(false)
 const closeSessionEmailDialog = ref(false)
@@ -436,14 +437,30 @@ async function reassign(userId: string | null) {
 
 async function closeEmail(closeReason?: string | null) {
   if (!selectedId.value) return
+  const shouldAutoAdvance = Boolean(mailboxUserSettings.value?.autoAdvanceOnClose && view.value !== "SENT")
+  const currentIndex = selectedListIndex.value
   actionLoading.value = true
   try {
     await EmailManagementProvider.instance.close(selectedId.value, {closeReason: closeReason || undefined})
+    if (shouldAutoAdvance) {
+      autoAdvanceLoading.value = true
+      notify("Gestión cerrada. Abriendo el siguiente mail.", "success")
+      await Promise.all([fetchList(), fetchCounts(), fetchSessionEmail()])
+      const nextEmail = currentIndex >= 0 ? items.value[currentIndex] || null : null
+      if (nextEmail) {
+        await openEmail(nextEmail)
+      } else {
+        closeDetail()
+        notify("Gestión cerrada. No hay otro mail para abrir.", "success")
+      }
+      return
+    }
     await Promise.all([fetchDetail(), fetchList(), fetchCounts(), fetchSessionEmail()])
     notify("Gestión cerrada.", "success")
   } catch (error: any) {
     notify(error?.response?.data?.message || error?.message || "No se pudo cerrar la gestión.", "error")
   } finally {
+    autoAdvanceLoading.value = false
     actionLoading.value = false
   }
 }
@@ -596,7 +613,7 @@ async function openMailboxSettings() {
   }
 }
 
-async function saveMailboxSettings(payload: {signatureHtml: string; signatureText: string}) {
+async function saveMailboxSettings(payload: {signatureHtml: string; signatureText: string; autoAdvanceOnClose: boolean}) {
   if (!mailboxId.value) return
   mailboxUserSettingsSaving.value = true
   try {
@@ -740,32 +757,46 @@ function notify(text: string, color = "info") {
           @toggle-star="toggleStar"
           @retry="fetchList"
         />
-        <section v-if="selectedId" class="email-detail-overlay">
-          <EmailDetail
-            :detail="detail"
-            :loading="loadingDetail"
-            :error="detailError"
-            :current-user="currentUser"
-            :permissions="detailPermissions"
-            :action-loading="actionLoading"
-            :saving="saving"
-            :signature-html="mailboxUserSettings?.signatureHtml || ''"
-            :signature-text="mailboxUserSettings?.signatureText || ''"
-            :can-navigate-previous="canNavigatePreviousEmail"
-            :can-navigate-next="canNavigateNextEmail"
-            :navigation-loading="detailNavigationLoading"
-            @back="closeDetail"
-            @retry="fetchDetail()"
-            @navigate-previous="navigateDetail('previous')"
-            @navigate-next="navigateDetail('next')"
-            @assign="assignToMe"
-            @reopen-and-assign="reopenAndAssignToMe"
-            @save-classification="saveClassification"
-            @reassign="reassign"
-            @close="closeEmail"
-            @reply-sent="fetchDetail(); fetchList(); fetchCounts(); fetchSessionEmail()"
-          />
-        </section>
+        <Transition name="email-detail-shift" mode="out-in">
+          <section
+            v-if="selectedId"
+            :key="selectedId"
+            class="email-detail-overlay"
+            :class="{'email-detail-overlay--advancing': autoAdvanceLoading}"
+          >
+            <v-progress-linear
+              v-if="autoAdvanceLoading"
+              color="primary"
+              indeterminate
+              absolute
+              location="top"
+            />
+            <EmailDetail
+              :detail="detail"
+              :loading="loadingDetail"
+              :error="detailError"
+              :current-user="currentUser"
+              :permissions="detailPermissions"
+              :action-loading="actionLoading"
+              :saving="saving"
+              :signature-html="mailboxUserSettings?.signatureHtml || ''"
+              :signature-text="mailboxUserSettings?.signatureText || ''"
+              :can-navigate-previous="canNavigatePreviousEmail"
+              :can-navigate-next="canNavigateNextEmail"
+              :navigation-loading="detailNavigationLoading"
+              @back="closeDetail"
+              @retry="fetchDetail()"
+              @navigate-previous="navigateDetail('previous')"
+              @navigate-next="navigateDetail('next')"
+              @assign="assignToMe"
+              @reopen-and-assign="reopenAndAssignToMe"
+              @save-classification="saveClassification"
+              @reassign="reassign"
+              @close="closeEmail"
+              @reply-sent="fetchDetail(); fetchList(); fetchCounts(); fetchSessionEmail()"
+            />
+          </section>
+        </Transition>
         <section v-if="selectedOutboundEmail" class="email-detail-overlay">
           <OutboundEmailDetail
             :email="selectedOutboundEmail"
@@ -841,6 +872,21 @@ function notify(text: string, color = "info") {
   z-index: 5;
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
+}
+.email-detail-overlay--advancing {
+  pointer-events: none;
+}
+.email-detail-shift-enter-active,
+.email-detail-shift-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+.email-detail-shift-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+.email-detail-shift-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
 }
 .email-compose-overlay {
   position: absolute;

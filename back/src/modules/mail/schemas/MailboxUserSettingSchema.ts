@@ -6,7 +6,8 @@ const MailboxUserSettingBaseSchema = z.object({
       mailbox: z.coerce.string().min(1,'validation.required'),
     user: z.coerce.string().min(1,'validation.required'),
     signatureHtml: z.string().optional(),
-    signatureText: z.string().optional()
+    signatureText: z.string().optional(),
+    autoAdvanceOnClose: z.boolean().optional()
 });
 
 const MailboxUserSettingSchema = MailboxUserSettingBaseSchema

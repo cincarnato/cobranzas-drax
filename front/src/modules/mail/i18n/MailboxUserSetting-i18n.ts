@@ -10,7 +10,8 @@ const messages = {
                        mailbox:'Mailbox',
            user:'User',
            signatureHtml:'Signature HTML',
-           signatureText:'Signature text'
+           signatureText:'Signature text',
+           autoAdvanceOnClose:'Auto advance on close'
           }
       },
       permission: {
@@ -30,7 +31,8 @@ const messages = {
                        mailbox:'Mailbox',
            user:'Usuario',
            signatureHtml:'Firma HTML',
-           signatureText:'Firma texto'
+           signatureText:'Firma texto',
+           autoAdvanceOnClose:'Avanzar automaticamente al cerrar'
           }
       },
      permission: {

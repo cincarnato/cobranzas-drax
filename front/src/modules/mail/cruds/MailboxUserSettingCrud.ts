@@ -89,7 +89,8 @@ user: [(v: any) => !!v || 'validation.required']
         {name:'mailbox',type:'ref',label:'mailbox',default:null,ref: 'Mailbox',refDisplay: 'name'},
 {name:'user',type:'ref',label:'user',default:null,ref: 'User',refDisplay: 'name'},
 {name:'signatureHtml',type:'longString',label:'signatureHtml',default:''},
-{name:'signatureText',type:'longString',label:'signatureText',default:''}
+{name:'signatureText',type:'longString',label:'signatureText',default:''},
+{name:'autoAdvanceOnClose',type:'boolean',label:'autoAdvanceOnClose',default:false}
     ]
   }
   

@@ -10,7 +10,7 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository<IMailb
     protected tableName: string = 'MailboxUserSetting';
     protected dataBaseFile: string;
     protected searchFields: string[] = [];
-    protected booleanFields: string[] = [];
+    protected booleanFields: string[] = ['autoAdvanceOnClose'];
     protected jsonFields: string[] = [];
     protected identifier: string = 'mailbox';
     protected populateFields = [
@@ -22,7 +22,8 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository<IMailb
         {name: "mailbox", type: "TEXT", unique: undefined, primary: false},
 {name: "user", type: "TEXT", unique: undefined, primary: false},
 {name: "signatureHtml", type: "TEXT", unique: undefined, primary: false},
-{name: "signatureText", type: "TEXT", unique: undefined, primary: false}
+{name: "signatureText", type: "TEXT", unique: undefined, primary: false},
+{name: "autoAdvanceOnClose", type: "TEXT", unique: undefined, primary: false}
     ]
 
     async findByMailboxAndUser(mailboxId: string, userId: string): Promise<IMailboxUserSetting | null> {
@@ -36,7 +37,7 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository<IMailb
         if (current?._id) {
             return await this.update(current._id, {...current, ...data, mailbox: mailboxId, user: userId});
         }
-        return await this.create({mailbox: mailboxId, user: userId, signatureHtml: "", signatureText: "", ...data});
+        return await this.create({mailbox: mailboxId, user: userId, signatureHtml: "", signatureText: "", autoAdvanceOnClose: false, ...data});
     }
   
 }

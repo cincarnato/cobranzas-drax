@@ -18,7 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void
-  (e: "save", value: {signatureHtml: string; signatureText: string}): void
+  (e: "save", value: {signatureHtml: string; signatureText: string; autoAdvanceOnClose: boolean}): void
 }>()
 
 const {t} = useI18n()
@@ -26,6 +26,7 @@ const auth = useAuth()
 const activeTab = ref("signature")
 const signatureHtml = ref("")
 const signatureText = ref("")
+const autoAdvanceOnClose = ref(false)
 const templateEmails = ref<ITemplateEmail[]>([])
 const templateEmailLoading = ref(false)
 const templateEmailSaving = ref(false)
@@ -55,11 +56,12 @@ const canSaveTemplateEmail = computed(() => Boolean(
 ))
 
 watch(
-  () => [props.modelValue, props.settings?._id, props.settings?.signatureHtml],
+  () => [props.modelValue, props.settings?._id, props.settings?.signatureHtml, props.settings?.autoAdvanceOnClose],
   () => {
     if (!props.modelValue) return
     signatureHtml.value = props.settings?.signatureHtml || ""
     signatureText.value = props.settings?.signatureText || ""
+    autoAdvanceOnClose.value = Boolean(props.settings?.autoAdvanceOnClose)
   },
   {immediate: true}
 )
@@ -88,6 +90,7 @@ function save() {
   emit("save", {
     signatureHtml: signatureHtml.value,
     signatureText: signatureText.value,
+    autoAdvanceOnClose: autoAdvanceOnClose.value,
   })
 }
 
@@ -217,6 +220,9 @@ function contentPreview(content: string) {
               <v-tab value="preparedMessages" prepend-icon="mdi-email-edit-outline">
                 {{ t('mail.settings.preparedMessages') }}
               </v-tab>
+              <v-tab value="behavior" prepend-icon="mdi-skip-next-outline">
+                {{ t('mail.settings.behavior') }}
+              </v-tab>
             </v-tabs>
           </v-col>
 
@@ -323,6 +329,28 @@ function contentPreview(content: string) {
                   />
                 </div>
               </v-window-item>
+
+              <v-window-item value="behavior">
+                <div class="settings-pane">
+                  <v-skeleton-loader v-if="loading" type="list-item-two-line" />
+
+                  <div v-else class="close-setting-grid">
+                    <v-switch
+                      v-model="autoAdvanceOnClose"
+                      color="primary"
+                      density="compact"
+                      hide-details
+                      :disabled="!mailbox"
+                    />
+                    <div>
+                        <div class="text-subtitle-2">{{ t('mail.settings.autoAdvanceOnClose') }}</div>
+                        <div class="text-body-2 text-medium-emphasis">
+                          {{ t('mail.settings.autoAdvanceOnCloseHint') }}
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </v-window-item>
             </v-window>
           </v-col>
         </v-row>
@@ -336,7 +364,7 @@ function contentPreview(content: string) {
           {{ t('mail.settings.close') }}
         </v-btn>
         <v-btn
-          v-if="activeTab === 'signature'"
+          v-if="activeTab !== 'preparedMessages'"
           color="primary"
           prepend-icon="mdi-content-save-outline"
           :loading="saving"
@@ -427,6 +455,13 @@ function contentPreview(content: string) {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.close-setting-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
 }
 
 @media (max-width: 959px) {

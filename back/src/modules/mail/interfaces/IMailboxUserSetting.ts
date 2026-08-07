@@ -4,6 +4,7 @@ interface IMailboxUserSettingBase {
     user: any
     signatureHtml?: string
     signatureText?: string
+    autoAdvanceOnClose?: boolean
     createdAt?: Date
     updatedAt?: Date
 }
@@ -14,6 +15,7 @@ interface IMailboxUserSetting {
     user: any
     signatureHtml?: string
     signatureText?: string
+    autoAdvanceOnClose?: boolean
     createdAt?: Date
     updatedAt?: Date
 }
