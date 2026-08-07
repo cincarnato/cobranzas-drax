@@ -13,11 +13,16 @@ const props = defineProps<{
 const entries = computed<EmailThreadEntry[]>(() => [
   ...props.inboundThread.map((item) => ({id: item._id, type: "INBOUND" as const, date: item.receivedAt, inboundEmail: item})),
   ...props.outboundThread.map((item) => ({id: item._id, type: "OUTBOUND" as const, date: item.sentAt || item.createdAt || new Date(), outboundEmail: item})),
-].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()))
+].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
 </script>
 
 <template>
   <div>
-    <EmailThreadItem v-for="entry in entries" :key="`${entry.type}-${entry.id}`" :entry="entry" />
+    <EmailThreadItem
+      v-for="(entry, index) in entries"
+      :key="`${entry.type}-${entry.id}`"
+      :entry="entry"
+      :initial-expanded="index === 0"
+    />
   </div>
 </template>

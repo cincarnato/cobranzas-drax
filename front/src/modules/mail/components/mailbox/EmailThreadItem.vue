@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import {computed, ref} from "vue";
+import {computed, ref, watch} from "vue";
 import dayjs from "dayjs";
 import type {EmailThreadEntry} from "@/modules/mail/interfaces/IEmailManagement";
 import EmailAttachments from "./EmailAttachments.vue";
 
-const props = defineProps<{entry: EmailThreadEntry}>()
+const props = defineProps<{
+  entry: EmailThreadEntry
+  initialExpanded?: boolean
+}>()
 const showRemote = ref(false)
-const expanded = ref(true)
+const expanded = ref(Boolean(props.initialExpanded))
+
+watch(() => [props.entry.type, props.entry.id, props.initialExpanded], () => {
+  expanded.value = Boolean(props.initialExpanded)
+  showRemote.value = false
+})
 
 const senderName = computed(() => props.entry.type === "INBOUND"
   ? (props.entry.inboundEmail?.fromName || "")
