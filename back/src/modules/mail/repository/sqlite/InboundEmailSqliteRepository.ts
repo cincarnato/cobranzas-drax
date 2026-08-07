@@ -120,7 +120,13 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
             params.since = since instanceof Date ? since.toISOString() : since;
         }
 
-        if (category) {
+        if (Array.isArray(category) && category.length > 0) {
+            const categoryPlaceholders = category.map((_, index) => `@category${index}`).join(", ");
+            category.forEach((value, index) => {
+                params[`category${index}`] = value;
+            });
+            where.push(`category IN (${categoryPlaceholders})`);
+        } else if (typeof category === "string" && category) {
             where.push("category = @category");
             params.category = category;
         }

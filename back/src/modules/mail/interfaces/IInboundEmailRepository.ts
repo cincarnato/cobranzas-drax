@@ -7,7 +7,7 @@ import type {IEmailUserState} from "./IEmailUserState";
 type FindInboundEmailsByProcessMarkOptions = {
     processMarkKey: string
     processingStatus?: string
-    category?: string | null
+    category?: string | string[] | null
     retryStatus?: string
     maxAttempts?: number
     since?: Date | null

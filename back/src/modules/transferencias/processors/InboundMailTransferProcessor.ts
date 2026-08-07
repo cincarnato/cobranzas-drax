@@ -1261,24 +1261,70 @@ class InboundMailTransferProcessor {
     private async isSettingEnabled(key: string): Promise<boolean> {
         try {
             const setting = await SettingServiceFactory().findByKey(key);
-            return setting?.value === true || setting?.value === "true";
+            return this.normalizeSettingBoolean(setting?.value);
         } catch (error) {
             this.logError("Error reading inbound transfer automation setting", error, {settingKey: key});
             return false;
         }
     }
 
-    private async getTransferEmailCategoryFilter(): Promise<string | null> {
+    private async getTransferEmailCategoryFilter(): Promise<string | string[] | null> {
         try {
             const setting = await SettingServiceFactory().findByKey(INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY);
-            const category = typeof setting?.value === "string" ? setting.value.trim() : "";
-            return category || null;
+            const categories = this.normalizeSettingStringList(setting?.value);
+            if (categories.length === 0) {
+                return null;
+            }
+
+            return categories.length === 1 ? categories[0] : categories;
         } catch (error) {
             this.logError("Error reading inbound transfer category setting", error, {
                 settingKey: INBOUND_MAIL_TRANSFER_CATEGORY_SETTING_KEY,
             });
             return null;
         }
+    }
+
+    private normalizeSettingBoolean(value: unknown): boolean {
+        if (typeof value === "boolean") {
+            return value;
+        }
+
+        return typeof value === "string" && value.trim().toLowerCase() === "true";
+    }
+
+    private normalizeSettingStringList(value: unknown): string[] {
+        const values = Array.isArray(value) ? value : this.parseSettingStringListValue(value);
+
+        return values
+            .filter((item): item is string => typeof item === "string")
+            .flatMap((item) => item.split(","))
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    private parseSettingStringListValue(value: unknown): unknown[] {
+        if (typeof value !== "string") {
+            return [];
+        }
+
+        const trimmedValue = value.trim();
+        if (!trimmedValue) {
+            return [];
+        }
+
+        if (trimmedValue.startsWith("[")) {
+            try {
+                const parsedValue = JSON.parse(trimmedValue);
+                if (Array.isArray(parsedValue)) {
+                    return parsedValue;
+                }
+            } catch {
+                return [trimmedValue];
+            }
+        }
+
+        return [trimmedValue];
     }
 
     private readNumberEnv(key: string, fallback: number): number {

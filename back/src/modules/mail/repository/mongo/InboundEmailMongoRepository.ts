@@ -49,7 +49,9 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             query.receivedAt = {$gte: since};
         }
 
-        if (category) {
+        if (Array.isArray(category) && category.length > 0) {
+            query.category = {$in: category};
+        } else if (typeof category === "string" && category) {
             query.category = category;
         }
 
