@@ -5,7 +5,6 @@ import {IdentityProfileAvatar, IdentityProfileDrawer, useAuth} from "@drax/ident
 import {useSettingStore} from "@drax/settings-vue";
 import DarkMode from "../components/DarkMode/index.vue";
 import SidebarMenu from "../components/SidebarMenu/SidebarMenu.vue";
-import AnimatedBackground from "../components/AnimatedBackground/AnimatedBackground.vue";
 import {useRouter} from "vue-router";
 import { useDarkMode } from '../composables/useDarkMode.js'
 import NotificationButton from "../modules/base/components/NotificationButton.vue"
@@ -52,7 +51,6 @@ const appName = computed(() => {
 
     <identity-profile-drawer v-if="isAuthenticated()" v-model="profileDrawer" ></identity-profile-drawer>
 
-    <animated-background></animated-background>
 
     <v-main>
       <router-view/>

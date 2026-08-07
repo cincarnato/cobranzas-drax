@@ -78,7 +78,7 @@ const humanStatusOptions: Array<{title: string; value: TransferEmailHumanStatus;
   {title: 'Descartado', value: 'DESCARTADO', color: 'error'}
 ]
 
-const months = [
+const conceptOptions = [
   'Enero',
   'Febrero',
   'Marzo',
@@ -90,7 +90,10 @@ const months = [
   'Septiembre',
   'Octubre',
   'Noviembre',
-  'Diciembre'
+  'Diciembre',
+  'Copago',
+  'Financiación',
+  'Punitorios'
 ]
 
 const inboundEmailId = computed(() => {
@@ -772,9 +775,9 @@ const humanStatusPresentation = (status?: string) => {
                   <v-col cols="12" md="3">
                     <v-select
                       v-model="affiliate.month"
-                      :items="months"
-                      label="Mes"
-                      placeholder="Seleccionar mes"
+                      :items="conceptOptions"
+                      label="Concepto"
+                      placeholder="Seleccionar concepto"
                       variant="outlined"
                       density="compact"
                       hide-details="auto"
