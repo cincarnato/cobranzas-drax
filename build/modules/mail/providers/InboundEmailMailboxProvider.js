@@ -349,7 +349,7 @@ class InboundEmailMailboxProvider {
     async isSettingEnabled(key) {
         try {
             const setting = await SettingServiceFactory().findByKey(key);
-            return setting?.value === true || setting?.value === "true";
+            return setting?.value === true || (typeof setting?.value === "string" && setting.value.trim().toLowerCase() === "true");
         }
         catch (error) {
             this.logError("Error reading mailbox automation setting", error, { settingKey: key });

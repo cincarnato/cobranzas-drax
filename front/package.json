@@ -16,7 +16,7 @@
     "@drax/crud-vue": "^3.57.0",
     "@drax/identity-vue": "^3.57.0",
     "@drax/media-vue": "^3.57.0",
-    "@drax/settings-vue": "^3.57.1",
+    "@drax/settings-vue": "^3.57.2",
     "@drax/dashboard-vue": "^3.57.0",
     "@drax/audit-vue": "^3.57.0",
     "@drax/ai-vue": "^3.57.0",

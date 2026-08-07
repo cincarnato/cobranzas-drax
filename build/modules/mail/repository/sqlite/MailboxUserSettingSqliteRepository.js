@@ -4,7 +4,7 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository {
         super(...arguments);
         this.tableName = 'MailboxUserSetting';
         this.searchFields = [];
-        this.booleanFields = [];
+        this.booleanFields = ['autoAdvanceOnClose'];
         this.jsonFields = [];
         this.identifier = 'mailbox';
         this.populateFields = [
@@ -16,7 +16,8 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository {
             { name: "mailbox", type: "TEXT", unique: undefined, primary: false },
             { name: "user", type: "TEXT", unique: undefined, primary: false },
             { name: "signatureHtml", type: "TEXT", unique: undefined, primary: false },
-            { name: "signatureText", type: "TEXT", unique: undefined, primary: false }
+            { name: "signatureText", type: "TEXT", unique: undefined, primary: false },
+            { name: "autoAdvanceOnClose", type: "TEXT", unique: undefined, primary: false }
         ];
     }
     async findByMailboxAndUser(mailboxId, userId) {
@@ -30,7 +31,7 @@ class MailboxUserSettingSqliteRepository extends AbstractSqliteRepository {
         if (current?._id) {
             return await this.update(current._id, { ...current, ...data, mailbox: mailboxId, user: userId });
         }
-        return await this.create({ mailbox: mailboxId, user: userId, signatureHtml: "", signatureText: "", ...data });
+        return await this.create({ mailbox: mailboxId, user: userId, signatureHtml: "", signatureText: "", autoAdvanceOnClose: false, ...data });
     }
 }
 export default MailboxUserSettingSqliteRepository;

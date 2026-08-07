@@ -128,6 +128,8 @@ async function TransferEmailFastifyRoutes(fastify, options) {
                 properties: {
                     amount: { type: ["number", "null"] },
                     transferDate: { type: ["string", "null"], format: "date-time" },
+                    originName: { type: "string" },
+                    destinationName: { type: "string" },
                     affiliates: {
                         type: "array",
                         items: {

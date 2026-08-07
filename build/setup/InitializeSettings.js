@@ -42,10 +42,10 @@ async function InitializeSettings() {
     await settingService.createOrUpdate({
         category: 'Correo',
         key: 'InboundMailTransferCategory',
-        value: 'Transferencias',
+        value: ['Transferencias', 'Depositos'],
         label: 'Categoría de correos para procesar transferencias',
         description: 'Categoría de InboundEmail usada para filtrar los correos que serán analizados como transferencias. Dejar vacío para no filtrar por categoría.',
-        type: 'string',
+        type: 'stringList',
         prefix: '',
         suffix: ''
     });

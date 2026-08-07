@@ -6,6 +6,7 @@ import MailboxUserSettingPermissions from "../permissions/MailboxUserSettingPerm
 const SaveMailboxUserSettingSchema = z.object({
     signatureHtml: z.string().optional(),
     signatureText: z.string().optional(),
+    autoAdvanceOnClose: z.boolean().optional(),
 });
 class MailboxUserSettingController extends AbstractFastifyController {
     constructor() {
@@ -39,6 +40,7 @@ class MailboxUserSettingController extends AbstractFastifyController {
             return reply.send(await MailboxUserSettingServiceFactory.instance.saveCurrent(mailboxId, this.getUserId(request), {
                 signatureHtml: body?.signatureHtml || "",
                 signatureText: body?.signatureText || "",
+                autoAdvanceOnClose: Boolean(body?.autoAdvanceOnClose),
             }));
         }
         catch (error) {

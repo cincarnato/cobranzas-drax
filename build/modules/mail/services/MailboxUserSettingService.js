@@ -16,6 +16,7 @@ class MailboxUserSettingService extends AbstractService {
         return await this.repository.upsertForMailboxAndUser(mailbox._id, userId, {
             signatureHtml: data.signatureHtml || "",
             signatureText: data.signatureText || "",
+            autoAdvanceOnClose: Boolean(data.autoAdvanceOnClose),
         });
     }
     async assertMailboxOperator(mailboxId, userId) {
