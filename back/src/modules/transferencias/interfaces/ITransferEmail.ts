@@ -34,10 +34,12 @@ interface ITransferEmailBase {
     processDate?: Date
     operationNumber?: string
     concept?: string
+    originName?: string
     originAccount?: string
     originCbu?: string
     originAlias?: string
     originBank?: string
+    destinationName?: string
     destinationAccount?: string
     destinationCbu?: string
     destinationAlias?: string
@@ -84,10 +86,12 @@ interface ITransferEmail {
     processDate?: Date
     operationNumber?: string
     concept?: string
+    originName?: string
     originAccount?: string
     originCbu?: string
     originAlias?: string
     originBank?: string
+    destinationName?: string
     destinationAccount?: string
     destinationCbu?: string
     destinationAlias?: string

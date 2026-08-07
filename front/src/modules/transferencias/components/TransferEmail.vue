@@ -48,6 +48,8 @@ type TransferEmailPartialForm = Pick<
   | 'affiliates'
   | 'humanStatus'
   | 'transferDate'
+  | 'originName'
+  | 'destinationName'
 >
 
 const email = computed(() => props.transferEmail)
@@ -65,7 +67,9 @@ const partialForm = reactive<Required<TransferEmailPartialForm>>({
   amount: 0,
   affiliates: [],
   humanStatus: 'VALIDADO',
-  transferDate: null
+  transferDate: null,
+  originName: '',
+  destinationName: ''
 })
 
 const humanStatusOptions: Array<{title: string; value: TransferEmailHumanStatus; color: string}> = [
@@ -158,12 +162,16 @@ const isDirty = computed(() => {
     amount: partialForm.amount || 0,
     affiliates: buildAffiliatesPayload(),
     humanStatus: partialForm.humanStatus,
-    transferDate: normalizeDate(partialForm.transferDate)
+    transferDate: normalizeDate(partialForm.transferDate),
+    originName: normalizeText(partialForm.originName),
+    destinationName: normalizeText(partialForm.destinationName)
   }) !== JSON.stringify({
     amount: email.value.amount || 0,
     affiliates: cloneAffiliates(email.value.affiliates || []),
     humanStatus: resolveInitialHumanStatus(email.value.humanStatus),
-    transferDate: normalizeDate(email.value.transferDate)
+    transferDate: normalizeDate(email.value.transferDate),
+    originName: normalizeText(email.value.originName),
+    destinationName: normalizeText(email.value.destinationName)
   })
 })
 
@@ -183,6 +191,8 @@ function syncPartialForm() {
   partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
   partialForm.humanStatus = resolveInitialHumanStatus(email.value.humanStatus)
   partialForm.transferDate = email.value.transferDate ? new Date(email.value.transferDate) : null
+  partialForm.originName = email.value.originName || ''
+  partialForm.destinationName = email.value.destinationName || ''
   closeInboundEmail.value = true
   syncSingleAffiliateAmount()
   metadataSaveError.value = ''
@@ -259,6 +269,10 @@ function normalizeDate(date?: Date | string | null) {
   return parsed.toISOString()
 }
 
+function normalizeText(value?: string | null) {
+  return value?.trim() || ''
+}
+
 async function saveMetadata() {
   if (props.readonly || !email.value._id) return
 
@@ -272,6 +286,8 @@ async function saveMetadata() {
       affiliates: buildAffiliatesPayload(),
       humanStatus: partialForm.humanStatus,
       transferDate: partialForm.transferDate,
+      originName: normalizeText(partialForm.originName),
+      destinationName: normalizeText(partialForm.destinationName),
       auditSessionId: props.auditSessionId,
       closeInboundEmail: closeInboundEmail.value
     })
@@ -279,6 +295,8 @@ async function saveMetadata() {
     email.value.amount = updated.amount || 0
     email.value.affiliates = cloneAffiliates(updated.affiliates || [])
     email.value.transferDate = updated.transferDate
+    email.value.originName = updated.originName
+    email.value.destinationName = updated.destinationName
     email.value.aiStatus = updated.aiStatus
     email.value.aiProcessedAt = updated.aiProcessedAt
     email.value.aiError = updated.aiError
@@ -690,6 +708,7 @@ const humanStatusPresentation = (status?: string) => {
           </v-expansion-panel-title>
           <v-expansion-panel-text>
             <div class="summary-block">
+              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.originName) }}</p>
               <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.originAccount) }}</p>
               <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.originCbu) }}</p>
               <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.originAlias) }}</p>
@@ -704,6 +723,7 @@ const humanStatusPresentation = (status?: string) => {
           </v-expansion-panel-title>
           <v-expansion-panel-text>
             <div class="summary-block">
+              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.destinationName) }}</p>
               <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.destinationAccount) }}</p>
               <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.destinationCbu) }}</p>
               <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.destinationAlias) }}</p>
@@ -754,8 +774,30 @@ const humanStatusPresentation = (status?: string) => {
           </v-col>
         </v-row>
 
-
-
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="partialForm.originName"
+              label="Titular cuenta origen"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              :readonly="readonly"
+              class="sketch-input mt-3"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="partialForm.destinationName"
+              label="Titular cuenta destino"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              :readonly="readonly"
+              class="sketch-input mt-3"
+            />
+          </v-col>
+        </v-row>
 
 
         <v-expansion-panels

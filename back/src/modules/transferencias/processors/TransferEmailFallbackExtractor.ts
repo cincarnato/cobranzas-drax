@@ -8,10 +8,12 @@ type TransferEmailFallbackItem = {
     transferDate: string | null;
     operationNumber: string | null;
     concept: string | null;
+    originName: string | null;
     originAccount: string | null;
     originCbu: string | null;
     originAlias: string | null;
     originBank: string | null;
+    destinationName: string | null;
     destinationAccount: string | null;
     destinationCbu: string | null;
     destinationAlias: string | null;
@@ -42,6 +44,8 @@ function extractTransferEmailFallback(inboundEmail: IInboundEmail, aiError?: str
     const amount = extractAmount(text);
     const operationNumber = extractOperationNumber(text);
     const transferDate = extractTransferDate(text);
+    const originName = extractName(text, ["titular origen", "ordenante", "remitente", "pagador", "de"]);
+    const destinationName = extractName(text, ["titular destino", "beneficiario", "destinatario", "para"]);
     const originCbu = extractLabeledCbu(text, "origen") || extractFirstCbu(text);
     const destinationCbu = extractLabeledCbu(text, "destino");
     const originAccount = extractLabeledValue(text, ["cuenta origen", "cuenta debito", "cuenta débito"]);
@@ -80,10 +84,12 @@ function extractTransferEmailFallback(inboundEmail: IInboundEmail, aiError?: str
             transferDate,
             operationNumber,
             concept,
+            originName,
             originAccount,
             originCbu,
             originAlias,
             originBank,
+            destinationName,
             destinationAccount,
             destinationCbu,
             destinationAlias,
@@ -213,9 +219,15 @@ function extractEmail(text: string): string | null {
     return text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || null;
 }
 
-function extractName(text: string): string | null {
-    const match = text.match(/\b(?:titular|ordenante|remitente|pagador)\b\s*:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.' -]{4,80})/);
-    return match?.[1]?.trim() || null;
+function extractName(text: string, labels: string[] = ["titular", "ordenante", "remitente", "pagador"]): string | null {
+    for (const label of labels) {
+        const match = text.match(new RegExp(`\\b${label}\\b\\s*:?\\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.' -]{4,80})`));
+        const value = match?.[1]?.trim().replace(/\s{2,}/g, " ");
+        if (value) {
+            return value;
+        }
+    }
+    return null;
 }
 
 function extractBank(text: string, labels: string[]): string | null {

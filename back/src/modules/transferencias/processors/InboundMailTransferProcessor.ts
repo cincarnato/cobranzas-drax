@@ -97,10 +97,12 @@ const transferEmailAiItemSchema = z.object({
     transferDate: z.string().nullable(),
     operationNumber: z.string().nullable(),
     concept: z.string().nullable(),
+    originName: z.string().nullable().optional().default(null),
     originAccount: z.string().nullable(),
     originCbu: z.string().nullable(),
     originAlias: z.string().nullable(),
     originBank: z.string().nullable(),
+    destinationName: z.string().nullable().optional().default(null),
     destinationAccount: z.string().nullable(),
     destinationCbu: z.string().nullable(),
     destinationAlias: z.string().nullable(),
@@ -605,7 +607,9 @@ class InboundMailTransferProcessor {
         const processDate = new Date();
 
         const payloads = await Promise.all(extractionResult.transfers.map(async (extraction) => {
+            const originName = this.normalizeString(extraction.originName);
             const emailFromName = this.normalizeString(extraction.affiliateName)
+                || originName
                 || inboundEmail.customer?.name
                 || this.normalizeString(inboundEmail.fromName);
             const emailFromEmail = this.normalizeString(extraction.affiliateEmail)
@@ -622,7 +626,7 @@ class InboundMailTransferProcessor {
                 : undefined;
             const extractedAffiliates = this.normalizeAffiliates([
                 {
-                    name: extraction.affiliateName,
+                    name: extraction.affiliateName || originName,
                     email: extraction.affiliateEmail,
                     amount,
                     documentNumber: extraction.affiliateDocumentNumber,
@@ -667,10 +671,12 @@ class InboundMailTransferProcessor {
                 processDate,
                 operationNumber: this.normalizeOperationNumber(extraction.operationNumber),
                 concept: this.normalizeString(extraction.concept),
+                originName,
                 originAccount,
                 originCbu,
                 originAlias: this.normalizeString(extraction.originAlias),
                 originBank: this.normalizeString(extraction.originBank),
+                destinationName: this.normalizeString(extraction.destinationName),
                 destinationAccount: this.normalizeString(extraction.destinationAccount),
                 destinationCbu: this.normalizeString(extraction.destinationCbu),
                 destinationAlias: this.normalizeString(extraction.destinationAlias),
@@ -1028,6 +1034,9 @@ class InboundMailTransferProcessor {
                     "Si el mail contiene transferencias para mas de un afiliado o mas de un comprobante, devuelve un item por cada transferencia en transfers.",
                     "Cada item de transfers debe representar una unica transferencia/comprobante y no debe mezclar datos entre comprobantes.",
                     "emailDocumentNumber es el DNI/CUIL/CUIT asociado al remitente o pagador identificado en el email.",
+                    "originName es el nombre del titular, ordenante, remitente o pagador de la cuenta bancaria de origen cuando aparezca en el comprobante.",
+                    "destinationName es el nombre del titular o beneficiario de la cuenta bancaria de destino cuando aparezca en el comprobante.",
+                    "originAccount y destinationAccount son numeros o identificadores de cuenta; no pongas nombres de personas en esos campos.",
                     "affiliateName, affiliateEmail y affiliateDocumentNumber deben contener datos del remitente o pagador cuando aparezcan en el mail; el afiliado final se resuelve luego con mapeos de pagadores.",
                     "additionalAffiliates debe incluir otros afiliados pagados por la misma transferencia, con name, email y documentNumber cuando aparezcan.",
                     "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",

@@ -51,6 +51,8 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
             affiliates: payload.affiliates,
             humanStatus: payload.humanStatus,
             transferDate: payload.transferDate,
+            originName: payload.originName,
+            destinationName: payload.destinationName,
         }
 
         let item

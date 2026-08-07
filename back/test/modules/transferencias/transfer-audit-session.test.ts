@@ -82,6 +82,8 @@ describe("TransferAuditSession", () => {
                 affiliates: transferEmail.affiliates,
                 humanStatus: 'VALIDADO',
                 transferDate: transferEmail.transferDate,
+                originName: 'Juan Perez',
+                destinationName: 'Premedic SA',
                 auditSessionId: state.session._id,
             },
             headers: {Authorization: `Bearer ${operatorTwo.accessToken}`},
@@ -163,6 +165,8 @@ describe("TransferAuditSession", () => {
                 affiliates: transferEmail.affiliates,
                 humanStatus: 'VALIDADO',
                 transferDate: transferEmail.transferDate,
+                originName: 'Juan Perez',
+                destinationName: 'Premedic SA',
                 auditSessionId: state.session._id,
             },
             headers: {Authorization: `Bearer ${root.accessToken}`},
@@ -176,6 +180,12 @@ describe("TransferAuditSession", () => {
         expect(audited.auditedAt).toBeDefined()
         expect(audited.assignedTo).toBeUndefined()
 
+        const persisted = await TransferEmailModel.findById(transferEmail._id).lean()
+        expect(persisted?.originName).toBe('Juan Perez')
+        expect(persisted?.destinationName).toBe('Premedic SA')
+        expect(audited.originName).toBe('Juan Perez')
+        expect(audited.destinationName).toBe('Premedic SA')
+
         const activeResponse = await testSetup.fastifyInstance.inject({
             method: 'GET',
             url: '/api/transfer-audit-sessions/active',
@@ -186,6 +196,31 @@ describe("TransferAuditSession", () => {
         expect(activeState.session.validatedCount).toBe(1)
         expect(activeState.stats.auditedCount).toBe(1)
         expect(activeState.stats.validatedCount).toBe(1)
+    })
+
+    it("auditing persists account holder names without an audit session", async () => {
+        await createPendingTransferEmails(1)
+        const root = await testSetup.rootUserLogin()
+        const transferEmail = await TransferEmailModel.findOne().lean()
+
+        const auditResponse = await testSetup.fastifyInstance.inject({
+            method: 'POST',
+            url: `/api/transfer-emails/${transferEmail?._id}/audit`,
+            payload: {
+                amount: 1500,
+                affiliates: transferEmail?.affiliates,
+                humanStatus: 'VALIDADO',
+                transferDate: transferEmail?.transferDate,
+                originName: 'Maria Lopez',
+                destinationName: 'Premedic SA',
+            },
+            headers: {Authorization: `Bearer ${root.accessToken}`},
+        })
+
+        expect(auditResponse.statusCode).toBe(200)
+        const persisted = await TransferEmailModel.findById(transferEmail?._id).lean()
+        expect(persisted?.originName).toBe('Maria Lopez')
+        expect(persisted?.destinationName).toBe('Premedic SA')
     })
 })
 
