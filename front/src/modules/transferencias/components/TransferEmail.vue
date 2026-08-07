@@ -54,7 +54,7 @@ type TransferEmailPartialForm = Pick<
 
 const email = computed(() => props.transferEmail)
 const activeLeftTab = ref('proof')
-const detailsPanels = ref<number[]>([2])
+const detailsPanels = ref<number[]>([])
 const affiliatesPanel = ref<number | null>(0)
 const loadingInboundEmail = ref(false)
 const linkedInboundEmail = ref<IInboundEmail | null>(null)
@@ -641,98 +641,6 @@ const humanStatusPresentation = (status?: string) => {
     </v-col>
 
     <v-col cols="12" md="7" lg="8">
-      <v-expansion-panels
-        v-model="detailsPanels"
-        multiple
-        variant="accordion"
-        class="detail-panels"
-      >
-        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-          <v-expansion-panel-title class="detail-panel-title">
-            Estado
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <div class="summary-block">
-              <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
-              <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
-              <p><span class="summary-label">Pagador mapeado:</span> {{ valueOrDash(payerLabel) }}</p>
-              <p><span class="summary-label">ID Payer:</span> {{ valueOrDash(payerId) }}</p>
-              <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
-              <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
-              <v-divider></v-divider>
-              <p><span class="summary-label">Estado auditoría:</span>
-                {{ humanStatusPresentation(email.humanStatus).label }}</p>
-              <p><span class="summary-label">Asignado a:</span>
-                {{ valueOrDash(email.assignedTo?.username || email.assignedTo?.name) }}</p>
-              <p><span class="summary-label">Auditado por:</span>
-                {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}</p>
-              <p><span class="summary-label">Fecha auditoría:</span> {{ formatDate(email.auditedAt) }}</p>
-            </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-          <v-expansion-panel-title class="detail-panel-title">
-            Email
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <div class="summary-block">
-
-              <p><span class="summary-label">Fecha Email:</span> {{ formatDate(email.emailDate) }}</p>
-              <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
-              <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
-              <p><span class="summary-label">Email Remitente:</span> {{ valueOrDash(email.emailFromEmail) }}</p>
-              <p><span class="summary-label">Documento Email:</span> {{ valueOrDash(email.emailDocumentNumber) }}</p>
-            </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-
-        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-          <v-expansion-panel-title class="detail-panel-title">
-            Comprobante
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <div class="summary-block">
-              <p><span class="summary-label">Monto Transferido:</span> {{
-                  formatCurrency(email.amount, email.currency)
-                }}</p>
-              <p><span class="summary-label">Fecha de Transferencia:</span> {{ formatDate(email.transferDate) }}</p>
-              <p><span class="summary-label">Número de Operación:</span> {{ valueOrDash(email.operationNumber) }}</p>
-              <p><span class="summary-label">Concepto:</span> {{ valueOrDash(email.concept) }}</p>
-            </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-
-        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-          <v-expansion-panel-title class="detail-panel-title">
-            Origen
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <div class="summary-block">
-              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.originName) }}</p>
-              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.originAccount) }}</p>
-              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.originCbu) }}</p>
-              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.originAlias) }}</p>
-              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.originBank) }}</p>
-            </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-
-        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
-          <v-expansion-panel-title class="detail-panel-title">
-            Destino
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <div class="summary-block">
-              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.destinationName) }}</p>
-              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.destinationAccount) }}</p>
-              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.destinationCbu) }}</p>
-              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.destinationAlias) }}</p>
-              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.destinationBank) }}</p>
-            </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
-
       <v-card class="sketch-card partial-form-card" variant="flat">
         <div class="partial-form-header">
           <div class="partial-form-title">Actualizar registro</div>
@@ -1003,6 +911,98 @@ const humanStatusPresentation = (status?: string) => {
         </div>
 
       </v-card>
+
+      <v-expansion-panels
+        v-model="detailsPanels"
+        multiple
+        variant="accordion"
+        class="detail-panels detail-panels--below-form"
+      >
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Estado
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Estado general:</span> {{ statusPresentation(email.status).label }}</p>
+              <p><span class="summary-label">Estado IA:</span> {{ aiStatusPresentation(email.aiStatus).label }}</p>
+              <p><span class="summary-label">Pagador mapeado:</span> {{ valueOrDash(payerLabel) }}</p>
+              <p><span class="summary-label">ID Payer:</span> {{ valueOrDash(payerId) }}</p>
+              <p><span class="summary-label">Fecha Procesado IA:</span> {{ formatDate(email.aiProcessedAt) }}</p>
+              <p><span class="summary-label">Error IA:</span> {{ valueOrDash(email.aiError) }}</p>
+              <v-divider></v-divider>
+              <p><span class="summary-label">Estado auditoría:</span>
+                {{ humanStatusPresentation(email.humanStatus).label }}</p>
+              <p><span class="summary-label">Asignado a:</span>
+                {{ valueOrDash(email.assignedTo?.username || email.assignedTo?.name) }}</p>
+              <p><span class="summary-label">Auditado por:</span>
+                {{ valueOrDash(email.auditedBy?.username || email.auditedBy?.name) }}</p>
+              <p><span class="summary-label">Fecha auditoría:</span> {{ formatDate(email.auditedAt) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Email
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+
+              <p><span class="summary-label">Fecha Email:</span> {{ formatDate(email.emailDate) }}</p>
+              <p><span class="summary-label">Asunto:</span> {{ valueOrDash(email.emailSubject) }}</p>
+              <p><span class="summary-label">Remitente:</span> {{ valueOrDash(email.emailFromName) }}</p>
+              <p><span class="summary-label">Email Remitente:</span> {{ valueOrDash(email.emailFromEmail) }}</p>
+              <p><span class="summary-label">Documento Email:</span> {{ valueOrDash(email.emailDocumentNumber) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Comprobante
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Monto Transferido:</span> {{
+                  formatCurrency(email.amount, email.currency)
+                }}</p>
+              <p><span class="summary-label">Fecha de Transferencia:</span> {{ formatDate(email.transferDate) }}</p>
+              <p><span class="summary-label">Número de Operación:</span> {{ valueOrDash(email.operationNumber) }}</p>
+              <p><span class="summary-label">Concepto:</span> {{ valueOrDash(email.concept) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Origen
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.originName) }}</p>
+              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.originAccount) }}</p>
+              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.originCbu) }}</p>
+              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.originAlias) }}</p>
+              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.originBank) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+
+        <v-expansion-panel class="sketch-card detail-panel" rounded="lg">
+          <v-expansion-panel-title class="detail-panel-title">
+            Destino
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="summary-block">
+              <p><span class="summary-label">Titular:</span> {{ valueOrDash(email.destinationName) }}</p>
+              <p><span class="summary-label">Cuenta:</span> {{ valueOrDash(email.destinationAccount) }}</p>
+              <p><span class="summary-label">CBU/CVU:</span> {{ valueOrDash(email.destinationCbu) }}</p>
+              <p><span class="summary-label">Alias:</span> {{ valueOrDash(email.destinationAlias) }}</p>
+              <p><span class="summary-label">Banco:</span> {{ valueOrDash(email.destinationBank) }}</p>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </v-col>
   </v-row>
 
@@ -1037,6 +1037,10 @@ const humanStatusPresentation = (status?: string) => {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
   width: 100%;
+}
+
+.detail-panels--below-form {
+  margin-top: 12px;
 }
 
 .detail-panel {
