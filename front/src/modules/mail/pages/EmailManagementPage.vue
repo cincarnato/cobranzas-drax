@@ -27,9 +27,12 @@ import OutboundEmailDetail from "@/modules/mail/components/mailbox/OutboundEmail
 import EmailDetail from "@/modules/mail/components/mailbox/EmailDetail.vue";
 import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
 import MailboxUserSettingsDialog from "@/modules/mail/components/mailbox/MailboxUserSettingsDialog.vue";
+import EmbeddedRouterDialog from "@/modules/mail/embedded/EmbeddedRouterDialog.vue";
+import embeddedRouter from "@/modules/mail/embedded/EmbeddedRouter";
 
 const route = useRoute()
 const router = useRouter()
+embeddedRouter.setRouter(router)
 const auth = useAuth()
 const authStore = useAuthStore()
 const {optionNames} = useMailboxAiOptions()
@@ -637,6 +640,24 @@ async function onStandaloneEmailSent() {
   await fetchList()
 }
 
+function openManagementUrl(payload: {path: string; inboundEmailId: string}) {
+  embeddedRouter.open({
+    path: payload.path,
+    query: {
+      inboundEmail: payload.inboundEmailId,
+    },
+  })
+}
+
+async function refreshAfterEmbeddedClose() {
+  await Promise.all([
+    selectedId.value ? fetchDetail(selectedId.value) : Promise.resolve(),
+    fetchList(),
+    fetchCounts(),
+    fetchSessionEmail(),
+  ])
+}
+
 function keepCompatibleFilters() {
   const mailbox = selectedMailbox.value
   if (!mailbox) return
@@ -794,6 +815,7 @@ function notify(text: string, color = "info") {
               @reassign="reassign"
               @close="closeEmail"
               @reply-sent="fetchDetail(); fetchList(); fetchCounts(); fetchSessionEmail()"
+              @manage-category="openManagementUrl"
             />
           </section>
         </Transition>
@@ -840,6 +862,7 @@ function notify(text: string, color = "info") {
       :saving="mailboxUserSettingsSaving"
       @save="saveMailboxSettings"
     />
+    <EmbeddedRouterDialog @closed="refreshAfterEmbeddedClose" />
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
       {{ snackbar.text }}
     </v-snackbar>

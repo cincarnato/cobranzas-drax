@@ -42,6 +42,7 @@ const emit = defineEmits<{
   (e: "reply-sent", value: any): void
   (e: "navigate-previous"): void
   (e: "navigate-next"): void
+  (e: "manage-category", value: {path: string; inboundEmailId: string}): void
 }>()
 
 const closeDialog = ref(false)
@@ -163,6 +164,13 @@ function buildManagementUrl(url: string, inboundEmailId: string) {
 function isAbsoluteUrl(url: string) {
   return /^[a-z][a-z\d+\-.]*:\/\//i.test(url)
 }
+
+function manageCategory() {
+  const url = selectedCategory.value?.managementUrl?.trim()
+  const inboundEmailId = email.value?._id
+  if (!url || !inboundEmailId) return
+  emit("manage-category", {path: url, inboundEmailId})
+}
 </script>
 
 <template>
@@ -253,12 +261,10 @@ function isAbsoluteUrl(url: string) {
             <EmailThread :inbound-thread="detail.inboundThread" :outbound-thread="detail.outboundThread" />
             <div v-if="canReply && managementUrl && selectedCategory" class="d-flex justify-center mt-4">
               <v-btn
-                :href="managementUrl"
-                target="_blank"
-                rel="noopener noreferrer"
                 color="primary"
                 variant="tonal"
-                prepend-icon="mdi-open-in-new"
+                prepend-icon="mdi-application-import"
+                @click="manageCategory"
               >
                 {{ t('mailbox.action.manageCategory', {category: selectedCategory.name}) }}
               </v-btn>
@@ -324,6 +330,7 @@ function isAbsoluteUrl(url: string) {
             @save-classification="$emit('save-classification', $event)"
             @reassign="$emit('reassign', $event)"
             @close-request="requestClose"
+            @manage-category="manageCategory"
           />
         </aside>
       </div>

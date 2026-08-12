@@ -28,6 +28,7 @@ const emit = defineEmits<{
   (e: "assign"): void
   (e: "reopen-and-assign"): void
   (e: "close-request", closeReason?: string | null): void
+  (e: "manage-category"): void
 }>()
 
 const classification = ref({
@@ -187,12 +188,10 @@ function sameClassification(value: typeof classification.value, email: IInboundE
     </v-alert>
     <v-btn
       v-if="managementUrl && managementCategoryName"
-      :href="managementUrl"
-      target="_blank"
-      rel="noopener noreferrer"
       color="primary"
       variant="tonal"
-      prepend-icon="mdi-open-in-new"
+      prepend-icon="mdi-application-import"
+      @click="emit('manage-category')"
     >
       {{ t('mailbox.action.manageCategory', {category: managementCategoryName}) }}
     </v-btn>
