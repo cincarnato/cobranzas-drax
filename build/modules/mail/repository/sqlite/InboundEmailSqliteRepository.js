@@ -314,7 +314,8 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository {
                       FROM ${this.tableName}
                       WHERE mailbox IN (${placeholders})
                         AND assignedTo = @userId
-                        AND attentionStatus = 'ASSIGNED'`)
+                        AND attentionStatus = 'ASSIGNED'
+                        AND assignmentMode = 'AUTO'`)
             .get(params);
         return Number(result?.total || 0);
     }
@@ -331,6 +332,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository {
                       FROM ${this.tableName}
                       WHERE mailbox IN (${placeholders})
                         AND attentionStatus = 'ASSIGNED'
+                        AND assignmentMode = 'AUTO'
                         AND assignedTo IS NOT NULL
                         AND assignedTo != ''
                       GROUP BY assignedTo`)

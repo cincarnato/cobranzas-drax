@@ -60,7 +60,7 @@ class OutboundEmailSqliteRepository extends AbstractSqliteRepository {
         const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
         const offset = (page - 1) * pageSize;
         const params = { mailboxId: options.mailboxId, limit: pageSize, offset };
-        const where = "mailbox = @mailboxId AND (inboundEmail IS NULL OR inboundEmail = '')";
+        const where = "mailbox = @mailboxId";
         const items = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE ${where} ORDER BY COALESCE(sentAt, createdAt) DESC LIMIT @limit OFFSET @offset`).all(params);
         for (const item of items) {
             await this.decorate(item);

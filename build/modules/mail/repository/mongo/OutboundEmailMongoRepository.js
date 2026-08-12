@@ -29,13 +29,7 @@ class OutboundEmailMongoRepository extends AbstractMongoRepository {
     async standalonePaginate(options) {
         const page = Math.max(Number(options.page || 1), 1);
         const pageSize = Math.min(Math.max(Number(options.pageSize || 25), 1), 100);
-        const query = {
-            mailbox: options.mailboxId,
-            $or: [
-                { inboundEmail: { $exists: false } },
-                { inboundEmail: null },
-            ],
-        };
+        const query = { mailbox: options.mailboxId };
         const [items, totalItems] = await Promise.all([
             this._model.find(query)
                 .populate(this._populateFields)

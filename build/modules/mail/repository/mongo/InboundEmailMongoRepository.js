@@ -225,6 +225,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
             mailbox: { $in: mailboxValues },
             assignedTo: userId,
             attentionStatus: "ASSIGNED",
+            assignmentMode: "AUTO",
         }).exec();
     }
     async countAssignedByUser(mailboxValues) {
@@ -236,6 +237,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
                     mailbox: { $in: mailboxValues },
                     attentionStatus: "ASSIGNED",
                     assignedTo: { $ne: null },
+                    assignmentMode: "AUTO",
                 },
             },
             {
