@@ -56,6 +56,18 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         return validatedItems;
     }
 
+    async findThread(inboundEmail: IInboundEmail): Promise<IInboundEmail[]> {
+        const items = await this.repository.findThread(inboundEmail);
+        const validatedItems: IInboundEmail[] = [];
+
+        for (const item of items) {
+            const transformedItem = this.transformRead ? await this.transformRead(item) : item;
+            validatedItems.push(await this.validateOutput(transformedItem));
+        }
+
+        return validatedItems;
+    }
+
     async managementPaginate(options: InboundEmailManagementListOptions): Promise<InboundEmailManagementListResult> {
         const currentUserId = options.currentUserId || "";
         const mailboxValues = await this.resolveManagementMailboxValues(options.mailboxValues?.[0], currentUserId, options.assignedTo || null);

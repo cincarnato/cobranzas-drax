@@ -31,6 +31,16 @@ type MailSendResult = {
     outboundEmail: IOutboundEmail;
 };
 
+type ReplyThreadEntry = {
+    type: "INBOUND" | "OUTBOUND";
+    date?: Date;
+    from?: string;
+    toEmails?: string[];
+    subject?: string;
+    bodyText?: string;
+    bodyHtml?: string;
+};
+
 class MailReplyService {
     private mediaService = new MediaService();
 
@@ -58,6 +68,7 @@ class MailReplyService {
         const attachments = this.normalizeAttachments(payload.attachments || []);
         const smtpAttachments = await this.buildSmtpAttachments(attachments);
         const closeReason = payload.closeReason || inboundEmail.closeReason || null;
+        const replyContent = await this.buildReplyContent(bodyText, bodyHtml, inboundEmail);
 
         if (!toEmails.length) {
             throw new BadRequestError("at least one recipient is required");
@@ -98,8 +109,8 @@ class MailReplyService {
                 cc: ccEmails.length ? ccEmails : undefined,
                 bcc: bccEmails.length ? bccEmails : undefined,
                 subject,
-                text: bodyText || undefined,
-                html: bodyHtml || undefined,
+                text: replyContent.text || undefined,
+                html: replyContent.html || undefined,
                 attachments: smtpAttachments.length ? smtpAttachments : undefined,
                 inReplyTo: inboundEmail.messageId || undefined,
                 references: references.length ? references : undefined,
@@ -373,6 +384,142 @@ class MailReplyService {
     private resolveSubject(inputSubject?: string, inboundSubject?: string): string {
         const subject = inputSubject?.trim() || inboundSubject?.trim() || "Sin asunto";
         return /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+    }
+
+    private async buildReplyContent(bodyText: string, bodyHtml: string, inboundEmail: IInboundEmail): Promise<{text: string; html: string}> {
+        const inboundThread = await InboundEmailServiceFactory.instance.findThread(inboundEmail);
+        const outboundThread = await OutboundEmailServiceFactory.instance.findByInboundEmailIds(inboundThread.map((item) => item._id));
+        const entries = this.buildThreadEntries(inboundThread, outboundThread);
+        return {
+            text: this.appendTextHistory(bodyText, entries),
+            html: this.appendHtmlHistory(bodyHtml || this.textToHtml(bodyText), entries),
+        };
+    }
+
+    private buildThreadEntries(inboundThread: IInboundEmail[], outboundThread: IOutboundEmail[]): ReplyThreadEntry[] {
+        return [
+            ...inboundThread.map((item) => ({
+                type: "INBOUND" as const,
+                date: item.receivedAt,
+                from: this.formatSender(item.fromName, item.fromEmail),
+                toEmails: item.toEmails || [],
+                subject: item.subject,
+                bodyText: item.bodyText,
+                bodyHtml: item.bodyHtml,
+            })),
+            ...outboundThread.map((item) => ({
+                type: "OUTBOUND" as const,
+                date: item.sentAt || item.createdAt,
+                from: item.fromEmail,
+                toEmails: item.toEmails || [],
+                subject: item.subject,
+                bodyText: item.bodyText,
+                bodyHtml: item.bodyHtml,
+            })),
+        ]
+            .filter((entry) => Boolean(entry.bodyText?.trim() || entry.bodyHtml?.trim()))
+            .sort((a, b) => this.entryTimestamp(a) - this.entryTimestamp(b));
+    }
+
+    private appendTextHistory(bodyText: string, entries: ReplyThreadEntry[]): string {
+        if (!entries.length) return bodyText;
+        const quotedEntries = entries
+            .map((entry) => {
+                const content = this.htmlToText(entry.bodyHtml || "") || entry.bodyText || "";
+                const quotedBody = this.quoteText(content);
+                if (!quotedBody) return "";
+                return [
+                    `El ${this.formatReplyDate(entry.date)}, ${entry.from || "remitente"} escribió:`,
+                    quotedBody,
+                ].join("\n");
+            })
+            .filter(Boolean);
+
+        return [bodyText, ...quotedEntries].filter(Boolean).join("\n\n");
+    }
+
+    private appendHtmlHistory(bodyHtml: string, entries: ReplyThreadEntry[]): string {
+        if (!entries.length) return bodyHtml;
+        const quotedEntries = entries
+            .map((entry) => {
+                const contentHtml = entry.bodyHtml?.trim()
+                    ? this.sanitizeEmailHtml(entry.bodyHtml)
+                    : this.textToHtml(entry.bodyText || "");
+                if (!contentHtml.trim()) return "";
+                return [
+                    `<div class="gmail_quote">`,
+                    `<div>El ${this.escapeHtml(this.formatReplyDate(entry.date))}, ${this.escapeHtml(entry.from || "remitente")} escribió:</div>`,
+                    `<blockquote style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">${contentHtml}</blockquote>`,
+                    `</div>`,
+                ].join("");
+            })
+            .filter(Boolean);
+
+        return [bodyHtml, ...quotedEntries].filter(Boolean).join("<br>");
+    }
+
+    private quoteText(value: string): string {
+        return value
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n")
+            .trim();
+    }
+
+    private htmlToText(value: string): string {
+        return value
+            .replace(/<br\s*\/?>/gi, "\n")
+            .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, "\n")
+            .replace(/<[^>]*>/g, "")
+            .replace(/&nbsp;/g, " ")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
+    private textToHtml(value: string): string {
+        return this.escapeHtml(value).replace(/\r\n|\r|\n/g, "<br>");
+    }
+
+    private sanitizeEmailHtml(value: string): string {
+        return value
+            .replace(/<\s*(script|style|iframe|object|embed|meta|link)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+            .replace(/<\s*(script|style|iframe|object|embed|meta|link)\b[^>]*\/?\s*>/gi, "")
+            .replace(/\s+on[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+            .replace(/\s+on[a-z]+\s*=\s*[^\s>]+/gi, "")
+            .trim();
+    }
+
+    private escapeHtml(value: string): string {
+        return value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    private formatSender(name?: string, email?: string): string {
+        const cleanName = name?.trim();
+        const cleanEmail = email?.trim();
+        if (cleanName && cleanEmail) return `${cleanName} <${cleanEmail}>`;
+        return cleanName || cleanEmail || "";
+    }
+
+    private formatReplyDate(value?: Date): string {
+        const date = value ? new Date(value) : new Date();
+        return Number.isNaN(date.getTime()) ? "fecha desconocida" : date.toLocaleString("es-AR");
+    }
+
+    private entryTimestamp(entry: ReplyThreadEntry): number {
+        const date = entry.date ? new Date(entry.date) : new Date(0);
+        return Number.isNaN(date.getTime()) ? 0 : date.getTime();
     }
 
     private buildReplyReferences(inboundEmail: IInboundEmail): string[] {
