@@ -43,6 +43,24 @@ const bodyHtml = computed(() => {
 })
 
 const outbound = computed(() => props.entry.outboundEmail)
+const attachments = computed(() => props.entry.type === "INBOUND"
+  ? props.entry.inboundEmail?.attachments
+  : props.entry.outboundEmail?.attachments)
+const outboundAction = computed(() => {
+  if (props.entry.type !== "OUTBOUND") return null
+  if (props.entry.outboundEmail?.inboundEmail && !props.entry.outboundEmail?.inReplyTo) {
+    return {
+      label: "Reenvio",
+      icon: "mdi-share-outline",
+      color: "deep-purple",
+    }
+  }
+  return {
+    label: "Respuesta",
+    icon: "mdi-reply-outline",
+    color: "deep-orange-darken-2",
+  }
+})
 
 function sanitizeHtml(value: string, allowRemote: boolean) {
   if (!value.trim()) return ""
@@ -88,6 +106,21 @@ function escapeHtml(value: string) {
         <div class="text-caption text-medium-emphasis text-truncate">Para: {{ recipients || '-' }}</div>
       </div>
       <v-spacer />
+      <v-chip
+        v-if="outboundAction"
+        :prepend-icon="outboundAction.icon"
+        :color="outboundAction.color"
+        size="x-small"
+        variant="tonal"
+      >
+        {{ outboundAction.label }}
+      </v-chip>
+      <v-icon
+        v-if="attachments?.length"
+        icon="mdi-paperclip"
+        size="small"
+        class="text-medium-emphasis"
+      />
       <div class="text-caption text-medium-emphasis">{{ dayjs(entry.date).format('DD/MM/YYYY HH:mm') }}</div>
       <v-btn
         :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
@@ -106,7 +139,7 @@ function escapeHtml(value: string) {
           Mostrar contenido remoto
         </v-btn>
         <div class="email-body" v-html="bodyHtml" />
-        <EmailAttachments :attachments="entry.inboundEmail?.attachments" />
+        <EmailAttachments :attachments="attachments" />
       </v-card-text>
     </template>
   </v-card>

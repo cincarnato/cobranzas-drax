@@ -37,6 +37,28 @@ const statusColor = computed(() => {
   return "warning"
 })
 
+const outboundAction = computed(() => {
+  if (props.email?.inboundEmail && !props.email?.inReplyTo) {
+    return {
+      label: "Reenvio",
+      icon: "mdi-share-outline",
+      color: "deep-purple",
+    }
+  }
+  if (props.email?.inboundEmail) {
+    return {
+      label: "Respuesta",
+      icon: "mdi-reply-outline",
+      color: "deep-orange-darken-2",
+    }
+  }
+  return {
+    label: "Nuevo",
+    icon: "mdi-pencil-outline",
+    color: "primary",
+  }
+})
+
 function formatList(values?: string[]) {
   return values?.length ? values.join(", ") : "-"
 }
@@ -51,6 +73,9 @@ function formatList(values?: string[]) {
           <h2 class="text-h6 text-truncate">{{ email?.subject || 'Sin asunto' }}</h2>
           <div class="d-flex flex-wrap align-center ga-2 mt-2">
             <v-chip size="small" variant="tonal" :color="statusColor">{{ email?.status || '-' }}</v-chip>
+            <v-chip size="small" variant="tonal" :color="outboundAction.color" :prepend-icon="outboundAction.icon">
+              {{ outboundAction.label }}
+            </v-chip>
             <span class="text-body-2">De: {{ email?.fromEmail || '-' }}</span>
             <span class="text-caption text-medium-emphasis">Por: {{ senderUser }}</span>
             <span class="text-caption text-medium-emphasis">{{ dateLabel }}</span>
@@ -67,6 +92,7 @@ function formatList(values?: string[]) {
             <v-list-item title="Mailbox" :subtitle="mailboxLabel" />
             <v-list-item title="Usuario" :subtitle="senderUser" />
             <v-list-item title="Estado" :subtitle="email?.status || '-'" />
+            <v-list-item title="Tipo" :subtitle="outboundAction.label" />
             <v-list-item title="Fecha de envío" :subtitle="dateLabel" />
             <v-list-item title="Message ID" :subtitle="email?.messageId || '-'" />
           </v-list>

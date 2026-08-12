@@ -67,7 +67,10 @@ const messages = {
     mail: {
       reply: {
         title: 'Reply email',
+        forwardTitle: 'Forward email',
         composeTitle: 'New email',
+        actionReply: 'Reply',
+        actionForward: 'Forward',
         to: 'To',
         cc: 'CC',
         bcc: 'BCC',
@@ -81,6 +84,7 @@ const messages = {
         attachFiles: 'Attach files',
         attachment: 'Attachment',
         attachmentsCount: '{count} attached file | {count} attached files',
+        forwardAttachmentsHint: 'Received attachments will be included in the forward.',
         attachmentUploadError: 'The attachment could not be uploaded.',
         closeAfterSend: 'Close email after sending',
         cancel: 'Cancel',
@@ -190,7 +194,10 @@ const messages = {
     mail: {
       reply: {
         title: 'Responder correo',
+        forwardTitle: 'Reenviar correo',
         composeTitle: 'Nuevo correo',
+        actionReply: 'Responder',
+        actionForward: 'Reenviar',
         to: 'Para',
         cc: 'CC',
         bcc: 'BCC',
@@ -204,6 +211,7 @@ const messages = {
         attachFiles: 'Adjuntar archivos',
         attachment: 'Adjunto',
         attachmentsCount: '{count} archivo adjunto | {count} archivos adjuntos',
+        forwardAttachmentsHint: 'Los adjuntos recibidos se incluirán en el reenvío.',
         attachmentUploadError: 'No se pudo subir el adjunto.',
         closeAfterSend: 'Cerrar correo luego de enviar',
         cancel: 'Cancelar',

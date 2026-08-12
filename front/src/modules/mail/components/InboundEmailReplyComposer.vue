@@ -12,6 +12,7 @@ import TemplateEmailProvider from "@/modules/mail/providers/TemplateEmailProvide
 import MailRichTextEditor from "@/modules/mail/components/MailRichTextEditor.vue";
 
 type EmailField = "to" | "cc" | "bcc"
+type ComposerAction = "reply" | "forward"
 
 const props = defineProps<{
   inboundEmail: IInboundEmail | null
@@ -50,14 +51,20 @@ const templateEmails = ref<ITemplateEmail[]>([])
 const selectedTemplateEmail = ref<ITemplateEmail | null>(null)
 const templateEmailLoading = ref(false)
 const templateEmailError = ref("")
+const composerAction = ref<ComposerAction>("reply")
 
 const {t} = useI18n()
 const auth = useAuth()
 const mediaSystem = MediaSystemFactory.getInstance()
 const composerMode = computed(() => props.mode || "reply")
 const isNewEmail = computed(() => composerMode.value === "new")
+const isForwardEmail = computed(() => !isNewEmail.value && composerAction.value === "forward")
 const canViewTemplateEmails = computed(() => auth.hasPermission("templateemail:view") || auth.hasPermission("templateemail:manage"))
 const showTemplateEmailSelector = computed(() => Boolean(props.mailbox?._id && canViewTemplateEmails.value))
+const composerActionItems = computed(() => [
+  {title: t("mail.reply.actionReply"), value: "reply", icon: "mdi-reply-outline"},
+  {title: t("mail.reply.actionForward"), value: "forward", icon: "mdi-share-outline"},
+])
 
 const emailDelimiters = [",", ";", " ", "\n", "\t"]
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -106,8 +113,9 @@ watch(
   () => [props.inboundEmail?._id, composerMode.value, props.mailbox?._id, props.signatureHtml, props.signatureText],
   () => {
     error.value = ""
-    subject.value = isNewEmail.value ? "" : resolveSubject(props.inboundEmail?.subject)
-    toEmails.value = isNewEmail.value ? [] : normalizeEmailList([props.inboundEmail?.replyToEmail || props.inboundEmail?.fromEmail || ""])
+    composerAction.value = "reply"
+    subject.value = isNewEmail.value ? "" : resolveSubject(props.inboundEmail?.subject, composerAction.value)
+    toEmails.value = initialToEmails()
     ccEmails.value = []
     bccEmails.value = []
     toEmailSearch.value = ""
@@ -116,7 +124,7 @@ watch(
     bodyHtml.value = initialBodyHtml(props.signatureHtml)
     bodyText.value = initialBodyText(props.signatureText)
     selectedTemplateEmail.value = null
-    attachments.value = []
+    attachments.value = initialAttachments()
     attachmentError.value = ""
     templateEmailError.value = ""
     editorTouched.value = false
@@ -125,6 +133,20 @@ watch(
   },
   {immediate: true}
 )
+
+watch(composerAction, () => {
+  if (isNewEmail.value) return
+  error.value = ""
+  subject.value = resolveSubject(props.inboundEmail?.subject, composerAction.value)
+  toEmails.value = initialToEmails()
+  ccEmails.value = []
+  bccEmails.value = []
+  toEmailSearch.value = ""
+  ccEmailSearch.value = ""
+  bccEmailSearch.value = ""
+  attachments.value = initialAttachments()
+  attachmentError.value = ""
+})
 
 watch(
   () => [props.mailbox?._id, canViewTemplateEmails.value],
@@ -147,9 +169,30 @@ watch(
   }
 )
 
-function resolveSubject(value?: string) {
+function resolveSubject(value?: string, action: ComposerAction = "reply") {
   const normalized = value?.trim() || "Sin asunto"
+  if (action === "forward") {
+    return /^fw(d)?:/i.test(normalized) ? normalized : `Fwd: ${normalized}`
+  }
   return /^re:/i.test(normalized) ? normalized : `Re: ${normalized}`
+}
+
+function initialToEmails() {
+  if (isNewEmail.value || isForwardEmail.value) return []
+  return normalizeEmailList([props.inboundEmail?.replyToEmail || props.inboundEmail?.fromEmail || ""])
+}
+
+function initialAttachments(): IOutboundEmailAttachment[] {
+  if (!isForwardEmail.value) return []
+  return (props.inboundEmail?.attachments || [])
+    .filter((attachment) => attachment?.filename && (attachment.filepath || attachment.url))
+    .map((attachment) => ({
+      filename: attachment.filename,
+      filepath: attachment.filepath,
+      size: Number(attachment.size || 0),
+      mimetype: attachment.mimetype,
+      url: attachment.url,
+    }))
 }
 
 function sizeLabel(size?: number) {
@@ -389,7 +432,9 @@ async function sendReply() {
     }
     const result = isNewEmail.value
       ? await MailReplyProvider.instance.sendNew({...payload, mailboxId: props.mailbox?._id || ""})
-      : await MailReplyProvider.instance.sendReply(props.inboundEmail?._id || "", payload)
+      : isForwardEmail.value
+        ? await MailReplyProvider.instance.sendForward(props.inboundEmail?._id || "", payload)
+        : await MailReplyProvider.instance.sendReply(props.inboundEmail?._id || "", payload)
     emit('sent', result)
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.data?.message || userFriendlyError(e?.message)
@@ -407,8 +452,8 @@ function userFriendlyError(message?: string) {
 <template>
   <v-card class="mail-reply-composer-card" elevation="6">
       <v-card-title class="d-flex align-center ga-2 py-3">
-        <v-icon :icon="isNewEmail ? 'mdi-pencil-outline' : 'mdi-reply-outline'" />
-        {{ isNewEmail ? t('mail.reply.composeTitle') : t('mail.reply.title') }}
+        <v-icon :icon="isNewEmail ? 'mdi-pencil-outline' : isForwardEmail ? 'mdi-share-outline' : 'mdi-reply-outline'" />
+        {{ isNewEmail ? t('mail.reply.composeTitle') : isForwardEmail ? t('mail.reply.forwardTitle') : t('mail.reply.title') }}
       </v-card-title>
 
       <v-divider />
@@ -426,6 +471,26 @@ function userFriendlyError(message?: string) {
 
         <v-form v-model="formValid" @submit.prevent="sendReply">
           <v-row dense>
+            <v-col v-if="!isNewEmail" cols="12">
+              <v-btn-toggle
+                v-model="composerAction"
+                color="primary"
+                density="comfortable"
+                mandatory
+                variant="outlined"
+                divided
+              >
+                <v-btn
+                  v-for="item in composerActionItems"
+                  :key="item.value"
+                  :value="item.value"
+                  :prepend-icon="item.icon"
+                >
+                  {{ item.title }}
+                </v-btn>
+              </v-btn-toggle>
+            </v-col>
+
             <v-col cols="12">
               <v-combobox
                 v-model="toEmailItems"
@@ -623,6 +688,9 @@ function userFriendlyError(message?: string) {
                 {{ templateEmailError }}
               </v-alert>
               <div v-if="attachments.length" class="d-flex flex-wrap ga-2 mt-3">
+                <div v-if="isForwardEmail" class="text-caption text-medium-emphasis w-100">
+                  {{ t('mail.reply.forwardAttachmentsHint') }}
+                </div>
                 <v-chip
                   v-for="(attachment, index) in attachments"
                   :key="`${attachment.filename}-${index}`"

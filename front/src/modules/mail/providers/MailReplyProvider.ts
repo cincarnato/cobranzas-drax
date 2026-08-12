@@ -48,6 +48,14 @@ class MailReplyProvider {
     ) as MailReplyResult
   }
 
+  async sendForward(inboundEmailId: string, payload: MailReplyPayload): Promise<MailReplyResult> {
+    return await this.httpClient.post(
+      `${this.basePath}/${inboundEmailId}/forward`,
+      payload,
+      {timeout: 120000}
+    ) as MailReplyResult
+  }
+
   async sendNew(payload: MailReplyPayload & {mailboxId: string}): Promise<MailSendResult> {
     return await this.httpClient.post(
       `${this.basePath}/send`,

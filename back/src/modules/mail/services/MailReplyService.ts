@@ -144,6 +144,103 @@ class MailReplyService {
         }
     }
 
+    async sendForward(inboundEmailId: string, payload: MailReplyPayload, userId?: string): Promise<MailReplyResult> {
+        if (!inboundEmailId) {
+            throw new BadRequestError("inbound email id is required");
+        }
+
+        const inboundEmail = await InboundEmailServiceFactory.instance.findById(inboundEmailId);
+        if (!inboundEmail) {
+            throw new NotFoundError();
+        }
+
+        const mailbox = await this.resolveMailbox(inboundEmail, payload.mailboxId);
+        this.assertMailboxCanSend(mailbox);
+
+        const toEmails = this.normalizeEmails(payload.toEmails || []);
+        const ccEmails = this.normalizeEmails(payload.ccEmails || []);
+        const bccEmails = this.normalizeEmails(payload.bccEmails || []);
+        const subject = this.resolveForwardSubject(payload.subject, inboundEmail.subject);
+        const bodyText = payload.bodyText?.trim() || "";
+        const bodyHtml = payload.bodyHtml?.trim() || "";
+        const attachments = this.normalizeAttachments(
+            payload.attachments === undefined
+                ? inboundEmail.attachments || []
+                : payload.attachments
+        );
+        const smtpAttachments = await this.buildSmtpAttachments(attachments);
+        const closeReason = payload.closeReason || inboundEmail.closeReason || null;
+        const forwardContent = this.buildForwardContent(bodyText, bodyHtml, inboundEmail);
+
+        if (!toEmails.length) {
+            throw new BadRequestError("at least one recipient is required");
+        }
+        if (!bodyText && !bodyHtml) {
+            throw new BadRequestError("forward body is required");
+        }
+        if (payload.closeAfterSend && mailbox.closeReasonRequired && !closeReason) {
+            throw new BadRequestError("Este mailbox requiere un motivo de cierre antes de cerrar la gestión.");
+        }
+
+        const fromEmail = mailbox.email;
+        const sentAt = new Date();
+        let outboundEmail = await OutboundEmailServiceFactory.instance.create({
+            inboundEmail: inboundEmail._id,
+            mailbox: mailbox._id,
+            user: userId,
+            fromEmail,
+            toEmails,
+            ccEmails,
+            bccEmails,
+            subject,
+            bodyText,
+            bodyHtml,
+            attachments,
+            status: "SENDING",
+            attempts: 1,
+        });
+
+        try {
+            const emailTransport = new EmailTransportService("smtp", this.getSmtpConfig(mailbox));
+            const sendResult = await emailTransport.sendEmail({
+                from: fromEmail,
+                to: toEmails,
+                cc: ccEmails.length ? ccEmails : undefined,
+                bcc: bccEmails.length ? bccEmails : undefined,
+                subject,
+                text: forwardContent.text || undefined,
+                html: forwardContent.html || undefined,
+                attachments: smtpAttachments.length ? smtpAttachments : undefined,
+            });
+
+            outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
+                status: "SENT",
+                messageId: sendResult?.messageId,
+                sentAt,
+                attempts: 1,
+            });
+
+            const updatedInboundEmail = await this.registerInboundReply(inboundEmail, sentAt, payload.closeAfterSend, closeReason, userId);
+            await SessionEmailServiceFactory.instance.onInboundEmailReplied(inboundEmail);
+            if (payload.closeAfterSend) {
+                await SessionEmailServiceFactory.instance.onInboundEmailClosed(inboundEmail, userId);
+            }
+
+            return {
+                inboundEmail: updatedInboundEmail,
+                outboundEmail,
+            };
+        } catch (error: any) {
+            outboundEmail = await OutboundEmailServiceFactory.instance.updatePartial(outboundEmail._id, {
+                status: "FAILED",
+                lastError: error?.message || "No se pudo reenviar el correo.",
+                attempts: 1,
+            });
+
+            throw Object.assign(error, {outboundEmail});
+        }
+    }
+
     async sendNew(payload: MailReplyPayload, userId?: string): Promise<MailSendResult> {
         if (!payload.mailboxId) {
             throw new BadRequestError("mailbox id is required");
@@ -386,6 +483,11 @@ class MailReplyService {
         return /^re:/i.test(subject) ? subject : `Re: ${subject}`;
     }
 
+    private resolveForwardSubject(inputSubject?: string, inboundSubject?: string): string {
+        const subject = inputSubject?.trim() || inboundSubject?.trim() || "Sin asunto";
+        return /^fw(d)?:/i.test(subject) ? subject : `Fwd: ${subject}`;
+    }
+
     private async buildReplyContent(bodyText: string, bodyHtml: string, inboundEmail: IInboundEmail): Promise<{text: string; html: string}> {
         const inboundThread = await InboundEmailServiceFactory.instance.findThread(inboundEmail);
         const outboundThread = await OutboundEmailServiceFactory.instance.findByInboundEmailIds(inboundThread.map((item) => item._id));
@@ -393,6 +495,32 @@ class MailReplyService {
         return {
             text: this.appendTextHistory(bodyText, entries),
             html: this.appendHtmlHistory(bodyHtml || this.textToHtml(bodyText), entries),
+        };
+    }
+
+    private buildForwardContent(bodyText: string, bodyHtml: string, inboundEmail: IInboundEmail): {text: string; html: string} {
+        const originalText = this.htmlToText(inboundEmail.bodyHtml || "") || inboundEmail.bodyText || "";
+        const originalHtml = inboundEmail.bodyHtml?.trim()
+            ? this.sanitizeEmailHtml(inboundEmail.bodyHtml)
+            : this.textToHtml(inboundEmail.bodyText || "");
+        const headerText = [
+            "---------- Mensaje reenviado ---------",
+            `De: ${this.formatSender(inboundEmail.fromName, inboundEmail.fromEmail) || "remitente"}`,
+            `Fecha: ${this.formatReplyDate(inboundEmail.receivedAt)}`,
+            `Asunto: ${inboundEmail.subject || "Sin asunto"}`,
+            `Para: ${(inboundEmail.toEmails || []).join(", ")}`,
+        ].filter(Boolean).join("\n");
+        const headerHtml = [
+            `<div>---------- Mensaje reenviado ---------</div>`,
+            `<div><b>De:</b> ${this.escapeHtml(this.formatSender(inboundEmail.fromName, inboundEmail.fromEmail) || "remitente")}</div>`,
+            `<div><b>Fecha:</b> ${this.escapeHtml(this.formatReplyDate(inboundEmail.receivedAt))}</div>`,
+            `<div><b>Asunto:</b> ${this.escapeHtml(inboundEmail.subject || "Sin asunto")}</div>`,
+            `<div><b>Para:</b> ${this.escapeHtml((inboundEmail.toEmails || []).join(", "))}</div>`,
+        ].join("");
+
+        return {
+            text: [bodyText, headerText, originalText].filter(Boolean).join("\n\n"),
+            html: [bodyHtml || this.textToHtml(bodyText), headerHtml, originalHtml].filter(Boolean).join("<br>"),
         };
     }
 

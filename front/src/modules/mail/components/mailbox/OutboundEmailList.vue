@@ -15,6 +15,28 @@ defineEmits<{
   (e: "retry"): void
   (e: "open", email: IOutboundEmail): void
 }>()
+
+function outboundAction(email: IOutboundEmail) {
+  if (email.inboundEmail && !email.inReplyTo) {
+    return {
+      label: "Reenvio",
+      icon: "mdi-share-outline",
+      color: "deep-purple",
+    }
+  }
+  if (email.inboundEmail) {
+    return {
+      label: "Respuesta",
+      icon: "mdi-reply-outline",
+      color: "deep-orange-darken-2",
+    }
+  }
+  return {
+    label: "Nuevo",
+    icon: "mdi-pencil-outline",
+    color: "primary",
+  }
+}
 </script>
 
 <template>
@@ -41,7 +63,7 @@ defineEmits<{
         :class="density"
         @click="$emit('open', email)"
       >
-        <v-icon icon="mdi-send-outline" color="primary" />
+        <v-icon :icon="outboundAction(email).icon" :color="outboundAction(email).color" />
         <div class="recipient-block">
           <span class="recipient text-truncate">Para: {{ (email.toEmails || []).join(', ') || '-' }}</span>
           <span class="from text-caption text-medium-emphasis text-truncate">
@@ -67,6 +89,13 @@ defineEmits<{
         >
           {{ email.status }}
         </v-chip>
+        <v-chip
+          size="x-small"
+          variant="tonal"
+          :color="outboundAction(email).color"
+        >
+          {{ outboundAction(email).label }}
+        </v-chip>
         <span class="date text-caption text-medium-emphasis">{{ dayjs(email.sentAt || email.createdAt).format('DD/MM HH:mm') }}</span>
       </div>
     </div>
@@ -85,7 +114,7 @@ defineEmits<{
 .outbound-email-list-item {
   min-height: 72px;
   display: grid;
-  grid-template-columns: 36px 280px minmax(260px, 1fr) 110px 120px;
+  grid-template-columns: 36px 260px minmax(260px, 1fr) 90px 110px 120px;
   align-items: center;
   column-gap: 10px;
   cursor: pointer;
