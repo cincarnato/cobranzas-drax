@@ -61,8 +61,9 @@ describe("EmailSupervision", () => {
             closedCount: 14,
         });
         await createInboundEmails(mailbox.email, 3);
-        await createInboundEmails(mailbox.email, 4, {assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED"});
-        await createInboundEmails(mailbox.email, 2, {assignedTo: operatorTwo._id, attentionStatus: "ASSIGNED"});
+        await createInboundEmails(mailbox.email, 3, {assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"});
+        await createInboundEmails(mailbox.email, 1, {assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED", assignmentMode: "MANUAL"});
+        await createInboundEmails(mailbox.email, 2, {assignedTo: operatorTwo._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"});
         await createInboundEmails(mailbox.email, 5, {attentionStatus: "CLOSED", closedAt: now});
         await createInboundEmails(mailbox.email, 2, {attentionStatus: "CLOSED", closedAt: new Date(now.getTime() - 36 * 60 * 60 * 1000)});
 
@@ -84,7 +85,7 @@ describe("EmailSupervision", () => {
         expect(body.operators).toHaveLength(2);
         expect(body.operators.find((row: any) => row.user.id === testSetup.rootUser._id.toString())).toMatchObject({
             status: "ACTIVE",
-            currentAssignedCount: 4,
+            currentAssignedCount: 3,
             sessionEmail: {
                 assignedCount: 26,
                 repliedCount: 21,
@@ -111,7 +112,8 @@ describe("EmailSupervision", () => {
             repliedCount: 3,
             closedCount: 4,
         });
-        await createInboundEmails(mailbox.email, 3, {assignedTo: operatorThree._id, attentionStatus: "ASSIGNED"});
+        await createInboundEmails(mailbox.email, 2, {assignedTo: operatorThree._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"});
+        await createInboundEmails(mailbox.email, 1, {assignedTo: operatorThree._id, attentionStatus: "ASSIGNED", assignmentMode: "MANUAL"});
 
         const defaultResponse = await testSetup.fastifyInstance.inject({
             method: "GET",
@@ -131,7 +133,7 @@ describe("EmailSupervision", () => {
         expect(row).toMatchObject({
             status: "OUT_OF_SESSION",
             sessionEmail: null,
-            currentAssignedCount: 3,
+            currentAssignedCount: 2,
         });
     });
 
@@ -203,7 +205,7 @@ describe("EmailSupervision", () => {
             repliedCount: 0,
             closedCount: 0,
         })));
-        await Promise.all(operators.map((operator) => createInboundEmails(mailbox.email, 1, {assignedTo: operator._id, attentionStatus: "ASSIGNED"})));
+        await Promise.all(operators.map((operator) => createInboundEmails(mailbox.email, 1, {assignedTo: operator._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"})));
         const countSpy = vi.spyOn(InboundEmailModel, "countDocuments");
 
         const response = await testSetup.fastifyInstance.inject({

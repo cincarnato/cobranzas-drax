@@ -280,6 +280,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             mailbox: {$in: mailboxValues},
             assignedTo: userId,
             attentionStatus: "ASSIGNED",
+            assignmentMode: "AUTO",
         }).exec();
     }
 
@@ -291,6 +292,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
                     mailbox: {$in: mailboxValues},
                     attentionStatus: "ASSIGNED",
                     assignedTo: {$ne: null},
+                    assignmentMode: "AUTO",
                 },
             },
             {

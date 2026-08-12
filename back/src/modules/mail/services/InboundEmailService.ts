@@ -125,7 +125,6 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         }
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
         this.assertMailboxOperator(mailbox, userId);
-        await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
         const updated = await this.repository.assignToMe(id, userId, force);
         if (!updated) throw new Error("INBOUND_EMAIL_ASSIGNMENT_CONFLICT");
         return updated;
@@ -161,7 +160,6 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
         this.assertMailboxOperator(mailbox, currentUserId || "");
         this.assertAssignableOperator(mailbox, userId);
-        if (userId) await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
         const updated = await this.repository.reassign(id, userId);
         if (!updated) throw new NotFoundError();
         return updated;
@@ -213,7 +211,6 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         }
         const mailbox = await this.resolveMailbox(inboundEmail.mailbox);
         this.assertMailboxOperator(mailbox, userId);
-        await this.assertAssignmentLimit(mailbox, userId, inboundEmail);
         const updated = await this.repository.reopenAndAssignToMe(id, userId);
         if (!updated) throw new NotFoundError();
         return updated;
@@ -246,18 +243,6 @@ class InboundEmailService extends AbstractService<IInboundEmail, IInboundEmailBa
         const operatorIds = this.getMailboxOperatorIds(mailbox);
         if (!operatorIds.length || !operatorIds.includes(userId)) {
             throw new BadRequestError("El usuario no está habilitado para gestionar este mailbox.");
-        }
-    }
-
-    private async assertAssignmentLimit(mailbox: IMailbox, userId: string, inboundEmail: IInboundEmail): Promise<void> {
-        const maxAssigned = Number(mailbox.maxAssignableEmailsPerUser || 0);
-        if (!maxAssigned || maxAssigned <= 0) return;
-        const assignedTo = this.resolveAssignedToId(inboundEmail);
-        if (inboundEmail.attentionStatus === "ASSIGNED" && assignedTo === userId) return;
-        const mailboxValues = this.getMailboxValues(mailbox);
-        const assignedCount = await this.repository.countAssignedToUser(mailboxValues, userId);
-        if (assignedCount >= maxAssigned) {
-            throw new BadRequestError("El operador alcanzó el máximo de correos asignables para este mailbox.");
         }
     }
 

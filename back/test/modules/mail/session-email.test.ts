@@ -41,7 +41,7 @@ describe("SessionEmail", () => {
         await testSetup.dropAndClose()
     })
 
-    it("starts a session and fills only available capacity when manual assignments already exist", async () => {
+    it("starts a session and ignores manual assignments when filling auto capacity", async () => {
         const root = await testSetup.rootUserLogin()
         const mailbox = await createMailbox([testSetup.rootUser._id], 5)
         await createInboundEmails(mailbox.email, 7)
@@ -55,9 +55,35 @@ describe("SessionEmail", () => {
 
         expect(response.statusCode).toBe(200)
         const state = response.json()
-        expect(state.assignedEmails).toHaveLength(3)
+        expect(state.assignedEmails).toHaveLength(5)
         expect(state.currentAssignedCount).toBe(5)
-        expect(state.session.assignedCount).toBe(3)
+        expect(state.session.assignedCount).toBe(5)
+    })
+
+    it("allows manual assignment even when auto capacity is full", async () => {
+        const root = await testSetup.rootUserLogin()
+        const mailbox = await createMailbox([testSetup.rootUser._id], 2)
+        await createInboundEmails(mailbox.email, 3)
+
+        const started = await testSetup.fastifyInstance.inject({
+            method: 'POST',
+            url: `/api/mailboxes/${mailbox._id}/session-email/start`,
+            headers: {Authorization: `Bearer ${root.accessToken}`},
+        })
+        expect(started.statusCode).toBe(200)
+        expect(started.json().currentAssignedCount).toBe(2)
+
+        const manualEmail = await InboundEmailModel.findOne({mailbox: mailbox.email, attentionStatus: "PENDING"}).lean()
+        const assigned = await testSetup.fastifyInstance.inject({
+            method: 'POST',
+            url: `/api/inbound-emails/${manualEmail?._id}/assign-to-me`,
+            headers: {Authorization: `Bearer ${root.accessToken}`},
+        })
+
+        expect(assigned.statusCode).toBe(200)
+        expect(assigned.json().assignmentMode).toBe("MANUAL")
+        expect(await InboundEmailModel.countDocuments({mailbox: mailbox.email, assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED"})).toBe(3)
+        expect(await InboundEmailModel.countDocuments({mailbox: mailbox.email, assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"})).toBe(2)
     })
 
     it("prevents two simultaneous open sessions for the same user and mailbox", async () => {
@@ -123,9 +149,10 @@ describe("SessionEmail", () => {
 
         await Promise.all(Array.from({length: 5}, () => SessionEmailServiceFactory.instance.fillOperatorCapacity(session._id.toString())))
 
-        expect(await InboundEmailModel.countDocuments({mailbox: mailbox.email, assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED"})).toBe(5)
+        expect(await InboundEmailModel.countDocuments({mailbox: mailbox.email, assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED", assignmentMode: "AUTO"})).toBe(5)
+        expect(await InboundEmailModel.countDocuments({mailbox: mailbox.email, assignedTo: testSetup.rootUser._id, attentionStatus: "ASSIGNED"})).toBe(9)
         const refreshed = await SessionEmailModel.findById(session._id).lean()
-        expect(refreshed?.assignedCount).toBe(1)
+        expect(refreshed?.assignedCount).toBe(5)
     })
 
     it("does not refill while paused and refills when resumed", async () => {

@@ -74,7 +74,7 @@ onBeforeUnmount(() => {
 
       <div class="session-metrics mt-3">
         <div>
-          <span>Asignados sesión</span>
+          <span>Auto sesión</span>
           <strong>{{ session.assignedCount || 0 }}</strong>
         </div>
         <div>
@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
           <strong>{{ session.closedCount || 0 }}</strong>
         </div>
         <div>
-          <span>En curso</span>
+          <span>Auto en curso</span>
           <strong>{{ state?.currentAssignedCount || 0 }} / {{ session.maxAssignableEmails || 0 }}</strong>
         </div>
       </div>

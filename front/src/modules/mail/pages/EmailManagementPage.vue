@@ -844,8 +844,8 @@ function notify(text: string, color = "info") {
       <v-card>
         <v-card-title>Finalizar atención</v-card-title>
         <v-card-text>
-          Tenés {{ sessionEmailState?.currentAssignedCount || 0 }} casos actualmente asignados.
-          Los casos continuarán asignados a vos, pero dejarás de recibir nuevas asignaciones automáticas.
+          Tenés {{ sessionEmailState?.currentAssignedCount || 0 }} casos automáticos actualmente asignados por la sesión.
+          Esos casos volverán a pendientes y dejarás de recibir nuevas asignaciones automáticas. Los casos manuales no se ven afectados.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
