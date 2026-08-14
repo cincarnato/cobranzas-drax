@@ -62,6 +62,7 @@ const selectedOutboundEmail = ref<IOutboundEmail | null>(null)
 const totalPages = ref(1)
 const totalItems = ref(0)
 const selectedId = ref<string | null>(null)
+const navigationAnchorIndex = ref(-1)
 const detail = ref<EmailManagementDetail | null>(null)
 const counts = ref<Record<string, number>>({})
 const loadingMailboxes = ref(false)
@@ -91,8 +92,20 @@ const currentUser = computed(() => authStore.authUser)
 const currentUserId = computed(() => (currentUser.value as any)?._id || currentUser.value?.id)
 const selectedMailbox = computed(() => mailboxes.value.find((item) => item._id === mailboxId.value) || null)
 const selectedListIndex = computed(() => selectedId.value ? items.value.findIndex((item) => item._id === selectedId.value) : -1)
-const canNavigatePreviousEmail = computed(() => view.value !== "SENT" && selectedListIndex.value !== -1 && (selectedListIndex.value > 0 || page.value > 1))
-const canNavigateNextEmail = computed(() => view.value !== "SENT" && selectedListIndex.value !== -1 && (selectedListIndex.value < items.value.length - 1 || page.value < totalPages.value))
+const effectiveNavigationIndex = computed(() => selectedListIndex.value !== -1 ? selectedListIndex.value : navigationAnchorIndex.value)
+const selectedEmailIsInCurrentList = computed(() => selectedListIndex.value !== -1)
+const canNavigatePreviousEmail = computed(() => {
+  if (view.value === "SENT" || !selectedId.value) return false
+  const currentIndex = effectiveNavigationIndex.value
+  return currentIndex > 0 || page.value > 1
+})
+const canNavigateNextEmail = computed(() => {
+  if (view.value === "SENT" || !selectedId.value) return false
+  const currentIndex = effectiveNavigationIndex.value
+  if (currentIndex < 0) return false
+  const nextIndex = selectedEmailIsInCurrentList.value ? currentIndex + 1 : currentIndex
+  return nextIndex < items.value.length || page.value < totalPages.value
+})
 const isSupervisor = computed(() => auth.hasPermission("inboundemail:manage"))
 const baseCanUpdate = computed(() => auth.hasPermission("inboundemail:update") || isSupervisor.value)
 const canAssignOperator = computed(() => auth.hasPermission("inboundemail:assign") || isSupervisor.value)
@@ -283,6 +296,7 @@ function startCountsPolling() {
 
 async function openEmail(email: EmailManagementListItem) {
   selectedId.value = email._id
+  navigationAnchorIndex.value = items.value.findIndex((item) => item._id === email._id)
   if (!email.userState?.isRead) {
     email.userState = await EmailManagementProvider.instance.updateUserState(email._id, {isRead: true})
   }
@@ -292,7 +306,7 @@ async function openEmail(email: EmailManagementListItem) {
 async function navigateDetail(direction: "previous" | "next") {
   if (detailNavigationLoading.value || loadingList.value || loadingDetail.value || view.value === "SENT") return
 
-  const currentIndex = selectedListIndex.value
+  const currentIndex = effectiveNavigationIndex.value
   if (currentIndex === -1) return
 
   detailNavigationLoading.value = true
@@ -307,8 +321,9 @@ async function navigateDetail(direction: "previous" | "next") {
       return
     }
 
-    if (currentIndex < items.value.length - 1) {
-      await openEmail(items.value[currentIndex + 1])
+    const nextIndex = selectedEmailIsInCurrentList.value ? currentIndex + 1 : Math.max(currentIndex, 0)
+    if (nextIndex < items.value.length) {
+      await openEmail(items.value[nextIndex])
       return
     }
     if (page.value >= totalPages.value) return
@@ -321,6 +336,7 @@ async function navigateDetail(direction: "previous" | "next") {
 async function openAdjacentEmailFromPage(targetPage: number, position: "first" | "last") {
   skipNextListWatch = true
   page.value = targetPage
+  navigationAnchorIndex.value = position === "first" ? 0 : -1
   await nextTick()
   await fetchList()
   const target = position === "first" ? items.value[0] : items.value[items.value.length - 1]
@@ -329,6 +345,7 @@ async function openAdjacentEmailFromPage(targetPage: number, position: "first" |
 
 async function fetchDetail(id = selectedId.value) {
   if (!id) return
+  selectedId.value = id
   loadingDetail.value = true
   detailError.value = ""
   try {
@@ -570,6 +587,7 @@ function selectSidebarCategory(value?: string) {
 
 function closeDetail() {
   selectedId.value = null
+  navigationAnchorIndex.value = -1
   detail.value = null
   if (routeInboundEmailId.value) {
     routeInboundEmailId.value = null
@@ -650,6 +668,8 @@ function openManagementUrl(payload: {path: string; inboundEmailId: string}) {
 }
 
 async function refreshAfterEmbeddedClose() {
+  const previousIndex = selectedListIndex.value
+  if (previousIndex !== -1) navigationAnchorIndex.value = previousIndex
   await Promise.all([
     selectedId.value ? fetchDetail(selectedId.value) : Promise.resolve(),
     fetchList(),

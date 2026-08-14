@@ -299,20 +299,38 @@ function manageCategory() {
                 @assign="requestTakeEmail"
               />
             </div>
-            <v-alert v-else density="compact" variant="tonal" color="info" class="mt-4">
-              La gestión está cerrada.
-              <template v-if="permissions.canReopen" #append>
-                <v-btn
-                  color="primary"
-                  variant="tonal"
-                  size="small"
-                  :loading="actionLoading"
-                  @click="$emit('reopen-and-assign')"
-                >
-                  Reabrir y tomar
-                </v-btn>
-              </template>
-            </v-alert>
+            <v-card v-else class="closed-state-card mt-4" variant="tonal" color="success">
+              <v-card-text class="closed-state-card__body">
+                <div class="closed-state-card__icon">
+                  <v-icon icon="mdi-check-circle-outline" size="32" />
+                </div>
+                <div class="closed-state-card__content">
+                  <div class="text-subtitle-1 font-weight-bold">{{ t('mailbox.closedState.title') }}</div>
+                  <div class="text-body-2 text-medium-emphasis mt-1">{{ t('mailbox.closedState.description') }}</div>
+                  <div class="d-flex flex-wrap align-center ga-2 mt-4">
+                    <v-btn
+                      color="primary"
+                      size="large"
+                      prepend-icon="mdi-chevron-right"
+                      :disabled="!canNavigateNext || navigationLoading"
+                      :loading="navigationLoading"
+                      @click="$emit('navigate-next')"
+                    >
+                      {{ t('mailbox.closedState.nextAction') }}
+                    </v-btn>
+                    <v-btn
+                      v-if="permissions.canReopen"
+                      color="primary"
+                      variant="tonal"
+                      :loading="actionLoading"
+                      @click="$emit('reopen-and-assign')"
+                    >
+                      {{ t('mailbox.closedState.reopenAction') }}
+                    </v-btn>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
           </div>
         </div>
         <aside class="management-panel border-s overflow-auto">
@@ -382,6 +400,30 @@ function manageCategory() {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
   background: rgb(var(--v-theme-surface));
+}
+.closed-state-card {
+  border: 1px solid rgba(var(--v-theme-success), 0.28);
+  border-radius: 8px;
+}
+.closed-state-card__body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.closed-state-card__icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.12);
+}
+.closed-state-card__content {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .email-attribute-row :deep(.v-chip__content) {
   gap: 4px;

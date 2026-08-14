@@ -48,6 +48,12 @@ const messages = {
       action: {
         manageCategory: 'Manage {category}',
       },
+      closedState: {
+        title: 'Closed status',
+        description: 'This case has already been completed. Continue with the next assigned email to keep the attention flow active.',
+        nextAction: 'Go to next email',
+        reopenAction: 'Reopen and take',
+      },
     },
     permission: {
       'mailbox:view': 'View Mailbox',
@@ -105,6 +111,12 @@ const messages = {
       },
       action: {
         manageCategory: 'Gestionar {category}',
+      },
+      closedState: {
+        title: 'Estado cerrado',
+        description: 'Este caso ya fue gestionado. Continuá con el siguiente correo asignado para mantener el flujo de atención.',
+        nextAction: 'Pasar al siguiente mail',
+        reopenAction: 'Reabrir y tomar',
       },
     },
     permission: {
