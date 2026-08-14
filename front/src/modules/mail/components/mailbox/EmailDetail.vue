@@ -52,6 +52,7 @@ const closeDialog = ref(false)
 const takeDialog = ref(false)
 const replyComposerRef = ref<{focusEditor: () => void} | null>(null)
 const managementPanelRef = ref<{requestCloseFromShortcut: () => void} | null>(null)
+const detailRootRef = ref<HTMLElement | null>(null)
 const threadPaneRef = ref<HTMLElement | null>(null)
 const pendingCloseReason = ref<string | null>(null)
 
@@ -110,8 +111,13 @@ watch(canReply, async (value, previous) => {
   if (!value || previous) return
   await nextTick()
   threadPaneRef.value?.scrollTo({top: threadPaneRef.value.scrollHeight, behavior: "smooth"})
-  replyComposerRef.value?.focusEditor()
 })
+
+watch(() => email.value?._id, async (value) => {
+  if (!value) return
+  await nextTick()
+  detailRootRef.value?.focus({preventScroll: true})
+}, {immediate: true})
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeydown)
@@ -241,7 +247,7 @@ function isInsideManagementPanel(target: EventTarget | null) {
 </script>
 
 <template>
-  <div class="email-detail h-100 d-flex flex-column">
+  <div ref="detailRootRef" class="email-detail h-100 d-flex flex-column" tabindex="-1">
     <div v-if="loading" class="pa-4">
       <v-skeleton-loader type="article, actions" />
     </div>
