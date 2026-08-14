@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from "vue";
+import {computed, nextTick, ref} from "vue";
 import type {IMailbox} from "@/modules/mail/interfaces/IMailbox";
 import {useMailboxAiOptions} from "@/modules/mail/composables/useMailboxAiOptions";
 
@@ -11,6 +11,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{(e: "update:modelValue", value: any): void}>()
 const {optionName} = useMailboxAiOptions()
+const closeReasonSelectRef = ref<{focus?: () => void} | null>(null)
+const closeReasonMenu = ref(false)
 
 const priorityItems = computed(() => (props.mailbox?.priorities || [])
   .map((item) => {
@@ -40,6 +42,16 @@ const sentimentItems = computed(() => (props.mailbox?.sentiments || [])
 function update(partial: Partial<typeof props.modelValue>) {
   emit("update:modelValue", {...props.modelValue, ...partial})
 }
+
+async function focusCloseReason() {
+  closeReasonMenu.value = true
+  await nextTick()
+  closeReasonSelectRef.value?.focus?.()
+}
+
+defineExpose({
+  focusCloseReason
+})
 </script>
 
 <template>
@@ -108,6 +120,8 @@ function update(partial: Partial<typeof props.modelValue>) {
     </v-col>
     <v-col v-if="mailbox?.closeReasonRequired || mailbox?.closeReasons?.length" cols="12">
       <v-select
+        ref="closeReasonSelectRef"
+        v-model:menu="closeReasonMenu"
         :model-value="modelValue.closeReason"
         :readonly="readonly"
         :items="(mailbox?.closeReasons || []).map((item) => item.name)"

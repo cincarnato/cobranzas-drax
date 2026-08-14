@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, reactive, ref, watch} from "vue";
+import {computed, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {DraxImagePreview} from "@drax/common-vue";
 import {CrudCreateOnTheFlyButton} from "@drax/crud-vue";
 import {VDateInput} from 'vuetify/labs/VDateInput'
@@ -189,6 +189,14 @@ watch(() => partialForm.amount, syncSingleAffiliateAmount)
 watch(() => partialForm.affiliates.length, syncSingleAffiliateAmount)
 watch(isDirty, (value) => emit('dirty-change', value), {immediate: true})
 
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
+
 function syncPartialForm() {
   partialForm.amount = email.value.amount || 0
   partialForm.affiliates = cloneAffiliates(email.value.affiliates || [])
@@ -320,6 +328,14 @@ async function saveMetadata() {
     metadataSaveError.value = 'No se pudieron guardar los cambios.'
   } finally {
     savingMetadata.value = false
+  }
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented || event.repeat) return
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault()
+    void saveMetadata()
   }
 }
 

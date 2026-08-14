@@ -37,6 +37,7 @@ const classification = ref({
   priority: props.email.priority || null,
   sentiment: props.email.sentiment || null,
 })
+const classificationFormRef = ref<{focusCloseReason: () => void} | null>(null)
 const selectedUser = ref<string | null>(null)
 const users = ref<any[]>([])
 const userSearch = ref("")
@@ -120,6 +121,20 @@ function sameClassification(value: typeof classification.value, email: IInboundE
     && (value.priority || null) === (email.priority || null)
     && (value.sentiment || null) === (email.sentiment || null)
 }
+
+function requestCloseFromShortcut() {
+  if (!props.permissions.canClose) return
+  if (closeReasonValidation.value) {
+    classificationFormRef.value?.focusCloseReason()
+    return
+  }
+  if (closeValidationMessage.value) return
+  emit("close-request", classification.value.closeReason)
+}
+
+defineExpose({
+  requestCloseFromShortcut
+})
 </script>
 
 <template>
@@ -177,7 +192,7 @@ function sameClassification(value: typeof classification.value, email: IInboundE
 
     <v-divider />
 
-    <EmailClassificationForm v-model="classification" :mailbox="mailbox" :readonly="!canEditClassification" />
+    <EmailClassificationForm ref="classificationFormRef" v-model="classification" :mailbox="mailbox" :readonly="!canEditClassification" />
     <div class="text-caption min-save-state">
       <span v-if="saving || saveState === 'saving'" class="text-medium-emphasis">Guardando cambios...</span>
       <span v-else-if="saveState === 'saved'" class="text-success">Cambios guardados</span>

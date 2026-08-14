@@ -186,6 +186,8 @@ function saveCurrent() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented) return
+
   const target = event.target as HTMLElement | null
   const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')
   if (isInput) return

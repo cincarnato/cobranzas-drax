@@ -48,6 +48,50 @@ const messages = {
       action: {
         manageCategory: 'Manage {category}',
       },
+      shortcuts: {
+        button: 'Shortcuts',
+        title: 'Keyboard shortcuts',
+        subtitle: 'Quick actions available in email management and transfer audit screens.',
+        close: 'Close',
+        items: {
+          manageCategory: {
+            title: 'External management',
+            description: 'Opens the category external management action for the selected email.',
+          },
+          takeEmail: {
+            title: 'Take email',
+            description: 'Assigns the selected email to your user when the action is available.',
+          },
+          closeEmail: {
+            title: 'Close management',
+            description: 'Closes the selected email. If a closing reason is required and missing, it focuses and opens the closing reason selector first.',
+          },
+          confirmClose: {
+            title: 'Confirm close',
+            description: 'Confirms the close management modal when it is open.',
+          },
+          cancelClose: {
+            title: 'Cancel close',
+            description: 'Cancels and closes the close management modal when it is open.',
+          },
+          nextEmail: {
+            title: 'Next email',
+            description: 'Moves to the next email in the current work queue.',
+          },
+          previousEmail: {
+            title: 'Previous email',
+            description: 'Moves to the previous email in the current work queue.',
+          },
+          saveTransfer: {
+            title: 'Save transfer',
+            description: 'Saves the metadata in the transfer email audit form.',
+          },
+          closeEmbedded: {
+            title: 'Close embedded modal',
+            description: 'Closes the embedded management dialog when it is open.',
+          },
+        },
+      },
       closedState: {
         title: 'Closed status',
         description: 'This case has already been completed. Continue with the next assigned email to keep the attention flow active.',
@@ -111,6 +155,50 @@ const messages = {
       },
       action: {
         manageCategory: 'Gestionar {category}',
+      },
+      shortcuts: {
+        button: 'Atajos',
+        title: 'Atajos de teclado',
+        subtitle: 'Acciones rápidas disponibles en gestión de mails y auditoría de transferencias.',
+        close: 'Cerrar',
+        items: {
+          manageCategory: {
+            title: 'Gestión externa',
+            description: 'Abre la acción de gestión externa de la categoría para el correo seleccionado.',
+          },
+          takeEmail: {
+            title: 'Tomar correo',
+            description: 'Asigna el correo seleccionado a tu usuario cuando la acción está disponible.',
+          },
+          closeEmail: {
+            title: 'Cerrar gestión',
+            description: 'Cierra el correo seleccionado. Si falta un motivo de cierre requerido, enfoca y despliega primero el selector de motivo.',
+          },
+          confirmClose: {
+            title: 'Confirmar cierre',
+            description: 'Confirma el modal de cierre de gestión cuando está abierto.',
+          },
+          cancelClose: {
+            title: 'Cancelar cierre',
+            description: 'Cancela y cierra el modal de cierre de gestión cuando está abierto.',
+          },
+          nextEmail: {
+            title: 'Siguiente mail',
+            description: 'Avanza al siguiente correo de la cola de trabajo actual.',
+          },
+          previousEmail: {
+            title: 'Mail anterior',
+            description: 'Vuelve al correo anterior de la cola de trabajo actual.',
+          },
+          saveTransfer: {
+            title: 'Guardar transferencia',
+            description: 'Guarda los metadatos del formulario de auditoría de transferencias.',
+          },
+          closeEmbedded: {
+            title: 'Cerrar modal embebido',
+            description: 'Cierra el modal de gestión embebida cuando está abierto.',
+          },
+        },
       },
       closedState: {
         title: 'Estado cerrado',

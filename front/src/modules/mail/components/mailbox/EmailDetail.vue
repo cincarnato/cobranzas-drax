@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, ref, watch} from "vue";
+import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useI18n} from "vue-i18n";
 import dayjs from "dayjs";
 import type {EmailManagementDetail, EmailManagementPermissions} from "@/modules/mail/interfaces/IEmailManagement";
@@ -11,6 +11,7 @@ import EmailThread from "./EmailThread.vue";
 import EmailManagementPanel from "./EmailManagementPanel.vue";
 import CloseEmailDialog from "./CloseEmailDialog.vue";
 import AssignEmailButton from "./AssignEmailButton.vue";
+import EmailShortcutsDialog from "./EmailShortcutsDialog.vue";
 import InboundEmailReplyComposer from "@/modules/mail/components/InboundEmailReplyComposer.vue";
 
 const props = defineProps<{
@@ -48,6 +49,7 @@ const emit = defineEmits<{
 const closeDialog = ref(false)
 const takeDialog = ref(false)
 const replyComposerRef = ref<{focusEditor: () => void} | null>(null)
+const managementPanelRef = ref<{requestCloseFromShortcut: () => void} | null>(null)
 const threadPaneRef = ref<HTMLElement | null>(null)
 const pendingCloseReason = ref<string | null>(null)
 
@@ -103,6 +105,14 @@ watch(canReply, async (value, previous) => {
   await nextTick()
   threadPaneRef.value?.scrollTo({top: threadPaneRef.value.scrollHeight, behavior: "smooth"})
   replyComposerRef.value?.focusEditor()
+})
+
+onMounted(() => {
+  window.addEventListener("keydown", handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeydown)
 })
 
 function requestClose(closeReason?: string | null) {
@@ -171,6 +181,57 @@ function manageCategory() {
   if (!url || !inboundEmailId) return
   emit("manage-category", {path: url, inboundEmailId})
 }
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.repeat) return
+  if (closeDialog.value || takeDialog.value) return
+
+  const key = event.key.toLowerCase()
+  const isPlainAlt = event.altKey && !event.ctrlKey && !event.metaKey
+  if (!isPlainAlt) return
+
+  const editableTarget = isEditableTarget(event.target)
+  if (editableTarget && !(key === "g" && isInsideManagementPanel(event.target))) return
+
+  if (key === "q") {
+    event.preventDefault()
+    manageCategory()
+    return
+  }
+  if (key === "t") {
+    event.preventDefault()
+    requestTakeEmail()
+    return
+  }
+  if (key === "g") {
+    event.preventDefault()
+    managementPanelRef.value?.requestCloseFromShortcut()
+    return
+  }
+  if (key === "j" && props.canNavigatePrevious && !props.navigationLoading) {
+    event.preventDefault()
+    emit("navigate-previous")
+    return
+  }
+  if (key === "k" && props.canNavigateNext && !props.navigationLoading) {
+    event.preventDefault()
+    emit("navigate-next")
+  }
+}
+
+function isEditableTarget(target: EventTarget | null) {
+  const element = target as HTMLElement | null
+  if (!element) return false
+  return Boolean(
+    element.closest("input, textarea, select, [contenteditable]")
+  )
+}
+
+function isInsideManagementPanel(target: EventTarget | null) {
+  const element = target as HTMLElement | null
+  return Boolean(element?.closest(".management-panel"))
+}
+
 </script>
 
 <template>
@@ -236,6 +297,7 @@ function manageCategory() {
                   {{ assignedToName }} está gestionando este correo.
                 </v-alert>
               </div>
+              <EmailShortcutsDialog />
               <v-btn
                 icon="mdi-refresh"
                 variant="text"
@@ -335,6 +397,7 @@ function manageCategory() {
         </div>
         <aside class="management-panel border-s overflow-auto">
           <EmailManagementPanel
+            ref="managementPanelRef"
             :email="email"
             :mailbox="detail.mailbox"
             :permissions="permissions"

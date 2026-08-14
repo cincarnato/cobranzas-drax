@@ -173,6 +173,7 @@ watch(mailboxId, () => {
 })
 
 onMounted(async () => {
+  window.addEventListener("keydown", handleKeydown)
   await fetchMailboxes()
   if (routeInboundEmailId.value) {
     await openInboundEmailFromRoute(routeInboundEmailId.value)
@@ -186,9 +187,16 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown)
   if (searchTimer) clearTimeout(searchTimer)
   if (countsTimer) clearInterval(countsTimer)
 })
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.repeat || event.key !== "Escape" || !embeddedRouter.state.opened) return
+  event.preventDefault()
+  embeddedRouter.close()
+}
 
 async function fetchMailboxes() {
   loadingMailboxes.value = true
