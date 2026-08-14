@@ -23,6 +23,7 @@ class EmailSupervisionService {
                 pendingEmails: emailCounts.pendingEmails,
                 assignedEmails: emailCounts.assignedEmails,
                 closedToday: emailCounts.closedToday,
+                oldestPendingReceivedAt: emailCounts.oldestPendingReceivedAt || null,
             },
             operators,
         };
@@ -34,6 +35,61 @@ class EmailSupervisionService {
             throw new BadRequestError("El usuario no está habilitado para gestionar este mailbox.");
         }
         return await InboundEmailServiceFactory.instance.findAssignedLiteByUser(this.getMailboxValues(mailbox), userId);
+    }
+    async daily(mailboxId, date) {
+        const mailbox = await this.resolveMailbox(mailboxId);
+        const day = this.getDateRange(date);
+        const { summary, operators } = await this.period(mailbox, day.from, day.to);
+        return {
+            date: day.date,
+            from: day.from,
+            to: day.to,
+            summary,
+            operators,
+        };
+    }
+    async monthly(mailboxId, month) {
+        const mailbox = await this.resolveMailbox(mailboxId);
+        const range = this.getMonthRange(month);
+        const { summary, operators } = await this.period(mailbox, range.from, range.to);
+        return {
+            month: range.month,
+            from: range.from,
+            to: range.to,
+            summary,
+            operators,
+        };
+    }
+    async period(mailbox, from, to) {
+        const stats = await SessionEmailServiceFactory.instance.dailyStatsByMailbox(mailbox._id, from, to);
+        const operatorsById = new Map((mailbox.operators || []).map((operator) => {
+            const user = this.toUser(operator);
+            return [user.id, user];
+        }));
+        const operators = stats
+            .map((row) => ({
+            user: operatorsById.get(row.userId) || { id: row.userId },
+            sessionCount: row.sessionCount,
+            assignedCount: row.assignedCount,
+            repliedCount: row.repliedCount,
+            closedCount: row.closedCount,
+            durationMs: row.durationMs,
+            firstStartedAt: row.firstStartedAt,
+            lastEndedAt: row.lastEndedAt,
+            lastActivityAt: row.lastActivityAt,
+        }))
+            .sort((a, b) => b.closedCount - a.closedCount || b.repliedCount - a.repliedCount || b.assignedCount - a.assignedCount);
+        return {
+            summary: {
+                sessionCount: operators.reduce((total, operator) => total + operator.sessionCount, 0),
+                operatorCount: operators.length,
+                assignedCount: operators.reduce((total, operator) => total + operator.assignedCount, 0),
+                repliedCount: operators.reduce((total, operator) => total + operator.repliedCount, 0),
+                closedCount: operators.reduce((total, operator) => total + operator.closedCount, 0),
+                durationMs: operators.reduce((total, operator) => total + operator.durationMs, 0),
+            },
+            operators,
+        };
     }
     buildSessionRows(sessionEmails, currentAssignedByUser) {
         return sessionEmails.map((sessionEmail) => {
@@ -108,6 +164,39 @@ class EmailSupervisionService {
         const to = new Date(from);
         to.setDate(to.getDate() + 1);
         return { from, to };
+    }
+    getDateRange(value) {
+        const source = value || this.formatDate(new Date());
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(source))
+            throw new BadRequestError("Fecha inválida.");
+        const from = new Date(`${source}T00:00:00`);
+        if (Number.isNaN(from.getTime()))
+            throw new BadRequestError("Fecha inválida.");
+        const to = new Date(from);
+        to.setDate(to.getDate() + 1);
+        return { date: source, from, to };
+    }
+    getMonthRange(value) {
+        const source = value || this.formatMonth(new Date());
+        if (!/^\d{4}-\d{2}$/.test(source))
+            throw new BadRequestError("Mes inválido.");
+        const from = new Date(`${source}-01T00:00:00`);
+        if (Number.isNaN(from.getTime()))
+            throw new BadRequestError("Mes inválido.");
+        const to = new Date(from);
+        to.setMonth(to.getMonth() + 1);
+        return { month: source, from, to };
+    }
+    formatDate(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+    formatMonth(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}`;
     }
 }
 export default EmailSupervisionService;

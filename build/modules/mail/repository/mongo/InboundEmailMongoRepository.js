@@ -256,9 +256,9 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
     }
     async supervisionCounts(mailboxValues, closedFrom, closedTo) {
         if (!mailboxValues.length) {
-            return { pendingEmails: 0, assignedEmails: 0, closedToday: 0 };
+            return { pendingEmails: 0, assignedEmails: 0, closedToday: 0, oldestPendingReceivedAt: null };
         }
-        const [statusRows, closedToday] = await Promise.all([
+        const [statusRows, closedToday, oldestPending] = await Promise.all([
             this._model.aggregate([
                 {
                     $match: {
@@ -278,12 +278,17 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
                 attentionStatus: "CLOSED",
                 closedAt: { $gte: closedFrom, $lt: closedTo },
             }).exec(),
+            this._model.findOne({
+                mailbox: { $in: mailboxValues },
+                attentionStatus: "PENDING",
+            }).sort({ receivedAt: 1 }).select("receivedAt").lean().exec(),
         ]);
         const byStatus = new Map(statusRows.map((row) => [row._id, row.count]));
         return {
             pendingEmails: byStatus.get("PENDING") || 0,
             assignedEmails: byStatus.get("ASSIGNED") || 0,
             closedToday,
+            oldestPendingReceivedAt: oldestPending?.receivedAt || null,
         };
     }
     async findAssignedLiteByUser(mailboxValues, userId) {

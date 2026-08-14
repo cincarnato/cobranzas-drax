@@ -345,7 +345,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository {
     }
     async supervisionCounts(mailboxValues, closedFrom, closedTo) {
         if (!mailboxValues.length)
-            return { pendingEmails: 0, assignedEmails: 0, closedToday: 0 };
+            return { pendingEmails: 0, assignedEmails: 0, closedToday: 0, oldestPendingReceivedAt: null };
         const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
         const params = {
             closedFrom: closedFrom.toISOString(),
@@ -369,11 +369,18 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository {
                         AND closedAt >= @closedFrom
                         AND closedAt < @closedTo`)
             .get(params);
+        const oldestPending = this.db
+            .prepare(`SELECT MIN(receivedAt) AS receivedAt
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus = 'PENDING'`)
+            .get(params);
         const byStatus = new Map(rows.map((row) => [row.status, Number(row.total || 0)]));
         return {
             pendingEmails: byStatus.get("PENDING") || 0,
             assignedEmails: byStatus.get("ASSIGNED") || 0,
             closedToday: Number(closed?.total || 0),
+            oldestPendingReceivedAt: oldestPending?.receivedAt ? new Date(oldestPending.receivedAt) : null,
         };
     }
     async findAssignedLiteByUser(mailboxValues, userId) {

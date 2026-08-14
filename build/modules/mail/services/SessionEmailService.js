@@ -47,6 +47,9 @@ class SessionEmailService extends AbstractService {
     async findOpenByMailbox(mailboxId) {
         return await this.repository.findOpenByMailbox(mailboxId);
     }
+    async dailyStatsByMailbox(mailboxId, from, to) {
+        return await this.repository.dailyStatsByMailbox(mailboxId, from, to);
+    }
     async pause(sessionId, userId) {
         const session = await this.assertOwnedSession(sessionId, userId);
         const mailbox = await this.resolveMailbox(session.mailbox);
@@ -78,6 +81,22 @@ class SessionEmailService extends AbstractService {
             lastActivityAt: now,
         });
         await InboundEmailServiceFactory.instance.releaseAutoAssignedBySession(sessionId, userId);
+        return await this.buildState(updated, mailbox);
+    }
+    async closeBySupervisor(sessionId) {
+        const session = await this.findById(sessionId);
+        if (!session)
+            throw new NotFoundError();
+        if (session.status === 'CLOSED')
+            throw new BadRequestError("La sesión ya está finalizada.");
+        const mailbox = await this.resolveMailbox(session.mailbox);
+        const sessionUserId = this.resolveId(session.user);
+        const now = new Date();
+        const updated = await this.updateStatusWhenFillIsIdle(sessionId, sessionUserId, 'CLOSED', {
+            endedAt: now,
+            lastActivityAt: now,
+        });
+        await InboundEmailServiceFactory.instance.releaseAutoAssignedBySession(sessionId, sessionUserId);
         return await this.buildState(updated, mailbox);
     }
     async fillOperatorCapacity(sessionId) {

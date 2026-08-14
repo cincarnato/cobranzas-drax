@@ -67,6 +67,17 @@ class SessionEmailController extends AbstractFastifyController {
             return this.handleSessionEmailError(error, reply);
         }
     }
+    async closeBySupervisor(request, reply) {
+        try {
+            request.rbac.assertAuthenticated();
+            request.rbac.assertPermission(InboundEmailPermissions.Manage);
+            const { sessionId } = request.params;
+            return reply.send(await SessionEmailServiceFactory.instance.closeBySupervisor(sessionId));
+        }
+        catch (error) {
+            return this.handleSessionEmailError(error, reply);
+        }
+    }
     getUserId(request) {
         const userId = request.rbac.userId || request.rbac.getAuthUser?.id;
         if (!userId)

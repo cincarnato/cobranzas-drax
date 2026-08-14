@@ -9,6 +9,7 @@ async function SessionEmailFastifyRoutes(fastify, options) {
     fastify.post('/api/session-email/:sessionId/pause', (req, rep) => controller.pause(req, rep));
     fastify.post('/api/session-email/:sessionId/resume', (req, rep) => controller.resume(req, rep));
     fastify.post('/api/session-email/:sessionId/close', (req, rep) => controller.close(req, rep));
+    fastify.post('/api/session-email/:sessionId/supervisor-close', (req, rep) => controller.closeBySupervisor(req, rep));
     fastify.get('/api/session-emails', { schema: schemas.paginateSchema }, (req, rep) => controller.paginate(req, rep));
     fastify.get('/api/session-emails/find', { schema: schemas.findSchema }, (req, rep) => controller.find(req, rep));
     fastify.get('/api/session-emails/search', { schema: schemas.searchSchema }, (req, rep) => controller.search(req, rep));

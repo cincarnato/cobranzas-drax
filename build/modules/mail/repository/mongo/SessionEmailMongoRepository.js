@@ -1,4 +1,5 @@
 import { AbstractMongoRepository } from "@drax/crud-back";
+import { mongoose } from "@drax/common-back";
 import { SessionEmailModel } from "../../models/SessionEmailModel.js";
 class SessionEmailMongoRepository extends AbstractMongoRepository {
     constructor() {
@@ -27,6 +28,48 @@ class SessionEmailMongoRepository extends AbstractMongoRepository {
             mailbox: mailboxId,
             status: { $in: ['ACTIVE', 'PAUSED'] },
         }).populate(this._populateFields).lean();
+    }
+    async dailyStatsByMailbox(mailboxId, from, to) {
+        const rows = await SessionEmailModel.aggregate([
+            {
+                $match: {
+                    mailbox: new mongoose.Types.ObjectId(mailboxId),
+                    startedAt: { $gte: from, $lt: to },
+                },
+            },
+            {
+                $group: {
+                    _id: "$user",
+                    sessionCount: { $sum: 1 },
+                    assignedCount: { $sum: { $ifNull: ["$assignedCount", 0] } },
+                    repliedCount: { $sum: { $ifNull: ["$repliedCount", 0] } },
+                    closedCount: { $sum: { $ifNull: ["$closedCount", 0] } },
+                    durationMs: {
+                        $sum: {
+                            $max: [
+                                { $subtract: [{ $ifNull: ["$endedAt", "$$NOW"] }, "$startedAt"] },
+                                0,
+                            ],
+                        },
+                    },
+                    firstStartedAt: { $min: "$startedAt" },
+                    lastEndedAt: { $max: "$endedAt" },
+                    lastActivityAt: { $max: "$lastActivityAt" },
+                },
+            },
+            { $sort: { closedCount: -1, repliedCount: -1, assignedCount: -1 } },
+        ]).exec();
+        return rows.map((row) => ({
+            userId: row._id?.toString() || "",
+            sessionCount: Number(row.sessionCount || 0),
+            assignedCount: Number(row.assignedCount || 0),
+            repliedCount: Number(row.repliedCount || 0),
+            closedCount: Number(row.closedCount || 0),
+            durationMs: Number(row.durationMs || 0),
+            firstStartedAt: row.firstStartedAt || null,
+            lastEndedAt: row.lastEndedAt || null,
+            lastActivityAt: row.lastActivityAt || null,
+        }));
     }
     async createOpenSession(data) {
         return await SessionEmailModel.create(data);

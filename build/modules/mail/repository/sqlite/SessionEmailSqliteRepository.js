@@ -44,6 +44,35 @@ class SessionEmailSqliteRepository extends AbstractSqliteRepository {
         }
         return items;
     }
+    async dailyStatsByMailbox(mailboxId, from, to) {
+        const rows = this.db.prepare(`
+            SELECT
+                user as userId,
+                COUNT(*) as sessionCount,
+                SUM(COALESCE(assignedCount, 0)) as assignedCount,
+                SUM(COALESCE(repliedCount, 0)) as repliedCount,
+                SUM(COALESCE(closedCount, 0)) as closedCount,
+                MIN(startedAt) as firstStartedAt,
+                MAX(endedAt) as lastEndedAt,
+                MAX(lastActivityAt) as lastActivityAt,
+                SUM(MAX((julianday(COALESCE(endedAt, datetime('now'))) - julianday(startedAt)) * 86400000, 0)) as durationMs
+            FROM ${this.tableName}
+            WHERE mailbox = @mailboxId AND startedAt >= @from AND startedAt < @to
+            GROUP BY user
+            ORDER BY closedCount DESC, repliedCount DESC, assignedCount DESC
+        `).all({ mailboxId, from: from.toISOString(), to: to.toISOString() });
+        return rows.map((row) => ({
+            userId: String(row.userId || ""),
+            sessionCount: Number(row.sessionCount || 0),
+            assignedCount: Number(row.assignedCount || 0),
+            repliedCount: Number(row.repliedCount || 0),
+            closedCount: Number(row.closedCount || 0),
+            durationMs: Number(row.durationMs || 0),
+            firstStartedAt: row.firstStartedAt ? new Date(row.firstStartedAt) : null,
+            lastEndedAt: row.lastEndedAt ? new Date(row.lastEndedAt) : null,
+            lastActivityAt: row.lastActivityAt ? new Date(row.lastActivityAt) : null,
+        }));
+    }
     async createOpenSession(data) {
         if (await this.findUserOpenSession(String(data.mailbox), String(data.user)))
             throw new Error('SESSION_EMAIL_ALREADY_OPEN');
