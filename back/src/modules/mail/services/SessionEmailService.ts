@@ -2,7 +2,7 @@ import {AbstractService} from "@drax/crud-back";
 import type {ZodObject, ZodRawShape} from "zod";
 import {BadRequestError, ForbiddenError, mongoose, NotFoundError} from "@drax/common-back";
 import type {ISessionEmailRepository} from "../interfaces/ISessionEmailRepository";
-import type {ISessionEmail, ISessionEmailBase, SessionEmailState} from "../interfaces/ISessionEmail";
+import type {ISessionEmail, ISessionEmailBase, SessionEmailDailyStats, SessionEmailState} from "../interfaces/ISessionEmail";
 import type {IMailbox} from "../interfaces/IMailbox";
 import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js";
 import InboundEmailServiceFactory from "../factory/services/InboundEmailServiceFactory.js";
@@ -58,6 +58,10 @@ class SessionEmailService extends AbstractService<ISessionEmail, ISessionEmailBa
         return await this.repository.findOpenByMailbox(mailboxId)
     }
 
+    async dailyStatsByMailbox(mailboxId: string, from: Date, to: Date): Promise<SessionEmailDailyStats[]> {
+        return await this.repository.dailyStatsByMailbox(mailboxId, from, to)
+    }
+
     async pause(sessionId: string, userId: string): Promise<SessionEmailState> {
         const session = await this.assertOwnedSession(sessionId, userId)
         const mailbox = await this.resolveMailbox(session.mailbox)
@@ -90,6 +94,21 @@ class SessionEmailService extends AbstractService<ISessionEmail, ISessionEmailBa
             lastActivityAt: now,
         })
         await InboundEmailServiceFactory.instance.releaseAutoAssignedBySession(sessionId, userId)
+        return await this.buildState(updated, mailbox)
+    }
+
+    async closeBySupervisor(sessionId: string): Promise<SessionEmailState> {
+        const session = await this.findById(sessionId)
+        if (!session) throw new NotFoundError()
+        if (session.status === 'CLOSED') throw new BadRequestError("La sesión ya está finalizada.")
+        const mailbox = await this.resolveMailbox(session.mailbox)
+        const sessionUserId = this.resolveId(session.user)
+        const now = new Date()
+        const updated = await this.updateStatusWhenFillIsIdle(sessionId, sessionUserId, 'CLOSED', {
+            endedAt: now,
+            lastActivityAt: now,
+        })
+        await InboundEmailServiceFactory.instance.releaseAutoAssignedBySession(sessionId, sessionUserId)
         return await this.buildState(updated, mailbox)
     }
 

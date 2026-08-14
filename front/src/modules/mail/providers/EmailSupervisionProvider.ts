@@ -1,7 +1,9 @@
 import {HttpRestClientFactory, type IHttpClient} from "@drax/common-front";
 import type {
   EmailSupervisionAssignedEmail,
+  EmailSupervisionDaily,
   EmailSupervisionLive,
+  EmailSupervisionMonthly,
 } from "@/modules/mail/interfaces/IEmailSupervision";
 
 class EmailSupervisionProvider {
@@ -23,6 +25,18 @@ class EmailSupervisionProvider {
     return await this.httpClient.get(`/api/mailboxes/${mailboxId}/supervision/email/live`, {
       params: {includeWithoutSession},
     }) as EmailSupervisionLive
+  }
+
+  async daily(mailboxId: string, date: string): Promise<EmailSupervisionDaily> {
+    return await this.httpClient.get(`/api/mailboxes/${mailboxId}/supervision/email/daily`, {
+      params: {date},
+    }) as EmailSupervisionDaily
+  }
+
+  async monthly(mailboxId: string, month: string): Promise<EmailSupervisionMonthly> {
+    return await this.httpClient.get(`/api/mailboxes/${mailboxId}/supervision/email/monthly`, {
+      params: {month},
+    }) as EmailSupervisionMonthly
   }
 
   async assignedEmails(mailboxId: string, userId: string): Promise<EmailSupervisionAssignedEmail[]> {

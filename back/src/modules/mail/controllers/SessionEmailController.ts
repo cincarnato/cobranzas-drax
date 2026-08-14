@@ -73,6 +73,17 @@ class SessionEmailController extends AbstractFastifyController<ISessionEmail, IS
         }
     }
 
+    async closeBySupervisor(request: CustomRequest, reply: FastifyReply) {
+        try {
+            request.rbac.assertAuthenticated()
+            request.rbac.assertPermission(InboundEmailPermissions.Manage)
+            const {sessionId} = request.params as {sessionId: string}
+            return reply.send(await SessionEmailServiceFactory.instance.closeBySupervisor(sessionId))
+        } catch (error) {
+            return this.handleSessionEmailError(error, reply)
+        }
+    }
+
     private getUserId(request: CustomRequest) {
         const userId = request.rbac.userId || request.rbac.getAuthUser?.id
         if (!userId) throw new Error('AUTHENTICATED_USER_REQUIRED')

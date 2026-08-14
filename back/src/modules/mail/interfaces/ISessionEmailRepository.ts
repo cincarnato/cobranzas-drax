@@ -1,10 +1,11 @@
 import type {IDraxCrudRepository} from "@drax/crud-share";
-import type {ISessionEmail, ISessionEmailBase, SessionEmailStatus} from "./ISessionEmail";
+import type {ISessionEmail, ISessionEmailBase, SessionEmailDailyStats, SessionEmailStatus} from "./ISessionEmail";
 
 interface ISessionEmailRepository extends IDraxCrudRepository<ISessionEmail, ISessionEmailBase, ISessionEmailBase> {
     findUserOpenSession(mailboxId: string, userId: string): Promise<ISessionEmail | null>
     findUserActiveSession(mailboxId: string, userId: string): Promise<ISessionEmail | null>
     findOpenByMailbox(mailboxId: string): Promise<ISessionEmail[]>
+    dailyStatsByMailbox(mailboxId: string, from: Date, to: Date): Promise<SessionEmailDailyStats[]>
     createOpenSession(data: ISessionEmailBase): Promise<ISessionEmail>
     updateStatus(sessionId: string, userId: string, status: SessionEmailStatus, patch?: Partial<ISessionEmailBase>): Promise<ISessionEmail | null>
     updateActivity(sessionId: string): Promise<ISessionEmail | null>

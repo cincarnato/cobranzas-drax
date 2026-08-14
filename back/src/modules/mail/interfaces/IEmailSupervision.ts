@@ -14,6 +14,7 @@ type EmailSupervisionSummary = {
     pendingEmails: number
     assignedEmails: number
     closedToday: number
+    oldestPendingReceivedAt?: Date | null
 }
 
 type EmailSupervisionOperator = {
@@ -26,6 +27,43 @@ type EmailSupervisionOperator = {
 type EmailSupervisionLive = {
     summary: EmailSupervisionSummary
     operators: EmailSupervisionOperator[]
+}
+
+type EmailSupervisionDailySummary = {
+    sessionCount: number
+    operatorCount: number
+    assignedCount: number
+    repliedCount: number
+    closedCount: number
+    durationMs: number
+}
+
+type EmailSupervisionDailyOperator = {
+    user: EmailSupervisionUser
+    sessionCount: number
+    assignedCount: number
+    repliedCount: number
+    closedCount: number
+    durationMs: number
+    firstStartedAt?: Date | null
+    lastEndedAt?: Date | null
+    lastActivityAt?: Date | null
+}
+
+type EmailSupervisionDaily = {
+    date: string
+    from: Date
+    to: Date
+    summary: EmailSupervisionDailySummary
+    operators: EmailSupervisionDailyOperator[]
+}
+
+type EmailSupervisionMonthly = {
+    month: string
+    from: Date
+    to: Date
+    summary: EmailSupervisionDailySummary
+    operators: EmailSupervisionDailyOperator[]
 }
 
 type EmailSupervisionAssignedEmail = {
@@ -42,6 +80,10 @@ type EmailSupervisionAssignedEmail = {
 
 export type {
     EmailSupervisionAssignedEmail,
+    EmailSupervisionDaily,
+    EmailSupervisionDailyOperator,
+    EmailSupervisionDailySummary,
+    EmailSupervisionMonthly,
     EmailSupervisionLive,
     EmailSupervisionOperator,
     EmailSupervisionOperatorStatus,

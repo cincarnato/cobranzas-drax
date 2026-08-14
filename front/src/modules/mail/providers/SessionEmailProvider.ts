@@ -35,6 +35,10 @@ class SessionEmailProvider {
   async close(sessionId: string): Promise<SessionEmailState> {
     return await this.httpClient.post(`/api/session-email/${sessionId}/close`, {}) as SessionEmailState
   }
+
+  async closeBySupervisor(sessionId: string): Promise<SessionEmailState> {
+    return await this.httpClient.post(`/api/session-email/${sessionId}/supervisor-close`, {}) as SessionEmailState
+  }
 }
 
 export default SessionEmailProvider

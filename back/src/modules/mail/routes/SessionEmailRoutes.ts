@@ -11,6 +11,7 @@ async function SessionEmailFastifyRoutes(fastify, options) {
     fastify.post('/api/session-email/:sessionId/pause', (req, rep) => controller.pause(req as any, rep))
     fastify.post('/api/session-email/:sessionId/resume', (req, rep) => controller.resume(req as any, rep))
     fastify.post('/api/session-email/:sessionId/close', (req, rep) => controller.close(req as any, rep))
+    fastify.post('/api/session-email/:sessionId/supervisor-close', (req, rep) => controller.closeBySupervisor(req as any, rep))
 
     fastify.get('/api/session-emails', {schema: schemas.paginateSchema}, (req, rep) => controller.paginate(req, rep))
     fastify.get('/api/session-emails/find', {schema: schemas.findSchema}, (req, rep) => controller.find(req, rep))

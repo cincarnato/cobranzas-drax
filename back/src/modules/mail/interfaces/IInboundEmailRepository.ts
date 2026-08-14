@@ -99,6 +99,7 @@ type InboundEmailSupervisionCounts = {
     pendingEmails: number
     assignedEmails: number
     closedToday: number
+    oldestPendingReceivedAt?: Date | null
 }
 
 type InboundEmailAssignedLite = {

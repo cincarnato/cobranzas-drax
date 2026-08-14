@@ -29,9 +29,22 @@ type SessionEmailState = {
     assignedEmails?: any[]
 }
 
+type SessionEmailDailyStats = {
+    userId: string
+    sessionCount: number
+    assignedCount: number
+    repliedCount: number
+    closedCount: number
+    durationMs: number
+    firstStartedAt?: Date | null
+    lastEndedAt?: Date | null
+    lastActivityAt?: Date | null
+}
+
 export type {
     ISessionEmail,
     ISessionEmailBase,
+    SessionEmailDailyStats,
     SessionEmailState,
     SessionEmailStatus
 }

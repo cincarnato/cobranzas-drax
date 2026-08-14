@@ -377,7 +377,7 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
     }
 
     async supervisionCounts(mailboxValues: string[], closedFrom: Date, closedTo: Date): Promise<InboundEmailSupervisionCounts> {
-        if (!mailboxValues.length) return {pendingEmails: 0, assignedEmails: 0, closedToday: 0};
+        if (!mailboxValues.length) return {pendingEmails: 0, assignedEmails: 0, closedToday: 0, oldestPendingReceivedAt: null};
         const placeholders = mailboxValues.map((_, index) => `@mailbox${index}`).join(", ");
         const params: Record<string, unknown> = {
             closedFrom: closedFrom.toISOString(),
@@ -401,11 +401,18 @@ class InboundEmailSqliteRepository extends AbstractSqliteRepository<IInboundEmai
                         AND closedAt >= @closedFrom
                         AND closedAt < @closedTo`)
             .get(params) as {total?: number};
+        const oldestPending = this.db
+            .prepare(`SELECT MIN(receivedAt) AS receivedAt
+                      FROM ${this.tableName}
+                      WHERE mailbox IN (${placeholders})
+                        AND attentionStatus = 'PENDING'`)
+            .get(params) as {receivedAt?: string | null};
         const byStatus = new Map(rows.map((row) => [row.status, Number(row.total || 0)]));
         return {
             pendingEmails: byStatus.get("PENDING") || 0,
             assignedEmails: byStatus.get("ASSIGNED") || 0,
             closedToday: Number(closed?.total || 0),
+            oldestPendingReceivedAt: oldestPending?.receivedAt ? new Date(oldestPending.receivedAt) : null,
         };
     }
 
