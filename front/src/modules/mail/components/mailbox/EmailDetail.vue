@@ -26,6 +26,8 @@ const props = defineProps<{
   signatureText?: string
   canNavigatePrevious?: boolean
   canNavigateNext?: boolean
+  navigationPosition?: number
+  navigationTotal?: number
   navigationLoading?: boolean
 }>()
 
@@ -98,6 +100,10 @@ const managementUrl = computed(() => {
   const inboundEmailId = email.value?._id
   if (!url || !inboundEmailId) return ""
   return buildManagementUrl(url, inboundEmailId)
+})
+const navigationCounterLabel = computed(() => {
+  if (!props.navigationPosition || !props.navigationTotal) return ""
+  return `${props.navigationPosition}/${props.navigationTotal}`
 })
 
 watch(canReply, async (value, previous) => {
@@ -297,25 +303,33 @@ function isInsideManagementPanel(target: EventTarget | null) {
                   {{ assignedToName }} está gestionando este correo.
                 </v-alert>
               </div>
-              <EmailShortcutsDialog />
-              <v-btn
-                icon="mdi-refresh"
-                variant="text"
-                :loading="loading"
-                @click="$emit('retry')"
-              />
-              <v-btn
-                icon="mdi-chevron-left"
-                variant="text"
-                :disabled="!canNavigatePrevious || navigationLoading"
-                @click="$emit('navigate-previous')"
-              />
-              <v-btn
-                icon="mdi-chevron-right"
-                variant="text"
-                :disabled="!canNavigateNext || navigationLoading"
-                @click="$emit('navigate-next')"
-              />
+              <div class="detail-actions d-flex align-center ga-1">
+                <EmailShortcutsDialog />
+                <v-btn
+                  icon="mdi-refresh"
+                  variant="text"
+                  :loading="loading"
+                  @click="$emit('retry')"
+                />
+                <v-btn
+                  icon="mdi-chevron-left"
+                  variant="text"
+                  :disabled="!canNavigatePrevious || navigationLoading"
+                  @click="$emit('navigate-previous')"
+                />
+                <span
+                  v-if="navigationCounterLabel"
+                  class="navigation-counter text-body-2 font-weight-medium text-medium-emphasis"
+                >
+                  {{ navigationCounterLabel }}
+                </span>
+                <v-btn
+                  icon="mdi-chevron-right"
+                  variant="text"
+                  :disabled="!canNavigateNext || navigationLoading"
+                  @click="$emit('navigate-next')"
+                />
+              </div>
             </div>
           </div>
 
@@ -490,6 +504,15 @@ function isInsideManagementPanel(target: EventTarget | null) {
 }
 .email-attribute-row :deep(.v-chip__content) {
   gap: 4px;
+}
+.navigation-counter {
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
 .attribute-label {
   font-weight: 600;

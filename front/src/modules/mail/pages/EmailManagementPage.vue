@@ -106,6 +106,12 @@ const canNavigateNextEmail = computed(() => {
   const nextIndex = selectedEmailIsInCurrentList.value ? currentIndex + 1 : currentIndex
   return nextIndex < items.value.length || page.value < totalPages.value
 })
+const currentEmailPosition = computed(() => {
+  if (view.value === "SENT" || !selectedId.value) return 0
+  const currentIndex = effectiveNavigationIndex.value
+  if (currentIndex < 0) return 0
+  return ((page.value - 1) * pageSize.value) + currentIndex + 1
+})
 const isSupervisor = computed(() => auth.hasPermission("inboundemail:manage"))
 const baseCanUpdate = computed(() => auth.hasPermission("inboundemail:update") || isSupervisor.value)
 const canAssignOperator = computed(() => auth.hasPermission("inboundemail:assign") || isSupervisor.value)
@@ -832,6 +838,8 @@ function notify(text: string, color = "info") {
               :signature-text="mailboxUserSettings?.signatureText || ''"
               :can-navigate-previous="canNavigatePreviousEmail"
               :can-navigate-next="canNavigateNextEmail"
+              :navigation-position="currentEmailPosition"
+              :navigation-total="totalItems"
               :navigation-loading="detailNavigationLoading"
               @back="closeDetail"
               @retry="fetchDetail()"
