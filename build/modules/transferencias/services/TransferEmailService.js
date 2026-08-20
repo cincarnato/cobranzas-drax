@@ -72,7 +72,7 @@ class TransferEmailService extends AbstractService {
                 this.applyMultipleAffiliateTotalRowStyle(totalRow);
             }
             for (const affiliate of affiliates) {
-                worksheet.addRow({
+                const affiliateRow = worksheet.addRow({
                     ...this.buildTransferExcelBaseRow(row),
                     name: affiliate.name ?? '',
                     amount: affiliate.amount ?? null,
@@ -80,6 +80,9 @@ class TransferEmailService extends AbstractService {
                     month: affiliate.month ?? '',
                     observations: affiliate.observations ?? '',
                 });
+                if (affiliates.length > 1) {
+                    this.applyMultipleAffiliateDetailRowStyle(affiliateRow);
+                }
             }
         }
         worksheet.getRow(1).font = { bold: true };
@@ -121,11 +124,17 @@ class TransferEmailService extends AbstractService {
     }
     applyMultipleAffiliateTotalRowStyle(row) {
         row.font = { bold: true };
+        this.applyRowFill(row, 'FFF2CC');
+    }
+    applyMultipleAffiliateDetailRowStyle(row) {
+        this.applyRowFill(row, 'D9EAF7');
+    }
+    applyRowFill(row, argb) {
         row.eachCell((cell) => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFF2CC' }
+                fgColor: { argb }
             };
         });
     }

@@ -105,7 +105,7 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
             }
 
             for (const affiliate of affiliates) {
-                worksheet.addRow({
+                const affiliateRow = worksheet.addRow({
                     ...this.buildTransferExcelBaseRow(row),
                     name: affiliate.name ?? '',
                     amount: affiliate.amount ?? null,
@@ -113,6 +113,10 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
                     month: affiliate.month ?? '',
                     observations: affiliate.observations ?? '',
                 })
+
+                if (affiliates.length > 1) {
+                    this.applyMultipleAffiliateDetailRowStyle(affiliateRow)
+                }
             }
         }
 
@@ -158,11 +162,19 @@ class TransferEmailService extends AbstractService<ITransferEmail, ITransferEmai
 
     private applyMultipleAffiliateTotalRowStyle(row: ExcelJS.Row): void {
         row.font = {bold: true}
+        this.applyRowFill(row, 'FFF2CC')
+    }
+
+    private applyMultipleAffiliateDetailRowStyle(row: ExcelJS.Row): void {
+        this.applyRowFill(row, 'D9EAF7')
+    }
+
+    private applyRowFill(row: ExcelJS.Row, argb: string): void {
         row.eachCell((cell) => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: {argb: 'FFF2CC'}
+                fgColor: {argb}
             }
         })
     }
