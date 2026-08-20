@@ -59,30 +59,21 @@ class TransferEmailService extends AbstractService {
             { header: 'Banco Cuenta Destino', key: 'destinationBank', width: 24 },
         ];
         for (const row of rows) {
-            for (const affiliate of row.affiliates || []) {
+            const affiliates = row.affiliates || [];
+            if (affiliates.length > 1) {
+                const totalRow = worksheet.addRow({
+                    ...this.buildTransferExcelBaseRow(row),
+                    name: 'Total comprobante - multiples afiliados',
+                    amount: row.amount ?? null,
+                    documentNumber: 'MULTIPLES',
+                    month: '',
+                    observations: `Comprobante aplicado a ${affiliates.length} afiliados`,
+                });
+                this.applyMultipleAffiliateTotalRowStyle(totalRow);
+            }
+            for (const affiliate of affiliates) {
                 worksheet.addRow({
-                    emailMessageId: row.emailMessageId ?? '',
-                    emailSubject: row.emailSubject ?? '',
-                    emailFromName: row.emailFromName ?? '',
-                    emailFromEmail: row.emailFromEmail ?? '',
-                    emailDocumentNumber: row.emailDocumentNumber ?? '',
-                    transferDate: row.transferDate ? new Date(row.transferDate) : '',
-                    emailDate: row.emailDate ? new Date(row.emailDate) : '',
-                    processDate: row.processDate ? new Date(row.processDate) : '',
-                    payer: this.formatPayer(row.payer),
-                    affiliateStrategy: row.affiliateStrategy ?? '',
-                    operationNumber: row.operationNumber ?? '',
-                    concept: row.concept ?? '',
-                    originName: row.originName ?? '',
-                    originAccount: row.originAccount ?? '',
-                    originCbu: row.originCbu ?? '',
-                    originAlias: row.originAlias ?? '',
-                    originBank: row.originBank ?? '',
-                    destinationName: row.destinationName ?? '',
-                    destinationAccount: row.destinationAccount ?? '',
-                    destinationCbu: row.destinationCbu ?? '',
-                    destinationAlias: row.destinationAlias ?? '',
-                    destinationBank: row.destinationBank ?? '',
+                    ...this.buildTransferExcelBaseRow(row),
                     name: affiliate.name ?? '',
                     amount: affiliate.amount ?? null,
                     documentNumber: affiliate.documentNumber ?? '',
@@ -101,6 +92,42 @@ class TransferEmailService extends AbstractService {
             buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
             fileName: `transferencias_${new Date().toISOString().slice(0, 10)}.xlsx`
         };
+    }
+    buildTransferExcelBaseRow(row) {
+        return {
+            emailMessageId: row.emailMessageId ?? '',
+            emailSubject: row.emailSubject ?? '',
+            emailFromName: row.emailFromName ?? '',
+            emailFromEmail: row.emailFromEmail ?? '',
+            emailDocumentNumber: row.emailDocumentNumber ?? '',
+            transferDate: row.transferDate ? new Date(row.transferDate) : '',
+            emailDate: row.emailDate ? new Date(row.emailDate) : '',
+            processDate: row.processDate ? new Date(row.processDate) : '',
+            payer: this.formatPayer(row.payer),
+            affiliateStrategy: row.affiliateStrategy ?? '',
+            operationNumber: row.operationNumber ?? '',
+            concept: row.concept ?? '',
+            originName: row.originName ?? '',
+            originAccount: row.originAccount ?? '',
+            originCbu: row.originCbu ?? '',
+            originAlias: row.originAlias ?? '',
+            originBank: row.originBank ?? '',
+            destinationName: row.destinationName ?? '',
+            destinationAccount: row.destinationAccount ?? '',
+            destinationCbu: row.destinationCbu ?? '',
+            destinationAlias: row.destinationAlias ?? '',
+            destinationBank: row.destinationBank ?? '',
+        };
+    }
+    applyMultipleAffiliateTotalRowStyle(row) {
+        row.font = { bold: true };
+        row.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF2CC' }
+            };
+        });
     }
     formatPayer(payer) {
         if (!payer) {
