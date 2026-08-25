@@ -1,4 +1,5 @@
 import {UserPermissions} from '@drax/identity-back'
+import {MediaPermissions, FilePermissions} from '@drax/media-back'
 import PadronPermissions from "../../../modules/afilmed/permissions/PadronPermissions.js";
 import GroupZonePermissions from "../../../modules/collections/permissions/GroupZonePermissions.js";
 import CovenantPermissions from "../../../modules/collections/permissions/CovenantPermissions.js";
@@ -80,6 +81,8 @@ const role = {
         TemplateEmailPermissions.Create,
         TemplateEmailPermissions.Update,
 
+        MediaPermissions.UploadFile,
+        FilePermissions.View
 
     ],
     childRoles: [],
