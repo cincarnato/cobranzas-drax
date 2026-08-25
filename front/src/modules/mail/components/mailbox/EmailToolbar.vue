@@ -49,7 +49,7 @@ defineEmits<{
       </v-btn-toggle>
       <v-select
         :model-value="pageSize"
-        :items="[10, 25, 50, 100]"
+        :items="[5, 10, 15, 25, 50, 100]"
         density="compact"
         variant="outlined"
         hide-details

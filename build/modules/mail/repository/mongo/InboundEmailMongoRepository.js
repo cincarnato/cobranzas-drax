@@ -5,6 +5,30 @@ import { mongoose } from "@drax/common-back";
 class InboundEmailMongoRepository extends AbstractMongoRepository {
     constructor() {
         super();
+        this.managementListSelect = [
+            "_id",
+            "receivedAt",
+            "subject",
+            "fromName",
+            "fromEmail",
+            "assignedTo",
+            "assignedAt",
+            "assignmentMode",
+            "attentionStatus",
+            "replyCount",
+            "hasAttachments",
+            "attachmentCount",
+            "attachmentsOcrError",
+            "category",
+            "sentiment",
+            "priority",
+            "summary",
+            "tags",
+            "processingStatus",
+            "isDuplicate",
+            "createdAt",
+            "updatedAt",
+        ].join(" ");
         this._model = InboundEmailModel;
         this._searchFields = ['messageId', 'threadId', 'mailbox', 'subject', 'fromName', 'fromEmail', 'replyToEmail', 'bodyText', 'normalizedText', 'category', 'attentionStatus', 'duplicateOfMessageId'];
         this._populateFields = ['assignedTo', 'assignedSession', 'closedBy'];
@@ -58,7 +82,8 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
         const sortDirection = options.sortDirection === "asc" ? 1 : -1;
         const totalItems = await this._model.countDocuments(query).exec();
         const items = await this._model.find(query)
-            .populate(this._populateFields)
+            .select(this.managementListSelect)
+            .populate({ path: "assignedTo", select: "_id name username email" })
             .sort({ [sortBy]: sortDirection })
             .skip((page - 1) * pageSize)
             .limit(pageSize)
