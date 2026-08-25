@@ -47,6 +47,77 @@ const fontSizeStyles: Record<string, string> = {
   "5": "24px",
   "7": "32px",
 }
+const allowedTags = new Set([
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "caption",
+  "col",
+  "colgroup",
+  "div",
+  "em",
+  "font",
+  "i",
+  "li",
+  "ol",
+  "p",
+  "s",
+  "span",
+  "strike",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "u",
+  "ul",
+])
+const tableTags = new Set(["table", "td", "th", "tr", "col", "colgroup"])
+const allowedStyleProperties = [
+  "background-color",
+  "border",
+  "border-bottom",
+  "border-bottom-color",
+  "border-bottom-style",
+  "border-bottom-width",
+  "border-collapse",
+  "border-color",
+  "border-left",
+  "border-left-color",
+  "border-left-style",
+  "border-left-width",
+  "border-right",
+  "border-right-color",
+  "border-right-style",
+  "border-right-width",
+  "border-spacing",
+  "border-style",
+  "border-top",
+  "border-top-color",
+  "border-top-style",
+  "border-top-width",
+  "border-width",
+  "color",
+  "font-family",
+  "font-size",
+  "font-style",
+  "font-weight",
+  "height",
+  "line-height",
+  "margin",
+  "max-width",
+  "min-width",
+  "padding",
+  "text-align",
+  "text-decoration",
+  "vertical-align",
+  "white-space",
+  "width",
+]
 
 watch(
   () => props.modelValue,
@@ -310,26 +381,8 @@ function sanitizeHtml(value: string) {
 
   const template = document.createElement("template")
   template.innerHTML = value
-  const allowedTags = new Set([
-    "a",
-    "b",
-    "blockquote",
-    "br",
-    "div",
-    "em",
-    "font",
-    "i",
-    "li",
-    "ol",
-    "p",
-    "s",
-    "span",
-    "strike",
-    "strong",
-    "u",
-    "ul",
-  ])
 
+  inlineEmbeddedStyles(template.content)
   cleanNode(template.content)
   removeInlineStyleMarkers(template.content)
   template.content.querySelectorAll("*").forEach((node) => {
@@ -347,6 +400,34 @@ function sanitizeHtml(value: string) {
 
 function cleanNode(node: ParentNode) {
   node.querySelectorAll("script, style, iframe, object, embed, meta, link").forEach((element) => element.remove())
+}
+
+function inlineEmbeddedStyles(node: ParentNode) {
+  node.querySelectorAll("style").forEach((styleElement) => {
+    const css = styleElement.textContent || ""
+    const rulePattern = /([^{}@]+)\{([^{}]+)\}/g
+    let rule: RegExpExecArray | null
+
+    while ((rule = rulePattern.exec(css))) {
+      const selectors = rule[1]
+        .split(",")
+        .map((selector) => selector.trim())
+        .filter(Boolean)
+      const declarations = rule[2].trim()
+      if (!declarations) continue
+
+      selectors.forEach((selector) => {
+        try {
+          node.querySelectorAll(selector).forEach((matchedNode) => {
+            const element = matchedNode as HTMLElement
+            element.style.cssText = `${element.style.cssText}; ${declarations}`
+          })
+        } catch {
+          // Clipboard HTML may contain client-specific selectors unsupported by querySelectorAll.
+        }
+      })
+    }
+  })
 }
 
 function removeInlineStyleMarkers(node: ParentNode) {
@@ -368,9 +449,10 @@ function cleanAttributes(element: HTMLElement) {
     const value = attribute.value
     const isAnchorHref = tagName === "a" && name === "href" && /^(https?:|mailto:)/i.test(value)
     const isFontAttribute = tagName === "font" && ["color", "face", "size"].includes(name)
+    const isTableAttribute = tableTags.has(tagName) && isSafeTableAttribute(name, value)
     const isStyle = name === "style"
 
-    if (!isAnchorHref && !isFontAttribute && !isStyle) {
+    if (!isAnchorHref && !isFontAttribute && !isTableAttribute && !isStyle) {
       element.removeAttribute(attribute.name)
     }
   })
@@ -378,12 +460,20 @@ function cleanAttributes(element: HTMLElement) {
   sanitizeStyleAttribute(element)
 }
 
+function isSafeTableAttribute(name: string, value: string) {
+  if (["align", "valign"].includes(name)) return /^(left|center|right|justify|top|middle|bottom|baseline)$/i.test(value)
+  if (["colspan", "rowspan"].includes(name)) return /^\d{1,2}$/.test(value) && Number(value) > 0
+  if (["border", "cellpadding", "cellspacing"].includes(name)) return /^\d{1,3}$/.test(value)
+  if (["height", "width"].includes(name)) return /^\d{1,4}%?$/.test(value)
+  if (name === "span") return /^\d{1,2}$/.test(value) && Number(value) > 0
+  return false
+}
+
 function sanitizeStyleAttribute(element: HTMLElement) {
-  const allowedStyles = ["border-left", "border-inline-start", "color", "background-color", "font-family", "font-size", "margin", "padding", "text-align"]
-  const nextStyles = allowedStyles
+  const nextStyles = allowedStyleProperties
     .map((property) => {
       const value = element.style.getPropertyValue(property)
-      return value ? `${property}: ${value}` : ""
+      return value && isSafeStyleValue(value) ? `${property}: ${value}` : ""
     })
     .filter(Boolean)
 
@@ -392,6 +482,10 @@ function sanitizeStyleAttribute(element: HTMLElement) {
   } else {
     element.removeAttribute("style")
   }
+}
+
+function isSafeStyleValue(value: string) {
+  return !/url\s*\(|expression\s*\(/i.test(value)
 }
 </script>
 
@@ -512,6 +606,7 @@ function sanitizeStyleAttribute(element: HTMLElement) {
 
 .mail-editor__body {
   outline: none;
+  overflow-x: auto;
   padding: 16px;
   white-space: normal;
 }
@@ -541,5 +636,15 @@ function sanitizeStyleAttribute(element: HTMLElement) {
   color: rgba(var(--v-theme-on-surface), 0.72);
   margin: 8px 0;
   padding: 4px 0 4px 12px;
+}
+
+.mail-editor__body :deep(table) {
+  margin-block: 8px;
+}
+
+.mail-editor__body :deep(td),
+.mail-editor__body :deep(th) {
+  padding: 1px 2px;
+  vertical-align: top;
 }
 </style>
