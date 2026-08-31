@@ -4,7 +4,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
         super(...arguments);
         this.tableName = 'TransferEmail';
         this.searchFields = ['affiliateStrategy', 'affiliates', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
-        this.booleanFields = ['isTransferProof', 'needsHumanReview'];
+        this.booleanFields = ['isTransferProof', 'needsHumanReview', 'hasAdditionalInquiry'];
         this.jsonFields = ['affiliates'];
         this.identifier = '_id';
         this.populateFields = [
@@ -52,7 +52,8 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository {
             { name: "auditedBy", type: "TEXT", unique: undefined, primary: false },
             { name: "auditedAt", type: "TEXT", unique: undefined, primary: false },
             { name: "status", type: "TEXT", unique: undefined, primary: false },
-            { name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false }
+            { name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false },
+            { name: "hasAdditionalInquiry", type: "TEXT", unique: undefined, primary: false }
         ];
     }
     async assignNextAvailable() {

@@ -46,7 +46,8 @@ const TransferEmailBaseSchema = z.object({
     auditedBy: z.coerce.string().nullable().optional(),
     auditedAt: z.coerce.date().nullable().optional(),
     status: z.enum(['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO']).optional(),
-    needsHumanReview: z.boolean().optional()
+    needsHumanReview: z.boolean().optional(),
+    hasAdditionalInquiry: z.boolean().optional().default(false)
 });
 const TransferEmailSchema = TransferEmailBaseSchema
     .extend({

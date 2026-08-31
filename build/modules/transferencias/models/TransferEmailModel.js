@@ -47,7 +47,8 @@ const TransferEmailSchema = new mongoose.Schema({
     auditedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, index: true, unique: false },
     auditedAt: { type: Date, required: false, index: true, unique: false },
     status: { type: String, enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'], required: true, default: 'PENDIENTE_IA', index: true, unique: false },
-    needsHumanReview: { type: Boolean, required: false, index: false, unique: false }
+    needsHumanReview: { type: Boolean, required: false, index: false, unique: false },
+    hasAdditionalInquiry: { type: Boolean, required: false, default: false, index: true, unique: false }
 }, { timestamps: true });
 TransferEmailSchema.plugin(uniqueValidator, { message: 'validation.unique' });
 TransferEmailSchema.plugin(mongoosePaginate);
