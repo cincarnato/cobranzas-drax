@@ -122,6 +122,7 @@ const firstAttachmentName = computed(() => proofAttachment.value?.filename || 'S
 const showHumanReviewAlert = computed(() =>
   email.value.status === 'PENDIENTE_AUDITORIA' || Boolean(email.value.needsHumanReview)
 )
+const hasAdditionalInquiry = computed(() => Boolean(email.value.hasAdditionalInquiry))
 const isProofImage = computed(() => {
   const attachment = proofAttachment.value
   if (!attachment) return false
@@ -204,7 +205,7 @@ function syncPartialForm() {
   partialForm.transferDate = email.value.transferDate ? new Date(email.value.transferDate) : null
   partialForm.originName = email.value.originName || ''
   partialForm.destinationName = email.value.destinationName || ''
-  closeInboundEmail.value = true
+  closeInboundEmail.value = !hasAdditionalInquiry.value
   syncSingleAffiliateAmount()
   metadataSaveError.value = ''
   metadataSaveSuccess.value = ''
@@ -317,6 +318,7 @@ async function saveMetadata() {
     email.value.auditedAt = updated.auditedAt
     email.value.status = updated.status
     email.value.needsHumanReview = Boolean(updated.needsHumanReview)
+    email.value.hasAdditionalInquiry = Boolean(updated.hasAdditionalInquiry)
     syncPartialForm()
     emit('saved', updated)
     if (updated.humanStatus === 'VALIDADO') emit('validated', updated)
@@ -511,6 +513,15 @@ const humanStatusPresentation = (status?: string) => {
       size="small"
     >
       Revisión humana requerida
+    </v-chip>
+    <v-chip
+      v-if="hasAdditionalInquiry"
+      prepend-icon="mdi-email-alert-outline"
+      variant="flat"
+      size="small"
+      class="additional-inquiry-chip"
+    >
+      Requiere respuesta: consulta adicional
     </v-chip>
     <v-chip
       v-if="payerLabel"
@@ -881,7 +892,7 @@ const humanStatusPresentation = (status?: string) => {
           <v-checkbox
             v-if="!readonly"
             v-model="closeInboundEmail"
-            label="Cerrar correo"
+            :label="hasAdditionalInquiry ? 'Cerrar correo (requiere respuesta)' : 'Cerrar correo'"
             density="compact"
             hide-details
             class="close-inbound-email-checkbox"
@@ -1034,6 +1045,13 @@ const humanStatusPresentation = (status?: string) => {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.additional-inquiry-chip {
+  background: #ff073a !important;
+  color: #fff !important;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.88), 0 0 14px rgba(255, 7, 58, 0.92);
 }
 </style>
 

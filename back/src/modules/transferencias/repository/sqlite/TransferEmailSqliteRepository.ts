@@ -10,7 +10,7 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
     protected tableName: string = 'TransferEmail';
     protected dataBaseFile: string;
     protected searchFields: string[] = ['affiliateStrategy', 'affiliates', 'emailMessageId', 'emailSubject', 'emailFromName', 'emailFromEmail', 'emailDocumentNumber'];
-    protected booleanFields: string[] = ['isTransferProof', 'needsHumanReview'];
+    protected booleanFields: string[] = ['isTransferProof', 'needsHumanReview', 'hasAdditionalInquiry'];
     protected jsonFields: string[] = ['affiliates'];
     protected identifier: string = '_id';
     protected populateFields = [
@@ -58,7 +58,8 @@ class TransferEmailSqliteRepository extends AbstractSqliteRepository<ITransferEm
 {name: "auditedBy", type: "TEXT", unique: undefined, primary: false},
 {name: "auditedAt", type: "TEXT", unique: undefined, primary: false},
 {name: "status", type: "TEXT", unique: undefined, primary: false},
-{name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false}
+{name: "needsHumanReview", type: "TEXT", unique: undefined, primary: false},
+{name: "hasAdditionalInquiry", type: "TEXT", unique: undefined, primary: false}
     ]
 
     async assignNextAvailable(): Promise<ITransferEmail | null> {

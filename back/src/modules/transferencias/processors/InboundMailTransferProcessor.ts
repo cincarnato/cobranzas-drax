@@ -120,6 +120,7 @@ const transferEmailAiSchema = z.object({
     isTransferProof: z.boolean(),
     transfers: z.array(transferEmailAiItemSchema),
     needsHumanReview: z.boolean().nullable(),
+    hasAdditionalInquiry: z.boolean().nullable(),
     reasoning: z.string().nullable(),
 });
 
@@ -690,6 +691,7 @@ class InboundMailTransferProcessor {
                 humanStatus: "PENDIENTE",
                 status: "PENDIENTE_AUDITORIA",
                 needsHumanReview: this.resolveNeedsHumanReviewFromAiStatus(aiStatus),
+                hasAdditionalInquiry: Boolean(extractionResult.hasAdditionalInquiry),
             };
 
             return this.removeUndefinedFields(payload);
@@ -734,6 +736,7 @@ class InboundMailTransferProcessor {
             humanStatus: "PENDIENTE",
             status: "PENDIENTE_AUDITORIA",
             needsHumanReview: true,
+            hasAdditionalInquiry: false,
         });
     }
 
@@ -1039,6 +1042,9 @@ class InboundMailTransferProcessor {
                     "originAccount y destinationAccount son numeros o identificadores de cuenta; no pongas nombres de personas en esos campos.",
                     "affiliateName, affiliateEmail y affiliateDocumentNumber deben contener datos del remitente o pagador cuando aparezcan en el mail; el afiliado final se resuelve luego con mapeos de pagadores.",
                     "additionalAffiliates debe incluir otros afiliados pagados por la misma transferencia, con name, email y documentNumber cuando aparezcan.",
+                    "hasAdditionalInquiry debe ser true si el asunto o cuerpo del mail incluye una consulta, reclamo, pedido, problema o solicitud de respuesta adicional al envio del comprobante.",
+                    "hasAdditionalInquiry debe ser false cuando el mail solo informa o adjunta el comprobante, agradece, saluda, o contiene frases operativas simples como 'envio comprobante', 'adjunto pago' o 'realice transferencia'.",
+                    "Ejemplos para hasAdditionalInquiry=true: pregunta por deuda, cobertura, autorizacion, factura, baja, reintegro, estado de cuenta, error en imputacion, reclamo por cobro, pedido de contacto o cualquier texto que requiera contestacion humana.",
                     "Usa exclusivamente la evidencia disponible en asunto, cuerpo, texto normalizado, OCR de adjuntos y metadatos del remitente.",
                     "No inventes ni completes campos por inferencia débil.",
                     "Si un dato no está claro o no aparece, devuélvelo como null.",

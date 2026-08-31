@@ -65,6 +65,7 @@ interface ITransferEmailBase {
     auditedAt?: Date
     status?: TransferEmailStatus
     needsHumanReview?: boolean
+    hasAdditionalInquiry?: boolean
     createdAt?: Date
     updatedAt?: Date
 }
@@ -117,6 +118,7 @@ interface ITransferEmail {
     auditedAt?: Date
     status?: TransferEmailStatus
     needsHumanReview?: boolean
+    hasAdditionalInquiry?: boolean
     createdAt?: Date
     updatedAt?: Date
 }

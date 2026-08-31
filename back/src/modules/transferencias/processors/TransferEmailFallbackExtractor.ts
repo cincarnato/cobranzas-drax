@@ -24,6 +24,7 @@ type TransferEmailFallbackItem = {
     emailDocumentNumber: string | null;
     additionalAffiliates: [];
     needsHumanReview: boolean;
+    hasAdditionalInquiry: boolean;
     reasoning: string;
 };
 
@@ -31,6 +32,7 @@ type TransferEmailFallbackResult = {
     isTransferProof: boolean;
     transfers: TransferEmailFallbackItem[];
     needsHumanReview: boolean;
+    hasAdditionalInquiry: boolean;
     reasoning: string;
     extractionSource: "FALLBACK";
     aiError?: string;
@@ -70,6 +72,7 @@ function extractTransferEmailFallback(inboundEmail: IInboundEmail, aiError?: str
             isTransferProof: false,
             transfers: [],
             needsHumanReview: true,
+            hasAdditionalInquiry: false,
             reasoning: "Fallback sin IA: no se encontraron señales suficientes de comprobante o aviso de transferencia.",
             extractionSource: "FALLBACK",
             aiError,
@@ -100,9 +103,11 @@ function extractTransferEmailFallback(inboundEmail: IInboundEmail, aiError?: str
             emailDocumentNumber: affiliateDocumentNumber,
             additionalAffiliates: [],
             needsHumanReview: true,
+            hasAdditionalInquiry: false,
             reasoning: "Fallback sin IA: transferencia detectada con expresiones regulares. Requiere auditoria humana.",
         }],
         needsHumanReview: true,
+        hasAdditionalInquiry: false,
         reasoning: "Fallback sin IA: transferencia detectada con expresiones regulares. Requiere auditoria humana.",
         extractionSource: "FALLBACK",
         aiError,

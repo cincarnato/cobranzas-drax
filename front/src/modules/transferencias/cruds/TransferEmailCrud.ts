@@ -51,6 +51,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {title: 'aiStatus', key: 'aiStatus', align: 'start'},
       {title: 'humanStatus', key: 'humanStatus', align: 'start'},
       // {title: 'needsHumanReview', key: 'needsHumanReview', align: 'start'},
+      {title: 'hasAdditionalInquiry', key: 'hasAdditionalInquiry', align: 'start'},
       {title: 'aiProcessedAt', key: 'aiProcessedAt', align: 'start'},
       {title: 'aiError', key: 'aiError', align: 'start'},
       {title: 'assignedTo', key: 'assignedTo', align: 'start'},
@@ -188,7 +189,8 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
 {name:'assignedTo',type:'ref',label:'assignedTo',default:null,ref:'User',refDisplay:'username'},
 {name:'auditedBy',type:'ref',label:'auditedBy',default:null,ref:'User',refDisplay:'username'},
 {name:'auditedAt',type:'date',label:'auditedAt',default:null},
-{name:'needsHumanReview',type:'boolean',label:'needsHumanReview',default:false}
+{name:'needsHumanReview',type:'boolean',label:'needsHumanReview',default:false},
+{name:'hasAdditionalInquiry',type:'boolean',label:'hasAdditionalInquiry',default:false}
     ]
   }
 
@@ -207,6 +209,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
       {name: 'status', type: 'enum', label: 'Estado general', default: '', operator: 'eq', enum: ['PENDIENTE_IA', 'PENDIENTE_AUDITORIA', 'AUDITADO'] },
       {name: 'aiStatus', type: 'enum', label: 'Estado IA', default: '', operator: 'eq', enum: ['PENDIENTE', 'PROCESADO_CONFIABLE', 'PROCESADO_CON_DUDAS', 'PROCESADO_INCOMPLETO', 'PROCESADO_SIN_IA', 'ERROR_PROCESAMIENTO'] },
       {name: 'humanStatus', type: 'enum', label: 'Estado auditoría', default: '', operator: 'eq', enum: ['PENDIENTE', 'VALIDADO', 'CORREGIDO', 'DESCARTADO'] },
+      {name: 'hasAdditionalInquiry', type: 'boolean', label: 'Consulta adicional', default: null, operator: 'eq' },
     ]
   }
 
@@ -235,7 +238,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get exportHeaders(){
-    return ['_id','status','aiStatus','humanStatus','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateStrategy','payer','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'originName', 'destinationName']
+    return ['_id','status','aiStatus','humanStatus','hasAdditionalInquiry','emailMessageId','emailSubject','emailFromName','emailFromEmail','emailDocumentNumber','affiliateStrategy','payer','affiliates', 'amount','currency', 'transferDate', 'emailDate', 'processDate', 'aiProcessedAt', 'originName', 'destinationName']
   }
 
   get isImportable(){
