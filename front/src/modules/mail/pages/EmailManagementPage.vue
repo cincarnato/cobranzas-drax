@@ -43,7 +43,7 @@ const view = ref<EmailManagementView>((route.query.view as EmailManagementView) 
 const search = ref((route.query.search as string) || "")
 const debouncedSearch = ref(search.value)
 const page = ref(Number(route.query.page || 1))
-const pageSize = ref(25)
+const pageSize = ref(15)
 const density = ref<EmailDensity>("comfortable")
 const filters = ref<EmailManagementFilters>({
   category: route.query.category as string || undefined,

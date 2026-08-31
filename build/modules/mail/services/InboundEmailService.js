@@ -4,6 +4,7 @@ import MailboxServiceFactory from "../factory/services/MailboxServiceFactory.js"
 import OutboundEmailServiceFactory from "../factory/services/OutboundEmailServiceFactory.js";
 import EmailUserStateServiceFactory from "../factory/services/EmailUserStateServiceFactory.js";
 import SessionEmailServiceFactory from "../factory/services/SessionEmailServiceFactory.js";
+import { InboundEmailManagementDetailSchema, InboundEmailManagementListResultSchema } from "../schemas/InboundEmailSchema.js";
 class InboundEmailService extends AbstractService {
     constructor(InboundEmailRepository, baseSchema, fullSchema) {
         super(InboundEmailRepository, baseSchema, fullSchema);
@@ -41,18 +42,19 @@ class InboundEmailService extends AbstractService {
         const currentUserId = options.currentUserId || "";
         const mailboxValues = await this.resolveManagementMailboxValues(options.mailboxValues?.[0], currentUserId, options.assignedTo || null);
         if (!mailboxValues.length) {
-            return {
+            return InboundEmailManagementListResultSchema.parse({
                 items: [],
                 page: Math.max(Number(options.page || 1), 1),
                 pageSize: Math.min(Math.max(Number(options.pageSize || 25), 1), 100),
                 totalItems: 0,
                 totalPages: 1,
-            };
+            });
         }
-        return await this.repository.managementPaginate({
+        const result = await this.repository.managementPaginate({
             ...options,
             mailboxValues,
         });
+        return InboundEmailManagementListResultSchema.parse(result);
     }
     async managementCounts(mailboxValue, currentUserId, isSupervisor) {
         const mailboxValues = await this.resolveManagementMailboxValues(mailboxValue, currentUserId, null);
@@ -74,7 +76,7 @@ class InboundEmailService extends AbstractService {
         const inboundThread = await this.repository.findThread(inboundEmail);
         const outboundThread = await OutboundEmailServiceFactory.instance.findByInboundEmailIds(inboundThread.map((item) => item._id));
         const userState = await EmailUserStateServiceFactory.instance.findByEmailAndUser(inboundEmail._id, currentUserId);
-        return {
+        const result = {
             inboundEmail,
             mailbox,
             assignedUser: inboundEmail.assignedTo && typeof inboundEmail.assignedTo === "object" ? inboundEmail.assignedTo : null,
@@ -82,6 +84,7 @@ class InboundEmailService extends AbstractService {
             inboundThread,
             outboundThread,
         };
+        return InboundEmailManagementDetailSchema.parse(result);
     }
     async assignToMe(id, userId, force = false) {
         const inboundEmail = await this.findById(id);

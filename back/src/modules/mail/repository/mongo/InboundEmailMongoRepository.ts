@@ -16,6 +16,30 @@ import {mongoose} from "@drax/common-back";
 
 
 class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail, IInboundEmailBase, IInboundEmailBase> implements IInboundEmailRepository {
+    private readonly managementListSelect = [
+        "_id",
+        "receivedAt",
+        "subject",
+        "fromName",
+        "fromEmail",
+        "assignedTo",
+        "assignedAt",
+        "assignmentMode",
+        "attentionStatus",
+        "replyCount",
+        "hasAttachments",
+        "attachmentCount",
+        "attachmentsOcrError",
+        "category",
+        "sentiment",
+        "priority",
+        "summary",
+        "tags",
+        "processingStatus",
+        "isDuplicate",
+        "createdAt",
+        "updatedAt",
+    ].join(" ");
 
     constructor() {
         super();
@@ -87,7 +111,8 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
         const sortDirection = options.sortDirection === "asc" ? 1 : -1;
         const totalItems = await this._model.countDocuments(query).exec();
         const items = await this._model.find(query)
-            .populate(this._populateFields)
+            .select(this.managementListSelect)
+            .populate({path: "assignedTo", select: "_id name username email"})
             .sort({[sortBy]: sortDirection})
             .skip((page - 1) * pageSize)
             .limit(pageSize)
