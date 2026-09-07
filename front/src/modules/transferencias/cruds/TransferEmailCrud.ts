@@ -222,7 +222,7 @@ class TransferEmailCrud extends EntityCrud implements IEntityCrud {
   }
 
   get isCreatable(){
-    return true
+    return false
   }
 
   get isDeletable(){

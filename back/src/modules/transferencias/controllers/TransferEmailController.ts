@@ -87,7 +87,7 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
     async processInboundEmails(request: CustomRequest, reply: FastifyReply) {
         try {
             request?.rbac.assertAuthenticated();
-            request?.rbac.assertPermission(TransferEmailPermissions.Manage);
+            request?.rbac.assertPermission(TransferEmailPermissions.MassiveCreate);
 
             const body = (request.body || {}) as {
                 since?: string | null;

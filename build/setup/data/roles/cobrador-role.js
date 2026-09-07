@@ -40,6 +40,7 @@ const role = {
         TransferEmailPermissions.View,
         TransferEmailPermissions.Manage,
         TransferEmailPermissions.Update,
+        TransferEmailPermissions.Create,
         TransferAuditSessionPermissions.Manage,
         TransferAuditSessionPermissions.Create,
         TransferAuditSessionPermissions.Update,
