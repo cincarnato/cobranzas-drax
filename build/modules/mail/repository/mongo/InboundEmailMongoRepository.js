@@ -2,6 +2,9 @@ import { AbstractMongoRepository } from "@drax/crud-back";
 import { InboundEmailModel } from "../../models/InboundEmailModel.js";
 import { EmailUserStateModel } from "../../models/EmailUserStateModel.js";
 import { mongoose } from "@drax/common-back";
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 class InboundEmailMongoRepository extends AbstractMongoRepository {
     constructor() {
         super();
@@ -405,7 +408,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
                 query.receivedAt.$lte = options.dateTo;
         }
         if (options.search?.trim()) {
-            const regex = new RegExp(this.escapeRegExp(options.search.trim()), "i");
+            const regex = new RegExp(escapeRegExp(options.search.trim()), "i");
             query.$or = [
                 { subject: regex },
                 { fromName: regex },
@@ -437,9 +440,6 @@ class InboundEmailMongoRepository extends AbstractMongoRepository {
     }
     safeSortBy(sortBy) {
         return ["receivedAt", "subject", "fromName", "fromEmail", "attentionStatus", "priority", "category"].includes(sortBy) ? sortBy : "receivedAt";
-    }
-    escapeRegExp(value) {
-        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
     toObjectId(value) {
         return value && mongoose.Types.ObjectId.isValid(value)

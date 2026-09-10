@@ -14,6 +14,10 @@ import type {IInboundEmail, IInboundEmailBase} from "../../interfaces/IInboundEm
 import {EmailUserStateModel} from "../../models/EmailUserStateModel.js";
 import {mongoose} from "@drax/common-back";
 
+function escapeRegExp(value: string) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 
 class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail, IInboundEmailBase, IInboundEmailBase> implements IInboundEmailRepository {
     private readonly managementListSelect = [
@@ -455,7 +459,7 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
             if (options.dateTo) query.receivedAt.$lte = options.dateTo;
         }
         if (options.search?.trim()) {
-            const regex = new RegExp(this.escapeRegExp(options.search.trim()), "i");
+            const regex = new RegExp(escapeRegExp(options.search.trim()), "i");
             query.$or = [
                 {subject: regex},
                 {fromName: regex},
@@ -488,10 +492,6 @@ class InboundEmailMongoRepository extends AbstractMongoRepository<IInboundEmail,
 
     private safeSortBy(sortBy: string) {
         return ["receivedAt", "subject", "fromName", "fromEmail", "attentionStatus", "priority", "category"].includes(sortBy) ? sortBy : "receivedAt";
-    }
-
-    private escapeRegExp(value: string) {
-        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 
     private toObjectId(value?: string) {

@@ -5,7 +5,6 @@ import collectionsRoutes from '../modules/collections/routes/index.js'
 import googleRoutes from '../modules/google/routes/index.js'
 import mailRoutes from '../modules/mail/routes/index.js'
 import premedicRoutes from '../modules/premedic/routes/index.js'
-import recoveryRoutes from '../modules/recovery/routes/index.js'
 import transferenciasRoutes from '../modules/transferencias/routes/index.js'
 import bajasRoutes from '../modules/bajas/routes/index.js'
 import traspasosInternosRoutes from '../modules/traspasosInternos/routes/index.js'
@@ -18,7 +17,6 @@ const modulesRoutes = [
   ...googleRoutes,
   ...mailRoutes,
   ...premedicRoutes,
-  ...recoveryRoutes,
   ...transferenciasRoutes,
   ...bajasRoutes,
   ...traspasosInternosRoutes

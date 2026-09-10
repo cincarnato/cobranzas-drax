@@ -12,6 +12,7 @@ import { SettingPermissions } from "@drax/settings-back";
 import { DashboardPermissions } from "@drax/dashboard-back";
 import { AuditPermissions } from "@drax/audit-back";
 import { AILogPermissions } from "@drax/ai-back";
+import { RecoveryPermissions } from "@drax/recovery-back";
 
 import { BasePermissions } from "../modules/base/permissions/BasePermissions.js";
 import { NotificationPermissions } from "../modules/base/permissions/NotificationPermissions.js";
@@ -37,7 +38,6 @@ import { TransferEmailPermissions } from "../modules/transferencias/permissions/
 import { TransferAuditSessionPermissions } from "../modules/transferencias/permissions/TransferAuditSessionPermissions.js";
 import { AffiliatePermissions } from "../modules/premedic/permissions/AffiliatePermissions.js";
 import { AffiliateTypePermissions } from "../modules/premedic/permissions/AffiliateTypePermissions.js";
-import { RecoveryPermissions } from "../modules/recovery/permissions/RecoveryPermissions.js";
 import { BonusPermissions } from "../modules/bajas/permissions/BonusPermissions.js";
 import { InternalTransferBonusPermissions } from "../modules/traspasosInternos/permissions/InternalTransferBonusPermissions.js";
 
@@ -57,6 +57,7 @@ function InitializePermissions() {
         ...Object.values(DashboardPermissions),
         ...Object.values(AuditPermissions),
         ...Object.values(AILogPermissions),
+        ...Object.values(RecoveryPermissions),
 
         //Local modules permissions
         ...Object.values(BasePermissions),
@@ -83,7 +84,6 @@ function InitializePermissions() {
         ...Object.values(PayerPermissions),
         ...Object.values(TransferEmailPermissions),
         ...Object.values(TransferAuditSessionPermissions),
-        ...Object.values(RecoveryPermissions),
         ...Object.values(BonusPermissions),
         ...Object.values(InternalTransferBonusPermissions),
     ]

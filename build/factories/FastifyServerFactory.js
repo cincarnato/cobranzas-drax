@@ -5,6 +5,7 @@ import { SettingRoutes } from "@drax/settings-back";
 import { DashboardRoutes } from "@drax/dashboard-back";
 import { AuditRoutes } from "@drax/audit-back";
 import { AILogRoutes } from "@drax/ai-back";
+import { RecoveryFastifyRoutes } from "@drax/recovery-back";
 //Local modules routes
 import { GoogleFastifyRoutes } from "../modules/google/routes/GoogleRoutes.js";
 import { HealthRoutes } from "../modules/base/routes/HealthRoutes.js";
@@ -35,7 +36,6 @@ import { TransferEmailFastifyRoutes } from "../modules/transferencias/routes/Tra
 import { TransferAuditSessionFastifyRoutes } from "../modules/transferencias/routes/TransferAuditSessionRoutes.js";
 import { AffiliateFastifyRoutes } from "../modules/premedic/routes/AffiliateRoutes.js";
 import { AffiliateTypeFastifyRoutes } from "../modules/premedic/routes/AffiliateTypeRoutes.js";
-import { RecoveryFastifyRoutes } from "../modules/recovery/routes/RecoveryRoutes.js";
 import { BonusFastifyRoutes } from "../modules/bajas/routes/BonusRoutes.js";
 import { InternalTransferBonusFastifyRoutes } from "../modules/traspasosInternos/routes/InternalTransferBonusRoutes.js";
 function FastifyServerFactory(rootDir) {
@@ -59,6 +59,7 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(SettingRoutes);
     server.fastifyRegister(DashboardRoutes);
     server.fastifyRegister(AILogRoutes);
+    server.fastifyRegister(RecoveryFastifyRoutes);
     //LOCAL MODULES ROUTES
     server.fastifyRegister(GoogleFastifyRoutes);
     server.fastifyRegister(HealthRoutes);
