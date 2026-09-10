@@ -90,7 +90,6 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(PayerFastifyRoutes);
     server.fastifyRegister(TransferEmailFastifyRoutes);
     server.fastifyRegister(TransferAuditSessionFastifyRoutes);
-    server.fastifyRegister(RecoveryFastifyRoutes);
     server.fastifyRegister(BonusFastifyRoutes);
     server.fastifyRegister(InternalTransferBonusFastifyRoutes);
     return server;
