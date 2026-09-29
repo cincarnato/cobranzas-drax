@@ -25,6 +25,40 @@ async function TransferEmailFastifyRoutes(fastify, options) {
     fastify.post('/api/transfer-emails', {schema: schemas.createSchema}, (req,rep) =>controller.create(req,rep))
 
     fastify.post(
+        '/api/transfer-emails/receipt-test/extract',
+        {
+            schema: {
+                tags: ["transferencias"],
+                summary: "Extract transfer receipt data for the public test page",
+                consumes: ["multipart/form-data"],
+                response: {
+                    200: {
+                        type: "object",
+                        properties: {
+                            tool: {type: "string"},
+                            extractionSource: {type: "string", enum: ["AI", "FALLBACK"]},
+                            filename: {type: ["string", "null"]},
+                            mimetype: {type: ["string", "null"]},
+                            text: {type: "string"},
+                            receipt: {
+                                type: "object",
+                                properties: {
+                                    transferDate: {type: ["string", "null"]},
+                                    amount: {type: ["number", "null"]},
+                                    operationNumber: {type: ["string", "null"]},
+                                },
+                            },
+                            reasoning: {type: ["string", "null"]},
+                            aiError: {type: "string"},
+                        },
+                    },
+                },
+            },
+        },
+        (req,rep) => controller.extractReceiptTestData(req as any, rep)
+    )
+
+    fastify.post(
         '/api/transfer-emails/process-inbound-emails',
         {
             schema: {

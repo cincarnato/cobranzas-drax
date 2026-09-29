@@ -7,6 +7,7 @@ import TransferEmailViewRoute from "./TransferEmailViewRoute"
 import TransferEmailDashboardRoute from "./TransferEmailDashboardRoute"
 import TransferAuditSessionRoute from "./TransferAuditSessionRoute"
 import InboundEmailTransferManagementRoute from "./InboundEmailTransferManagementRoute"
+import TransferReceiptTestRoute from "./TransferReceiptTestRoute"
 import embeddedRouter from "@/modules/mail/embedded/EmbeddedRouter"
 
 embeddedRouter.register({
@@ -31,7 +32,8 @@ export const routes = [
 ...TransferEmailViewRoute,
 ...TransferEmailDashboardRoute,
 ...TransferAuditSessionRoute,
-...InboundEmailTransferManagementRoute
+...InboundEmailTransferManagementRoute,
+...TransferReceiptTestRoute
 ]
 
 export default routes

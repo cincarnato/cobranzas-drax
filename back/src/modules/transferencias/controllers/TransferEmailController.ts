@@ -9,6 +9,7 @@ import InboundMailTransferProcessor from "../processors/InboundMailTransferProce
 import type {IDraxFieldFilter} from "@drax/crud-share";
 import {BadRequestError, NotFoundError} from "@drax/common-back";
 import TransferAuditSessionServiceFactory from "../factory/services/TransferAuditSessionServiceFactory.js";
+import {extractTransferReceiptTestData} from "../processors/TransferReceiptTestExtractor.js";
 
 class TransferEmailController extends AbstractFastifyController<ITransferEmail, ITransferEmailBase, ITransferEmailBase>   {
     private inboundMailTransferProcessor?: InboundMailTransferProcessor;
@@ -193,6 +194,33 @@ class TransferEmailController extends AbstractFastifyController<ITransferEmail, 
             return reply.send(exported.buffer)
         } catch (e) {
             this.handleError(e, reply)
+        }
+    }
+
+    async extractReceiptTestData(request: CustomRequest, reply: FastifyReply) {
+        try {
+            const uploadedFile = await (request as any).file()
+
+            if (!uploadedFile) {
+                return reply.status(400).send({
+                    error: "TRANSFER_RECEIPT_TEST_FILE_REQUIRED",
+                    message: "Debe adjuntar un comprobante.",
+                })
+            }
+
+            const buffer = await uploadedFile.toBuffer()
+            const result = await extractTransferReceiptTestData({
+                buffer,
+                filename: uploadedFile.filename,
+                mimetype: uploadedFile.mimetype,
+            })
+
+            return reply.status(200).send(result)
+        } catch (error: any) {
+            return reply.status(500).send({
+                error: "TRANSFER_RECEIPT_TEST_EXTRACT_ERROR",
+                message: error?.message || "No se pudo procesar el comprobante.",
+            })
         }
     }
 
